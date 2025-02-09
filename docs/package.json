@@ -21,6 +21,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sharp": "^0.32.5",
+    "starlight-llms-txt": "^0.4.0",
     "typescript": "^5.6.3"
   },
   "devDependencies": {

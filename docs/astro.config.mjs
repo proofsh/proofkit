@@ -7,11 +7,16 @@ import vercel from "@astrojs/vercel/serverless";
 import react from "@astrojs/react";
 
 import tailwind from "@astrojs/tailwind";
+import starlightLlmsTxt from "starlight-llms-txt";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://proofkit.dev",
   integrations: [
     starlight({
+      description:
+        "ProofKit is a CLI tool for quickly building JavaScript apps.",
+      plugins: [starlightLlmsTxt({ projectName: "ProofKit CLI" })],
       title: "ProofKit CLI",
       social: {
         github: "https://github.com/proofgeist/proofkit",
