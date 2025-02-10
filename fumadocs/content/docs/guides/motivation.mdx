@@ -1,0 +1,74 @@
+---
+title: Motivation
+description: Learn more about why ProofKit was created, and how it's intended to help you.
+sidebar:
+  order: 2
+---
+
+import { LinkCard, Aside } from "@astrojs/starlight/components";
+
+The ProofKit CLI aims to make web development easier for beginners and more efficient for experienced devs. It's _opinionated_ structure allows for more than just a starter template or bootstrapping tool, but code-mod scripts that can modify a project after the initial setup.
+
+ProofKit is **not** a JavaScript framework. It's also **not** the only way to build a web app. It's simply our experience of building web apps encapsulated into a CLI tool to help you structure your project and add to it over time. Each template is just a starting point, and you are free to modify any part of it as you see fit.
+
+## For the New Web Dev
+
+The world of JavaScript and web development is vast. It can feel like you don't know where to start or that there are too many options to choose from. ProofKit is **not** another JavaScript framework, but merely a CLI with some opinions to help you get started building a new web app.
+
+ProofKit assumes that you already have some basic programming skills, perhaps from another language or low-code tool. You are a **problem solver** who's not afraid of troubleshooting, and you probably get a little thrill when the computer finally does what you intended for it to do!
+
+After you start a new ProofKit project, we encourage you to play around with it! Use git to commit the initial changes, then feel free to move files around, knowing you can always safely revert your changes to a known working state. We often learn best by doing, and a functional codebase is a great learning tool for you to dive into web development.
+
+<LinkCard
+  href="/guides/resources"
+  title="Learning Resources"
+  description="A list of subjects and tutorials to guide your web development journey."
+/>
+
+## The ProofKit Tech Stack
+
+Here is a list of the frameworks and packages that you'll come accross in a ProofKit project, the reasons why we chose them, and links to their own docs.
+
+### Browser-based Frameworks / Packages
+
+#### Next.js
+
+[Next.js](https://nextjs.org/docs) is a well-supported open-source React framework for full-stack web applications. This means it runs code on your frontened (in the client's web browser) and backend (on the web server, or API routes). It makes is easy to web a web app up and running with all the features that we expect from a modern web app and is used by companies of all sizes to power their online precence.
+
+#### Mantine
+
+[Mantine](https://mantine.dev/) is a vast, themeable component library for React. We use their default components and styles to build apps very quickly, but with the option of adding custom styles or themes later if needed. Mantine also includes many helpful React hooks, and they provide a Modal and Notifcation system to ProofKit apps.
+
+Why not tailwind css and/or shadcn/ui? We've chosen to focus on Mantine because it has allowed our team to work much faster for the kinds of web apps that we build for our clients. When you're working on multiple projects at once, it's actually a benefit to **not** own the compoment code within an individual codebase, so that it can be more easily upgraded when the time comes. However, we have not ruled out other components and style systems and may add support for them in the future.
+
+#### Tanstack Query / React Query
+
+[Tanstack Query](https://tanstack.com/query) is a library for managing server state in React. It's used by ProofKit to fetch data from external sources, such as REST APIs, so we can be certain that the "shape" of our data matches what we expected during development.
+
+#### zod
+
+[Zod](https://zod.dev/) is a type-safe validation library for JavaScript and TypeScript. It's used by ProofKit to validate all inputs from external sources, such as REST APIs, so we can be certain that the "shape" of our data matches what we expected during development. It's also used in form validation.
+
+#### next-safe-action
+
+[next-safe-action](https://next-safe-action.dev/docs/getting-started) provides a wrapper around Next.js actions that include middleware (for easily checking that a user is signed in) and input validation with zod schemas.
+
+### Authentication
+
+#### Clerk
+
+[Clerk](https://clerk.com/) is a hosted authentication service that is extremly easy to setup and use. It's a great choice to secure most customer-facing web apps, including built in features such as Social logins, magin link, multi-factor authentication, and more.
+
+#### next-auth
+
+For when you need a bit more flexibility or if you want to self-host the authentication layer, [next-auth](https://authjs.dev/) is also supported by ProofKit. While it requires a bit more configuration to get everything just right, ProofKit handles most of it for you.
+
+### Data Sources
+
+#### Supabase
+
+[Supabase](https://authjs.dev/) is an open-source set of tools that are centered around a Postgres database. They also offer an authentication layer (support coming soon to ProofKit) to handle user logins all under one roof.
+
+#### FileMaker
+
+[FileMaker](https://www.claris.com/) is a database and application development platform that allows users to create custom apps and automate processes.

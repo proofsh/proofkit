@@ -1,0 +1,78 @@
+---
+title: Deployment Methods
+description: Learn about the different methods for deploying WebViewer code to your FileMaker file.
+---
+
+There are many ways to deploy WebViewer code to your FileMaker file, and each method has it's own pros and cons. This document attempts to outline the various options so you can make the best choice for your app.
+
+## Embedded
+
+This technique stores the WebViewer code as **data** directly in your FileMaker file. This is the default method for most WebViewer integrations and the method used when setting up a new project with the ProofKit CLI.
+
+#### Pros
+
+- Simple to setup and understand
+- Works offline
+
+#### Cons
+
+- Doesn't survive data migrations
+- Unable to use server-side JavaScript libraries
+- Updates requires the web developer to have access to the FileMaker file
+
+#### Considerations
+
+If it weren't for the data migration issues, the embedded method would easily be the best choice. It fits our mental model so well about what we expect when developing a FileMaker solution with everything being part of the same FileMaker file. If you aren't doing data migrations, this is a great choice. But if are working in a seperate development envionrment (which we strongly recommend), you simply need to understand additional steps required.
+
+To get around the data migration issue, you have a few options:
+
+**Use a sidecar/utility file for the WebViewer code.** Essentially, any file that you will always **copy or replace** when doing a migration. Some solutions already have a UI or Interface file that serves this purpose and you can just use that.
+
+**Use a migration-only utility file.** If you need to keep your users in single open file in their FileMaker Pro client, or don't want to load the WebViewer code from a seperate file, you can essentially create a mirror of the required WebViewer table in a utlity file and use a [post-deployment script](https://docs.ottofms.com/concepts/deployments/deployment-scripts) to copy the code from the utility file to a table in the main file.
+
+**Store the WebViewer code in a script** This method is generally not recommended because it's not possbile to automate the updaing process whenever you make changes to the web code, but it can be used to store the code as **schema** in the file which will survive data migrations. This option may only work for simple widgets, as you might run into FileMaker's character limits.
+
+## Hosted
+
+In the other extreme, you can host the WebViewer code like you would any other web application. If you're only using the fm-webviewer-fetch library, you can still do this without any security concerns because the data won't load unless the web page is loaded in your FileMaker solution in a WebViewer.
+
+#### Pros
+
+- Code survives data migrations
+- Can use server-side JavaScript libraries
+- Can deploy updates to the web code without a data migration
+
+#### Cons
+
+- Requires a web server, or hosting account with Vercel (or similar)
+- Code is de-coupled from the FileMaker file, which may cause schema to be out of sync if you're not careful
+- Requires a persistent internet connection
+
+#### Implementation
+
+To implement this method with a ProofKit-initialized WebViewer project, you'll need to make the following changes:
+
+- Remove the `viteSingleFile` plugin from your `vite.config.ts` file and package.json file
+  - This plugin is not needed when deploying it as a standard web app, and will cause performance issues when loaded from a server
+- Remove the `upload` and `build:upload` scripts in your package.json file
+- _(optional)_ Remove the `HashHistory` override for the router in the `main.tsx` file so that your URLs behave more like a traditional web app
+- Deploy the code to a host like Vercel. Vercel will automatically detect that this is a Vite project and build it as you expect.
+- Edit the WebViewer object to load from your production URL (from Vercel) instead of the `ProofKitWV::HTML` field
+  - You may also want to add more steps to the case statement to load different URLs based on the environment, such as `development`, `staging`, and `production`
+
+Alternatively, you can just install the `fm-webviewer-fetch` library into a standard Next.js web app if you're going to use the Hosted method.
+
+## Downloaded
+
+This technique is a hybrid of the embedded and hosted methods. Essentially, the code is embedded in the FileMaker file, but you also host a copy of it on another web server. The FileMaker file (or the web code) can check for updates and download the latest version directly to the the neccesary field.
+
+#### Pros
+
+- Enables a self-updating solution
+- Great for non-hosted files, or a vertical-market solution where each copy may need a different version of the WebViewer code
+- Can work offline, after the initial download
+
+#### Cons
+
+- Requires a server to host a copy of the code (but can be a simple static file host or CDN)
+- More complex to setup and maintain

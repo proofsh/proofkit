@@ -1,0 +1,94 @@
+---
+title: FileMaker Add-on Auth
+description: How to add FileMaker Add-on Auth to your FileMaker file
+sidebar:
+  order: 1
+---
+
+import CliCommand from "../../../components/CliCommand.astro";
+
+ProofKit includes a self-hosted authentication solution that is built to be flexible and easy to customize. Rather than using a third-party library or authentication service, the ProofKit CLI installs all of the necessary functions into your project and then you just have to install the FileMaker add-on in your FileMaker file to get the necessary tables in your database.
+
+While FileMaker Add-on Auth is built to be secure, it is more advanced than a typical third-party authentication service and does warrant a good understanding of how it works before you customize it beyond the default settings. For more details about the security principles behind it, see the [Lucia documentation](https://lucia-auth.com/).
+
+## Installing
+
+From within a ProofKit project, run the following command:
+
+<CliCommand command="proofkit add auth --type=fmaddon" frame="none" />
+
+This auth integration requires that some specific tables and layouts exist in your FileMaker file. The CLI will detect if these layouts and not in your file, and notify you to install the FileMaker Add-on if they are missing. The FileMaker Add-on encapsulates all of the changes needed and makes it easy to add the requirements to your file.
+
+To easily install the add-on, enter Layout mode on any layout and open the "Add-ons" tab in the left pane. Click the + icon in the lower left corner, then select the "ProofKit Auth" add-on from the list.
+
+:::caution[Troubleshooting]
+If you don't see the add-on after installing FileMaker Add-on Auth from the CLI, quit and re-open FileMaker Pro.
+:::
+
+After you install the add-on for the first time, make sure you re-run the `typegen` command to add the types in your project.
+
+<CliCommand command="typegen" frame="none" />
+
+## Email Verification Setup
+
+By default, FileMaker Add-on Auth works with an email/password based login and asks users to verify their email address when they change their email and when they first sign up. However, you must implement the email sending functionality with the third-party service of your choice. If you skipped the email provider question during the setup, the email verification codes will be displayed in the terminal of your running dev server for your testing.
+
+To customize the email sent to your users, edit the `src/server/auth/email.tsx` file. The actual email is rendered to HTML using the [React Email](https://react.email/docs/introduction) library and can be sent with any email service you choose, but ProofKit has built-in support for [Resend](https://resend.com/) and [Plunk](https://www.useplunk.com/).
+
+## Usage
+
+## Customizing
+
+:::danger[Security Considerations]
+Make sure you fully understand the security implications of any changes you make to the FileMaker Add-on Auth code. For a full guide to the security principles behind it, see the [Lucia documentation](https://lucia-auth.com/) and [The Copenhagen Book](https://thecopenhagenbook.com/).
+:::
+
+Once the add-on is installed in your FileMaker file, you can customize the tables and layouts to better fit your solution. For example, if you already have a users table, you may wish to use that instead of the new one created by the add-on.
+
+The easiest way to customize is to use the tables from FileMaker Add-on and create a one-to-one relationship with your existing table(s). You can also add new fields to the FileMaker Add-on tables to extend their functionality.
+
+After you've made your modifications, run the `typegen` command again to update the types in your project.
+
+<CliCommand command="typegen" frame="none" />
+
+Then, we suggest running the `tsc` command to check for any errors in the FileMaker Add-on Auth code.
+
+<CliCommand command="tsc" frame="none" />
+
+For example, if you added new fields to the session or user layouts, you will likely need to update the functions that create records in those tables and provide some default values.
+
+:::tip[A quick note on field types]
+All expiration timestamps are stored as number fields representing the number of milliseconds since the Unix Epoch and these are a bit easier to work with in JavaScript. Any record with an expiration timestamp in the past can be safely deleted, as it simply represents an abandonded session, email verification, or password reset request.
+:::
+
+### Session Table
+
+From [The Copenhagen Book](https://thecopenhagenbook.com/sessions):
+
+> **Sessions are a way to persist state in the server.** It is especially useful for managing the authentication state, such as the client's identity. We can assign each session with a unique ID and store it on the server to use it as a token. Then the client can associate the request with a session by sending the session ID with it. To implement authentication, we can simply store user data alongside the session.
+
+The session layout also includes related fields for the user, so user info can be fetched in a single request via the FileMaker Data API. **Unless you change the types in the code**, you should expect all data from this layout to be available to the currently logged in user in the browser.
+
+By default, the layout for the session table should be named `proofkit_auth_sessions` but this can be customized in the fmschema.config.mjs file.
+
+### Users Table
+
+This table store information about a user's account, including their email address, email verification status, and password hash. You should be careful to never expose the password hash to the client, nor query this layout directly outside of the provided FileMaker Add-on Auth functions.
+
+By default, the layout for the users table should be named `proofkit_auth_users` but this can be customized in the fmschema.config.mjs file.
+
+### Verification Table
+
+The purpose of this table is to store a request for a user to change their email address until they have successfully verified the new email by entering the code sent to the new address.
+
+By default, the layout for the verification table should be named `proofkit_auth_email_verification` but this can be customized in the fmschema.config.mjs file.
+
+### Password Reset Table
+
+The purpose of this table is to store a request for a user to reset their password until they have successfully reset their password by entering the code sent to their email address.
+
+By default, the layout for the password reset table should be named `proofkit_auth_password_reset` but this can be customized in the fmschema.config.mjs file.
+
+### Alternative Authentication Methods
+
+At this time, FileMaker Add-on Auth will only setup email/password authentication for you, but any other authentication methods can be added by modifying the code yourself. Guides for integrating OAuth providers, passkeys (WebAuthn), two-factor, and more are available in the [Lucia documentation](https://lucia-auth.com/). Just keep in mind that you'll likely need to add more fields to the tables and layouts as mentioned above to support those additional features.

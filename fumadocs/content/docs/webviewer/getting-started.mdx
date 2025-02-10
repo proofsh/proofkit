@@ -1,0 +1,91 @@
+---
+title: Getting Started
+description: How to start a new project with the ProofKit CLI
+sidebar:
+  order: 2
+---
+
+import { Aside, Code } from "@astrojs/starlight/components";
+import Prerequisites from "../../../components/Prerequisites.mdx";
+import InitCommand from "../../../components/InitCommand.astro";
+import CliCommand from "../../../components/CliCommand.astro";
+
+Creating a ProofKit project for a FileMaker WebViewer is extremely similar to the browser-based version as covered in the [main Getting Started guide](/guides/getting-started). This document will simply highlight the key differences.
+
+## Prep your FileMaker file
+
+- The file must be hosted on a FileMaker server running OttoFMS (4.7 or later)
+- The server must have the Data API enabled.
+- You must have a user account that has the `fmrest` extended privilege enabled.
+- The Full Access user account must have the `fmurlscript` extended privilege enabled (Allow URLs to run FileMaker scripts)
+
+<Aside type="note" title="Why does it have to be hosted?">
+  The ProofKit CLI uses the metadata endpoint of the Data API to learn about the
+  layouts and fields in your file to generate type-safe code that can be used in
+  your webviewer. This is only for development though; once you build your web
+  code for production, it can interact directly with the FileMaker Pro client
+  and will work even offline.
+
+In a future release, we may provide a way to scaffold a new webviewer project for use with local development, but there are other tradeoffs to consider.
+
+</Aside>
+
+## Creating a ProofKit Project
+
+Run the following command to scaffold a new ProofKit project, choosing the `webviewer` option when prompted:
+
+<InitCommand />
+
+Refer to the [main Getting Started guide](/guides/getting-started) for more details on the prompts and options available.
+
+## Install the ProofKit WebViewer Addon
+
+The ProofKit CLI will automatically install the ProofKit WebViewer to your computer, but you must install it into your FileMaker file to receive the necessary tables, layouts, and scripts.
+
+To easily install the add-on, enter Layout mode on any layout and open the "Add-ons" tab in the left pane. Click the + icon in the lower left corner, then select the "ProofKit Auth" add-on from the list.
+
+:::caution[Troubleshooting]
+If you don't see the add-on after initialing your project with the CLI, quit and re-open FileMaker Pro.
+:::
+
+## Developing with the WebViewer
+
+When you run the dev server with the `dev` command, a localhost URL will be displayed for you to see your project in a browser. **DO NOT OPEN THIS URL IN A BROWSER**
+
+In modern FileMaker versions, the WebViewer is just as capable as any other browser, but if your users are going to exclusively be running this code in a WebViewer, you should also be developing with the the WebViewer as your browser. Plus, it's the only way to test the FileMaker interactions that you will likely build.
+
+Thankfully, the ProofKit WebViewer Addon makes it easy to switch your webviewer from dev mode and production mode.
+
+With your dev server running (e.g. `pnpm dev`), open a **seperate** terminal instance and run:
+
+<CliCommand command="launch-fm" frame="none" />
+
+which will open your FileMaker file in FileMaker Pro and run the `Launch Web Viewer for Dev` script. This script will ensure that you're on the correct layout and that the WebViewer is running in dev mode—pointing to your localhost URL.
+
+You can use the other utility scripts to build your own version of this behavior:
+
+- **Enable WebDev Mode**: Sets a global variable to indicate that the WebViewer should be running in dev mode, then resets the WebViewer to re-apply it's calculation.
+- **Disable WebDev Mode**: Clears the global variable for the WebViewer to return to production mode, then resets the WebViewer to re-apply it's calculation.
+
+To enable the JavaScript debugging in FileMaker Web Viewers, run this command in your terminal, then restart FileMaker Pro:
+
+<Code
+  code="defaults write com.filemaker.client.pro12 WebKitDebugDeveloperExtrasEnabled -bool YES"
+  frame="none"
+/>
+
+## Building for Production
+
+When you're done with development, you need to **build** your project for production and then **upload** the resulting code to your FileMaker file. Use these commands in your project's root directory:
+
+<CliCommand command={["build", "upload", "build:upload"]} frame="none" />
+
+The final command is simply a shortcut for running the `build` and `upload` commands in sequence.
+
+The `build` command will compile your project into a single html file, which will be output to the `dist` directory.
+
+The `upload` command will use the fmp URL protocol to call a script in your FileMaker file with the path to the html file. The FileMaker script will read the data from that file and insert it into a single-record field in the `ProofKitWV` table.
+
+:::caution[Data Migrations]
+If you are working with a seperated Dev/Production environments and running migrations to deploy your code to production, the uploaded code will not transfer to your production environment. See the [Deployment Methods](/webviewer/deployment-methods) page for more details.
+:::

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["**/*.config.tsx", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "compilerOptions": {
+    "strict": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "jsx": "preserve",
+    "incremental": true,
+    "isolatedModules": true
+  },
+  "exclude": ["node_modules"]
+}

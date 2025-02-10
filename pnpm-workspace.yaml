@@ -1,4 +1,5 @@
 packages:
   - "cli"
   - "docs"
+  - "fumadocs"
   - "shared"

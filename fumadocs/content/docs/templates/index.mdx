@@ -1,0 +1,21 @@
+---
+title: Page Templates
+description: A collection of page templates for the ProofKit CLI
+sidebar:
+  label: "Overview"
+  order: 1
+---
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+ProofKit comes with several built-in page templates that you can use to quickly scaffold new pages in your application. These templates are available through the CLI when you run `proofkit add page`.
+
+Some templates require data from one of your data sources to generate properly and you will be prompted to select a data source and schema if more than one is available in your project. This will allow the template to generate a custom page that is tailored to your data.
+
+Choose your application type to see available templates:
+
+<CardGrid>
+
+  <LinkCard href="/templates/browser" title="Browser Templates" />
+  <LinkCard href="/templates/web-viewer" title="WebViewer Templates" />
+</CardGrid>

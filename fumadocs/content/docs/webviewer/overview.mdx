@@ -1,0 +1,22 @@
+---
+title: Overview
+description: Learn about the different methods for deploying WebViewer code to your FileMaker file.
+sidebar:
+  order: 1
+---
+
+The FileMaker Web Viewer object is a powerful way to build rich, interactive experiences for your FileMaker users. In many ways, it's simpler than a traditional browser-based web app because you can host the code inside of your FileMaker file (rather than hosting on a web server) and you don't have to deal with authentication because you can rely on the FileMaker Pro client.
+
+## FAQ
+
+#### What is the difference between the WebViewer and the browser-based project created with the ProofKit CLI?
+
+The primary difference is the framework used. For browser-based projects, we use [Next.js](https://nextjs.org/) and the WebViewer project uses [Vite](https://vitejs.dev/) and [Tanstack Router](https://tanstack.com/router). Next.js is a full-stack framework, meaning that it results in some code that is expected to run on a server AND some code that runs in the browser. Vite allows us to build s single bundle of code for the browser that can be store in FileMaker and if needed, we can use the FileMaker Pro client as the "server" to run private functions and "host" the code.
+
+#### Can I build WebViewer applications using Next.js?
+
+Yes! This is sometimes preferred if you already hae a web app and want to keep things in a single codebase, or if you're already hosting the web app and don't need the FileMaker app to work offline. Simply point your webviewer object to the URL of your existing web app or local dev server and use the [fm-webviewer-fetch](https://fm-webviewer-fetch.proofgeist.com/) package to interact with FileMaker scripts and data.
+
+#### Does this technique work in Web Direct?
+
+Yes. The ProofKit WebViewer Addon includes a custom function that wraps your web code so the injected FileMaker JavaScript code will still interface with the WebViewer, even in Web Direct.

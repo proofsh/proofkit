@@ -1,0 +1,45 @@
+---
+title: Adding Components
+description: How to add new components to your ProofKit project
+sidebar:
+  order: 4
+---
+
+import { Aside, Steps, Code } from "@astrojs/starlight/components";
+import CliCommand from "../../../components/CliCommand.astro";
+
+After initilizing a new ProofKit project, you can use the CLI to add new components and features.
+
+The ProofKit package is installed in your project, and as a script in your `package.json`, so you can run the following command (as long as your current directory is your project root):
+
+<CliCommand command="proofkit" frame="none" />
+
+This will prompt you with a list of available components and features to add to your project.
+
+## Adding a Page
+
+ProofKit includes many page templates to help you build out your web app. Use this command to select one.
+
+<CliCommand command="proofkit add page" frame="none" />
+
+If the template you select requires data, you may be prompted to select which data source and schema to use. (If there is only one, it will be selected by default without prompting)
+
+## Adding a Data Source
+
+If you need to connect to a new database or FileMaker file, use this command.
+
+<CliCommand command="proofkit add data" frame="none" />
+
+For FileMaker data sources, a single "Data Source" consists of:
+
+- A FileMaker Server
+- A FileMaker File
+- An OttoFMS API Key (representing a single account name with permission to the file)
+
+If you need to change any one of these (i.e. to connect to a different file on the same server), you'll want to add a new data source.
+
+## Adding Schema
+
+When you want to interact with data from a new table or layout, you'll need to add a `schema`.
+
+<CliCommand command="proofkit add schema" frame="none" />

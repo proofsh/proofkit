@@ -1,0 +1,57 @@
+---
+title: Learning Resources
+description: A list of resources that can help you learn more about ProofKit.
+sidebar:
+  order: 100
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+There are so many resources out there that can help you learn more about web development, far too many to list here. If any of the concepts in these docs are unfamiliar to you, use this guide to help you find the tutorials that best match your learning style.
+
+## Web Development Basics
+
+#### git / GitHub
+
+Source control is key to any modern coding workflow. You'll use git to keep track of any changes that you make to the text files in your project. It's helpful while learning as you can revert to previous, known good versions of your code if you make a mistake.
+
+There are a vast number of resources out there to help you learn git. We suggest searching for a basic git tutorial that matches your learning style (interactive, video, written, etc).
+
+[GitHub](https://github.com/) is the most popular hosting platform for git repositories. It's free to use and a great choice for easy deployment and collaboration. If you're new to git, we suggest learning GitHub also.
+
+#### npm / pnpm
+
+npm ("node package manager") is the package manager for JavaScript. It's the default package manager for Node.js, and is used to install and update dependencies (third-party code used in your project).
+
+pnpm ("performant npm") is a fast, disk space efficient package manager. It's a drop in replacement for npm and is our recommended package manager. It just takes one extra step to install, but then can be used in place of npm anywhere that you see a `npm` command.
+
+For example, to check for available updates, run `pnpm update --interactive`.
+
+#### Code Editor / IDE
+
+While you can use any text editor to write code, an IDE ("integrated development environment") can make your life a lot easier. We recommend using [VS Code](https://code.visualstudio.com/) or [Cursor](https://www.cursor.com/) as your IDE. These will integrate a terminal for you to run proofkit commands, and have a native git integration to easily view the changes made to your code. Cursor is a paid IDE, but it has great AI features to help you write code faster and may valuable for asking questions about the code you're writing (or written by ProofKit) as you learn.
+
+## JavaScript / React
+
+In web development, you'll use a variety of HTML, JavaScript, and CSS at the core of any project. Unless those terms are completely unfamiliar to you, you can likely jump right into a React tutorial and you'll be able to pick up those concepts on the way. In particular, it's likely unneccesary to learn JavaScript before starting with React.
+
+The [React documentation](https://react.dev/learn) is a great place to start and includes browser-based code snippets to help you learn.
+
+If you prefer to build your own project in a code editor, or you also want to learn how React will interact with Next.js, you could also try the [React fundamentals course](https://nextjs.org/learn/react-foundations/what-is-react-and-nextjs) from Next.js.
+
+Technically speaking, we suggest using TypeScript instead of JavaScript wherever possible. Since TypeScript is a superset of JavaScript, the only difference is that you'll get more helpful errors and warnings when you make a mistake. If you really want to learn TypeScript specifically, we suggest the free [Beginner's TypeScript Course](https://www.totaltypescript.com/tutorials/beginners-typescript) from [Total TypeScript](https://www.totaltypescript.com/).
+
+## Next.js
+
+If you're using ProofKit to build a browser-based app, you'll be using Next.js. Next.js is known as a "meta-framework" because it's built on top of React. It's purpose is to convert your React code into a set of files that can be served to the browser.
+
+The [Next.js course](https://nextjs.org/learn) will help you build an app from scratch starting with an example template. However, if you've already successfully started a new project with ProofKit, you may want to jump directly to the [getting started guides](https://nextjs.org/docs/app/getting-started/layouts-and-pages) in their documentation to better understand how a Next.js app is structured.
+
+<Aside type="caution">
+  The Next.js course will cover many topics at a more unopinionated, lower level
+  than ProofKit, since its designed to show the capabilities of the framework.
+  Topics such as writing CSS directly or using raw SQL statements to fetch data
+  from a database are likely not things you'll need to do in a ProofKit app.
+</Aside>
+
+## Advanced Topics

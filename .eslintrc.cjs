@@ -15,8 +15,9 @@ const config = {
     project: [
       "./tsconfig.json",
       "./docs/tsconfig.json",
-      "./cli/tsconfig.eslint.json", // separate eslint config for the CLI since we want to lint and typecheck differently due to template files
-      "./create-proofkit/tsconfig.eslint.json", // separate eslint config for the create-proofkit CLI since we want to lint and typecheck differently due to template files
+      "./cli/tsconfig.eslint.json",
+      "./create-proofkit/tsconfig.eslint.json",
+      "./fumadocs/tsconfig.eslint.json",
     ],
     extraFileExtensions: [".astro"],
   },

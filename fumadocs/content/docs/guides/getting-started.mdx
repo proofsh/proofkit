@@ -1,0 +1,114 @@
+---
+title: Getting Started
+description: How to start a new project with the ProofKit CLI
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps, Code } from "@astrojs/starlight/components";
+import InitCommand from "../../../components/InitCommand.astro";
+import CliCommand from "../../../components/CliCommand.astro";
+import Prerequisites from "../../../components/Prerequisites.mdx";
+
+This guide walks you through how to get up and running with a new ProofKit project.
+
+<Prerequisites />
+
+### Data Sources
+
+Additional prerequisites apply depending on which data source you intend to connect to.
+
+#### FileMaker
+
+To connect to FileMaker data, you'll need a FileMaker server (19.6+) running OttoFMS (4.7+). Your server should be accessible via port 443
+
+<Aside title="For older versions of OttoFMS">
+  To start a ProofKit project with an older version of OttoFMS, you need to provide an Admin API key via the `--adminApiKey` flag. You can get an Admin API key from the [OttoFMS dashboard](https://docs.ottofms.com/otto-console/api-keys#admin-api-keys).
+
+  <CliCommand command="@proofgeist/kit init --adminApiKey=<YourAdminApiKey>" type="execute" />
+</Aside>
+
+Your hosted FileMaker file must have an account with the `fmrest` priviledge set enabled. During setup, you'll be asked for either the account name and password for that file, or select a Data API key previously generated from OttoFMS. (If you provide credentials, a Data API key will be created for you)
+
+#### FileMaker Web Viewer
+
+If you intend to build for the FileMaker Web Viewer, the same requirements apply for FileMaker Server and OttoFMS as above. You will also need to make sure that your Full Access account has the `fmurlscript` priviledge enabled so the web code can trigger FileMaker scripts, making development a lot easier. For more details, see the [WebViewer Getting Started Guide](/webviewer/getting-started).
+
+#### Supabase
+
+Coming Soon
+
+## Creating a ProofKit Project
+
+Now you can scaffold a new ProofKit project! Follow the prompts to setup your project and connect to your own database.
+
+<InitCommand />
+
+**Project Name** - must be lowercase letters, numbers, `_` and `-` characters only. This will also be the folder name where your project will get created.
+
+**Project Type** - Either a Web App for Browsers or FileMaker Web Viewer. This section of the docs focuses mostly on the browser-based projects using Next.js. For more details about the WebViewer option, see the [WebViewer Getting Started Guide](/webviewer/getting-started).
+
+**Server URL** - Enter the URL of your FileMaker server. It must start with https:// but can be any path on the server (such as https://myserver.com/otto/app) to make it easier to copy/paste
+
+Next you'll be asked to select a file from your server. If your solution contains multiple files, select the file where the data lives. You'll be able to add more files and/or layouts later.
+
+If you've already created a **Data API key** for the selected file, you can select it. Alternatively you can enter a FileMaker username and password and a Data API key will be created for you.
+
+<Aside type="caution" title="Data API Key Troubleshooting">
+If you get an error while creating a Data API key, it's most often one of these causes:
+
+- The Data API is not enabled on your FileMaker server
+- The account name and/or password you entered was incorrect
+- The account does not have the `fmrest` extended privledge
+
+</Aside>
+
+Now you can select a **layout** to load data from, and a name for the **schema** that will be created. This is a friendly name that you can use in your code whenever you want to access the data on this layout. Schema names must be valid JavaScript variable names and unique within each data source (FileMaker file).
+
+For FileMaker developers, "layout" and "schema" are effectively interchangeable. What you may see referred to as "schemas" is just a more generic term for a specific set of fields (and/or related fields)
+
+<Aside type="tip">
+  If your layout name starts with `API` or `dapi` it will appear at the top of
+  this list!
+</Aside>
+
+## Launching Your Web App
+
+Once your project is created, you'll see a few **next steps** printed to the console.
+
+<Steps>
+
+1. **Open your project folder.** The rest of the commands should be run in the context of the project
+
+   <Code code="cd <projectName>" frame="none" />
+
+   If you're not already in your code editor, you'll probably find it easier to switch to it now. You can open your project folder in Visual Studio Code and run the following commands from the integrated terminal (which by default opens with the context of the project folder, so you don't need the `cd` command)
+
+      <Aside type="tip">
+
+   Use the `code` command to quickly launch your project in VSCode.
+
+   <Code code={`code <projectName>`} />
+   <Code code={`cd <projectName>\ncode .`} />
+
+   If this command fails, open VSCode manually and open the command pallete `cmd+shift+P` to search for "install code" and run the `Shell Command: Install 'code' command` action. Then try the above commands again.
+
+      </Aside>
+
+2. **Make your first git commit.** A ton of files were added to your project, so now is a great time to commit them to source control so we can revert back to this point in the project if we ever need to.
+
+   `git commit -m "initial commit"`
+
+   You can also do this with the graphical interface of VSCode [(tutorial)](https://code.visualstudio.com/docs/sourcecontrol/overview)
+
+3. **Start your dev server.** This command builds your web app on-the-fly so you can view it in a browser on your local computer.
+
+   <CliCommand command="dev" frame="none" />
+
+   The result of this command will display a localhost URL in your console, such as [`http://localhost:3000`](http://localhost:3000), where you can view your ProofKit app.
+
+   This is a long-running command, so sometimes you'll want to stop the dev server using `ctrl+C` so that you can enter another terminal command.
+
+</Steps>
+
+Your ProofKit app is now up and running! Now you'll want to learn how to [add more pieces](/guides/adding-components) to your project, or check out the [motivations](/guides/motivation) page to learn more about the tech stack used here so you can learn more about each underlying framework that you'll come across.
