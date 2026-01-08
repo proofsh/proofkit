@@ -20,6 +20,10 @@ import { apiKey, contacts, contactsTOWithIds, database, password, serverUrl, use
 import { mockResponses } from "./fixtures/responses";
 import { jsonCodec } from "./utils/helpers";
 import { createMockFetch, simpleMock } from "./utils/mock-fetch";
+import { createCIAwareFetchHandler } from "./utils/self-healing-fetch";
+
+// Create self-healing fetch handler for CI environments
+const selfHealingFetchHandler = createCIAwareFetchHandler();
 
 if (!serverUrl) {
   throw new Error("FMODATA_SERVER_URL environment variable is required");
@@ -45,6 +49,7 @@ afterEach(async () => {
   const connection = new FMServerConnection({
     serverUrl,
     auth: { apiKey },
+    fetchClientOptions: selfHealingFetchHandler ? { fetchHandler: selfHealingFetchHandler } : undefined,
   });
   const db = connection.database(database);
 
@@ -90,6 +95,7 @@ describe("Basic E2E Operations", () => {
   const connection = new FMServerConnection({
     serverUrl,
     auth: { apiKey },
+    fetchClientOptions: selfHealingFetchHandler ? { fetchHandler: selfHealingFetchHandler } : undefined,
   });
   const db = connection.database(database);
 
@@ -388,6 +394,7 @@ describe("Entity IDs", () => {
   const connection = new FMServerConnection({
     serverUrl,
     auth: { username, password },
+    fetchClientOptions: selfHealingFetchHandler ? { fetchHandler: selfHealingFetchHandler } : undefined,
   });
 
   const db = connection.database(database, { useEntityIds: true });
@@ -594,6 +601,7 @@ describe("Batch Operations", () => {
   const connection = new FMServerConnection({
     serverUrl,
     auth: { username, password },
+    fetchClientOptions: selfHealingFetchHandler ? { fetchHandler: selfHealingFetchHandler } : undefined,
   });
 
   const db = connection.database(database);

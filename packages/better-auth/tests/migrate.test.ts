@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createSelfHealingFetch } from "../../fmodata/tests/utils/self-healing-fetch";
 import { getMetadata } from "../src/migrate";
 import { createRawFetch } from "../src/odata";
 
@@ -22,6 +23,14 @@ function getTestEnv() {
 
 const { fmServer, fmDatabase, ottoApiKey } = getTestEnv();
 
+// Create self-healing fetch handler for CI environments
+const selfHealingFetchHandler = process.env.CI
+  ? createSelfHealingFetch({
+      serverUrl: fmServer,
+      apiKey: ottoApiKey,
+    })
+  : undefined;
+
 const { fetch } = createRawFetch({
   serverUrl: fmServer,
   auth: {
@@ -29,6 +38,7 @@ const { fetch } = createRawFetch({
   },
   database: fmDatabase,
   logging: "verbose",
+  fetchHandler: selfHealingFetchHandler,
 });
 
 describe("migrate", () => {

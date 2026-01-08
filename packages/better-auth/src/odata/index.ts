@@ -17,6 +17,8 @@ export interface FmOdataConfig {
   auth: ODataAuth;
   database: string;
   logging?: true | "verbose" | "none";
+  /** Custom fetch handler for self-healing in CI environments */
+  fetchHandler?: typeof fetch;
 }
 
 export function validateUrl(input: string): Result<URL, unknown> {
@@ -106,7 +108,7 @@ export function createRawFetch(args: FmOdataConfig) {
         }
       }
 
-      const response = await fetch(url, requestInit);
+      const response = await (args.fetchHandler ?? fetch)(url, requestInit);
 
       // Optional logging for response details
       if (args.logging === "verbose" || args.logging === true) {

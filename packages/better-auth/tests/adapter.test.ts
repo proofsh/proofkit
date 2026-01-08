@@ -1,6 +1,7 @@
 import { runAdapterTest } from "better-auth/adapters/test";
 import { beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod/v4";
+import { createSelfHealingFetch } from "../../fmodata/tests/utils/self-healing-fetch";
 import { FileMakerAdapter } from "../src";
 import { createRawFetch } from "../src/odata";
 
@@ -17,6 +18,15 @@ if (!process.env.FM_PASSWORD) {
   throw new Error("FM_PASSWORD is not set");
 }
 
+// Create self-healing fetch handler for CI environments
+const selfHealingFetchHandler =
+  process.env.CI && process.env.OTTO_API_KEY
+    ? createSelfHealingFetch({
+        serverUrl: process.env.FM_SERVER,
+        apiKey: process.env.OTTO_API_KEY,
+      })
+    : undefined;
+
 const { fetch } = createRawFetch({
   serverUrl: process.env.FM_SERVER,
   auth: {
@@ -25,6 +35,7 @@ const { fetch } = createRawFetch({
   },
   database: process.env.FM_DATABASE,
   logging: "verbose", // Enable verbose logging to see the response details
+  fetchHandler: selfHealingFetchHandler,
 });
 
 describe("My Adapter Tests", async () => {
