@@ -26,7 +26,7 @@ export interface CreateClientError {
   statusCode: number;
   details?: Record<string, unknown>;
   kind?: "missing_env" | "adapter_error" | "connection_error" | "unknown";
-  suspectedField?: "server" | "db" | "auth";
+  suspectedField?: string;
   fmErrorCode?: string;
   message?: string;
 }
@@ -170,7 +170,7 @@ export interface OdataClientError {
   error: string;
   statusCode: number;
   kind?: "missing_env" | "adapter_error" | "connection_error" | "unknown";
-  suspectedField?: "server" | "db" | "auth";
+  suspectedField?: string;
 }
 
 export function createOdataClientFromConfig(config: FmodataConfig): OdataClientResult | OdataClientError {
@@ -201,24 +201,28 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
     const getEnvName = (customName: string | undefined, defaultName: string) =>
       customName && customName.trim() !== "" ? customName : defaultName;
 
-    const baseUrl = process.env[getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl)];
-    const connectedFileName =
-      process.env[getEnvName(config.envNames?.fmHttp?.connectedFileName, defaultEnvNames.fmHttpConnectedFileName)];
+    const baseUrlEnvName = getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl);
+    const connectedFileNameEnvName = getEnvName(
+      config.envNames?.fmHttp?.connectedFileName,
+      defaultEnvNames.fmHttpConnectedFileName,
+    );
+    const baseUrl = process.env[baseUrlEnvName];
+    const connectedFileName = process.env[connectedFileNameEnvName];
 
     if (!(baseUrl && connectedFileName)) {
       const missing: string[] = [];
       if (!baseUrl) {
-        missing.push(getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl));
+        missing.push(baseUrlEnvName);
       }
       if (!connectedFileName) {
-        missing.push(getEnvName(config.envNames?.fmHttp?.connectedFileName, defaultEnvNames.fmHttpConnectedFileName));
+        missing.push(connectedFileNameEnvName);
       }
       return {
         error: "Missing required environment variables for FM HTTP mode",
         statusCode: 400,
         kind: "missing_env",
         details: { missing: { baseUrl: !baseUrl, connectedFileName: !connectedFileName } },
-        suspectedField: baseUrl ? "db" : "server",
+        suspectedField: baseUrl ? connectedFileNameEnvName : baseUrlEnvName,
         message: `Missing: ${missing.join(", ")}`,
       };
     }

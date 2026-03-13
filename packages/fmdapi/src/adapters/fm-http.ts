@@ -82,20 +82,23 @@ export class FmHttpAdapter implements Adapter {
     const headers = new Headers(fetchOptions?.headers);
     headers.set("Content-Type", "application/json");
 
-    const res = await fetch(`${this.baseUrl}/callScript`, {
-      ...fetchOptions,
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        connectedFileName: this.connectedFileName,
-        scriptName: this.scriptName,
-        data: scriptParam,
-      }),
-      signal: controller.signal,
-    });
-
-    if (timeout) {
-      clearTimeout(timeout);
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/callScript`, {
+        ...fetchOptions,
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          connectedFileName: this.connectedFileName,
+          scriptName: this.scriptName,
+          data: scriptParam,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
     }
 
     if (!res.ok) {

@@ -4,12 +4,18 @@ import type { BuildSchemaArgs } from "./types";
 
 const defaultWebviewerScriptName = "execute_data_api";
 
+function normalizeScriptName(scriptName?: string) {
+  const normalized = scriptName?.trim();
+  return normalized ? normalized : undefined;
+}
+
 function getGeneratedWebviewerScriptName(args: Pick<BuildSchemaArgs, "webviewerScriptName" | "fmHttp">) {
-  if (args.webviewerScriptName) {
-    return args.webviewerScriptName;
+  const explicitWebviewerScriptName = normalizeScriptName(args.webviewerScriptName);
+  if (explicitWebviewerScriptName) {
+    return explicitWebviewerScriptName;
   }
   if (args.fmHttp) {
-    return args.fmHttp.scriptName ?? defaultWebviewerScriptName;
+    return normalizeScriptName(args.fmHttp.scriptName) ?? defaultWebviewerScriptName;
   }
   return undefined;
 }
@@ -127,7 +133,7 @@ function buildAdapter(writer: CodeBlockWriter, args: BuildSchemaArgs): string {
   const { envNames } = args;
   const generatedWebviewerScriptName = getGeneratedWebviewerScriptName(args);
 
-  if (generatedWebviewerScriptName) {
+  if (generatedWebviewerScriptName !== undefined) {
     writer.write("new WebViewerAdapter({scriptName: ");
     writer.quote(generatedWebviewerScriptName);
     writer.write("})");

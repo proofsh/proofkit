@@ -246,31 +246,62 @@ export function validateAndLogEnvValues(
     console.log(chalk.red("ERROR: Could not get all required config values"));
     console.log("Ensure the following environment variables are set:");
 
-    const { server, db, apiKey } = envValues;
+    const getEnvName = (customName: string | undefined, defaultName: string) =>
+      customName && customName.trim() !== "" ? customName : defaultName;
+
+    if (options?.fmHttp) {
+      if (!envValues.fmHttpBaseUrl) {
+        console.log(
+          getEnvName(
+            envNames?.fmHttp && "baseUrl" in envNames.fmHttp ? envNames.fmHttp.baseUrl : undefined,
+            defaultEnvNames.fmHttpBaseUrl,
+          ),
+        );
+      }
+      if (!envValues.fmHttpConnectedFileName) {
+        console.log(
+          getEnvName(
+            envNames?.fmHttp && "connectedFileName" in envNames.fmHttp ? envNames.fmHttp.connectedFileName : undefined,
+            defaultEnvNames.fmHttpConnectedFileName,
+          ),
+        );
+      }
+      console.log();
+      return undefined;
+    }
+
+    const { server, db, apiKey, username, password } = envValues;
 
     if (!server) {
-      console.log(`${envNames?.server ?? defaultEnvNames.server}`);
+      console.log(getEnvName(envNames?.server, defaultEnvNames.server));
     }
     if (!db) {
-      console.log(`${envNames?.db ?? defaultEnvNames.db}`);
+      console.log(getEnvName(envNames?.db, defaultEnvNames.db));
     }
 
-    if (!apiKey) {
+    if (!(apiKey || username)) {
       // Determine the names to display in the error message
-      const apiKeyNameToLog =
-        envNames?.auth && "apiKey" in envNames.auth && envNames.auth.apiKey
-          ? envNames.auth.apiKey
-          : defaultEnvNames.apiKey;
-      const usernameNameToLog =
-        envNames?.auth && "username" in envNames.auth && envNames.auth.username
-          ? envNames.auth.username
-          : defaultEnvNames.username;
-      const passwordNameToLog =
-        envNames?.auth && "password" in envNames.auth && envNames.auth.password
-          ? envNames.auth.password
-          : defaultEnvNames.password;
+      const apiKeyNameToLog = getEnvName(
+        envNames?.auth && "apiKey" in envNames.auth ? envNames.auth.apiKey : undefined,
+        defaultEnvNames.apiKey,
+      );
+      const usernameNameToLog = getEnvName(
+        envNames?.auth && "username" in envNames.auth ? envNames.auth.username : undefined,
+        defaultEnvNames.username,
+      );
+      const passwordNameToLog = getEnvName(
+        envNames?.auth && "password" in envNames.auth ? envNames.auth.password : undefined,
+        defaultEnvNames.password,
+      );
 
       console.log(`${apiKeyNameToLog} (or ${usernameNameToLog} and ${passwordNameToLog})`);
+    } else if (username && !password) {
+      console.log(
+        getEnvName(
+          envNames?.auth && "password" in envNames.auth ? envNames.auth.password : undefined,
+          defaultEnvNames.password,
+        ),
+      );
     }
 
     console.log();
