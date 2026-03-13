@@ -160,29 +160,32 @@ const generateTypedClientsSingle = async (
 
   for await (const item of layouts) {
     totalCount++;
-    const client = isFmHttpMode
-      ? DataApi({
-          adapter: new FmHttpAdapter({
-            baseUrl: fmHttpBaseUrl as string,
-            connectedFileName: fmHttpConnectedFileName as string,
-            scriptName: config.fmHttp?.scriptName,
-          }),
-          layout: item.layoutName,
-        })
-      : auth && "apiKey" in auth
-        ? DataApi({
-            adapter: new OttoAdapter({ auth, server: server as string, db: db as string }),
-            layout: item.layoutName,
-          })
-        : DataApi({
-            adapter: new FetchAdapter({
-              auth: auth as { username: string; password: string },
-              server: server as string,
-              db: db as string,
-              tokenStore: memoryStore(),
-            }),
-            layout: item.layoutName,
-          });
+    let client: ReturnType<typeof DataApi>;
+    if (isFmHttpMode) {
+      client = DataApi({
+        adapter: new FmHttpAdapter({
+          baseUrl: fmHttpBaseUrl as string,
+          connectedFileName: fmHttpConnectedFileName as string,
+          scriptName: config.fmHttp?.scriptName,
+        }),
+        layout: item.layoutName,
+      });
+    } else if (auth && "apiKey" in auth) {
+      client = DataApi({
+        adapter: new OttoAdapter({ auth, server: server as string, db: db as string }),
+        layout: item.layoutName,
+      });
+    } else {
+      client = DataApi({
+        adapter: new FetchAdapter({
+          auth: auth as { username: string; password: string },
+          server: server as string,
+          db: db as string,
+          tokenStore: memoryStore(),
+        }),
+        layout: item.layoutName,
+      });
+    }
     const result = await getLayoutMetadata({
       client,
       valueLists: item.valueLists,

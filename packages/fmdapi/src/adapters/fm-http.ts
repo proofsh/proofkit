@@ -10,7 +10,6 @@ import type {
 import { FileMakerError } from "../client-types.js";
 import type {
   Adapter,
-  ContainerUploadOptions,
   CreateOptions,
   DeleteOptions,
   ExecuteScriptOptions,
@@ -20,6 +19,8 @@ import type {
   ListOptions,
   UpdateOptions,
 } from "./core.js";
+
+const TRAILING_SLASHES_REGEX = /\/+$/;
 
 export interface FmHttpAdapterOptions {
   /** Base URL of the local FM HTTP server (e.g. "http://localhost:3000") */
@@ -36,7 +37,7 @@ export class FmHttpAdapter implements Adapter {
   protected scriptName: string;
 
   constructor(options: FmHttpAdapterOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+    this.baseUrl = options.baseUrl.replace(TRAILING_SLASHES_REGEX, "");
     this.connectedFileName = options.connectedFileName;
     this.scriptName = options.scriptName ?? "execute_data_api";
   }
@@ -98,16 +99,13 @@ export class FmHttpAdapter implements Adapter {
     }
 
     if (!res.ok) {
-      throw new FileMakerError(
-        String(res.status),
-        `FM HTTP request failed (${res.status}): ${await res.text()}`,
-      );
+      throw new FileMakerError(String(res.status), `FM HTTP request failed (${res.status}): ${await res.text()}`);
     }
 
     let respData: RawFMResponse;
     const raw = await res.json();
     // The /callScript response wraps the script result as a string or object
-    const scriptResult = typeof raw.result === "string" ? JSON.parse(raw.result) : raw.result ?? raw;
+    const scriptResult = typeof raw.result === "string" ? JSON.parse(raw.result) : (raw.result ?? raw);
     respData = scriptResult as RawFMResponse;
 
     if (respData.messages?.[0].code !== "0") {
@@ -199,10 +197,7 @@ export class FmHttpAdapter implements Adapter {
     });
 
     if (!res.ok) {
-      throw new FileMakerError(
-        String(res.status),
-        `FM HTTP executeScript failed (${res.status}): ${await res.text()}`,
-      );
+      throw new FileMakerError(String(res.status), `FM HTTP executeScript failed (${res.status}): ${await res.text()}`);
     }
 
     const raw = await res.json();

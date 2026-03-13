@@ -1,8 +1,4 @@
-import {
-  fmTableOccurrence,
-  textField,
-  timestampField,
-} from "@proofkit/fmodata";
+import { fmTableOccurrence, textField, timestampField } from "@proofkit/fmodata";
 
 export const isolated_contacts = fmTableOccurrence(
   "isolated_contacts",

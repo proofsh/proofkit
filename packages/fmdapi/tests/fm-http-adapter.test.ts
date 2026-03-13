@@ -196,10 +196,7 @@ describe("FmHttpAdapter", () => {
     });
 
     it("throws FileMakerError on HTTP error", async () => {
-      vi.stubGlobal(
-        "fetch",
-        () => Promise.resolve(new Response("Internal Server Error", { status: 500 })),
-      );
+      vi.stubGlobal("fetch", () => Promise.resolve(new Response("Internal Server Error", { status: 500 })));
 
       const client = createClient();
       await expect(client.list()).rejects.toBeInstanceOf(FileMakerError);

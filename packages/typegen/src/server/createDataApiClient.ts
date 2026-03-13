@@ -201,22 +201,24 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
     const getEnvName = (customName: string | undefined, defaultName: string) =>
       customName && customName.trim() !== "" ? customName : defaultName;
 
-    const baseUrl =
-      process.env[getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl)];
+    const baseUrl = process.env[getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl)];
     const connectedFileName =
       process.env[getEnvName(config.envNames?.fmHttp?.connectedFileName, defaultEnvNames.fmHttpConnectedFileName)];
 
-    if (!baseUrl || !connectedFileName) {
+    if (!(baseUrl && connectedFileName)) {
       const missing: string[] = [];
-      if (!baseUrl) missing.push(getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl));
-      if (!connectedFileName)
+      if (!baseUrl) {
+        missing.push(getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl));
+      }
+      if (!connectedFileName) {
         missing.push(getEnvName(config.envNames?.fmHttp?.connectedFileName, defaultEnvNames.fmHttpConnectedFileName));
+      }
       return {
         error: "Missing required environment variables for FM HTTP mode",
         statusCode: 400,
         kind: "missing_env",
         details: { missing: { baseUrl: !baseUrl, connectedFileName: !connectedFileName } },
-        suspectedField: !baseUrl ? "server" : "db",
+        suspectedField: baseUrl ? "db" : "server",
         message: `Missing: ${missing.join(", ")}`,
       };
     }

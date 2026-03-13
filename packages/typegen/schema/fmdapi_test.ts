@@ -1,4 +1,4 @@
-import { fmTableOccurrence, textField, numberField } from "@proofkit/fmodata";
+import { fmTableOccurrence, numberField, textField } from "@proofkit/fmodata";
 
 export const fmdapi_test = fmTableOccurrence(
   "fmdapi_test",
