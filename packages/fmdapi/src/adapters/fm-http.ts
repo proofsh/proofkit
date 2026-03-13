@@ -102,11 +102,19 @@ export class FmHttpAdapter implements Adapter {
       throw new FileMakerError(String(res.status), `FM HTTP request failed (${res.status}): ${await res.text()}`);
     }
 
-    let respData: RawFMResponse;
     const raw = await res.json();
     // The /callScript response wraps the script result as a string or object
-    const scriptResult = typeof raw.result === "string" ? JSON.parse(raw.result) : (raw.result ?? raw);
-    respData = scriptResult as RawFMResponse;
+    let scriptResult: unknown;
+    try {
+      scriptResult = typeof raw.result === "string" ? JSON.parse(raw.result) : (raw.result ?? raw);
+    } catch (err) {
+      throw new FileMakerError(
+        "500",
+        `FM HTTP response parse failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    const respData = scriptResult as RawFMResponse;
 
     if (respData.messages?.[0].code !== "0") {
       throw new FileMakerError(
