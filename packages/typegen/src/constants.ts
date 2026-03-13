@@ -29,4 +29,6 @@ export const defaultEnvNames = {
   password: "FM_PASSWORD",
   server: "FM_SERVER",
   db: "FM_DATABASE",
+  fmHttpBaseUrl: "FM_HTTP_BASE_URL",
+  fmHttpConnectedFileName: "FM_CONNECTED_FILE_NAME",
 };

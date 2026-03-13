@@ -39,7 +39,8 @@ describe("typegen unit tests", () => {
     originalEnv.FM_DATABASE = process.env.FM_DATABASE;
     originalEnv.FM_USERNAME = process.env.FM_USERNAME;
     originalEnv.FM_PASSWORD = process.env.FM_PASSWORD;
-
+    originalEnv.FM_HTTP_BASE_URL = process.env.FM_HTTP_BASE_URL;
+    originalEnv.FM_CONNECTED_FILE_NAME = process.env.FM_CONNECTED_FILE_NAME;
     // Set mock env values for tests
     // Use valid Otto API key format (KEY_ prefix for Otto v3)
     process.env.OTTO_API_KEY = "KEY_test_api_key_12345";
@@ -464,5 +465,54 @@ describe("typegen unit tests", () => {
     const content = await fs.readFile(indexPath, "utf-8");
 
     expect(content).toContain("suffixSchemaLayout");
+  });
+
+  it("generates client using FmHttpAdapter when fmHttp config is provided", async () => {
+    process.env.FM_HTTP_BASE_URL = "http://127.0.0.1:1365";
+    process.env.FM_CONNECTED_FILE_NAME = "TestFile";
+
+    const fetchMock = vi.fn(
+      createLayoutMetadataMock({
+        FmHttpLayout: mockLayoutMetadata["basic-layout"],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+
+    const config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }> = {
+      type: "fmdapi",
+      envNames: undefined,
+      layouts: [
+        {
+          layoutName: "FmHttpLayout",
+          schemaName: "fmHttpSchema",
+        },
+      ],
+      path: "unit-typegen-output/fm-http",
+      generateClient: true,
+      validator: false,
+      fmHttp: {
+        scriptName: "execute_data_api_custom",
+      },
+    };
+
+    await generateTypedClients(config, { cwd: import.meta.dirname });
+
+    const clientPath = path.join(__dirname, "unit-typegen-output/fm-http/client/fmHttpSchema.ts");
+    const content = await fs.readFile(clientPath, "utf-8");
+
+    expect(content).toContain("FmHttpAdapter");
+    expect(content).toContain("FM_HTTP_BASE_URL");
+    expect(content).toContain("FM_CONNECTED_FILE_NAME");
+    expect(content).toContain('scriptName: "execute_data_api_custom"');
+
+    expect(fetchMock).toHaveBeenCalled();
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(String(url)).toContain("/callScript");
+
+    const body = JSON.parse(String(init?.body ?? "{}"));
+    expect(body.scriptName).toBe("execute_data_api_custom");
+    const scriptParam = JSON.parse(String(body.data ?? "{}"));
+    expect(scriptParam.action).toBe("metaData");
+    expect(scriptParam.layouts).toBe("FmHttpLayout");
   });
 });

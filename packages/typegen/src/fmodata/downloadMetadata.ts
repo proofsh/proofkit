@@ -29,6 +29,10 @@ export async function downloadTableMetadata({
     throw new Error(validationResult.errorMessage);
   }
 
+  if (validationResult.mode === "fmHttp") {
+    throw new Error("FM HTTP mode is not supported for OData metadata download");
+  }
+
   const { server, db, auth } = validationResult;
 
   // Create connection based on authentication method

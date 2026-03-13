@@ -1,0 +1,18 @@
+{
+  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "config": {
+    "type": "fmdapi",
+    "fmHttp": {
+      "scriptName": "execute_data_api"
+    },
+    "layouts": [
+      {
+        "layoutName": "Contacts",
+        "schemaName": "contacts"
+      }
+    ],
+    "path": "packages/typegen/live-fm-http-output",
+    "validator": "zod/v4",
+    "generateClient": true
+  }
+}

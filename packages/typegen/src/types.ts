@@ -35,6 +35,12 @@ export const envNamesBase = z
         password: z.string().optional(),
       })
       .optional(),
+    fmHttp: z
+      .object({
+        baseUrl: z.string().optional(),
+        connectedFileName: z.string().optional(),
+      })
+      .optional(),
   })
   .optional()
   .meta({
@@ -60,11 +66,22 @@ const envNames = envNamesBase
             password: val.auth.password === "" ? undefined : val.auth.password,
           }
         : undefined,
+      fmHttp: val.fmHttp
+        ? {
+            baseUrl: val.fmHttp.baseUrl === "" ? undefined : val.fmHttp.baseUrl,
+            connectedFileName: val.fmHttp.connectedFileName === "" ? undefined : val.fmHttp.connectedFileName,
+          }
+        : undefined,
     };
 
     // Remove auth if all values are undefined
     if (transformed.auth && Object.values(transformed.auth).every((v) => v === undefined)) {
       transformed.auth = undefined;
+    }
+
+    // Remove fmHttp if all values are undefined
+    if (transformed.fmHttp && Object.values(transformed.fmHttp).every((v) => v === undefined)) {
+      transformed.fmHttp = undefined;
     }
 
     // Return undefined if all top-level values are undefined
@@ -173,6 +190,19 @@ const webviewerScriptNameField = z.string().optional().meta({
     "The name of the webviewer script to be used. If this key is set, the generated client will use the @proofkit/webviewer adapter instead of the OttoFMS or Fetch adapter, which will only work when loaded inside of a FileMaker webviewer.",
 });
 
+const fmHttpField = z
+  .object({
+    scriptName: z.string().optional().meta({
+      description:
+        'The name of the FileMaker script that executes Data API calls. Defaults to "execute_data_api".',
+    }),
+  })
+  .optional()
+  .meta({
+    description:
+      "If set, the generated client will use the FmHttpAdapter to connect via a local FM HTTP server instead of OttoFMS or direct FileMaker Data API.",
+  });
+
 const reduceMetadataField = z.boolean().optional().meta({
   description:
     "If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
@@ -206,6 +236,7 @@ const createFmdapiConfig = (envNamesSchema: typeof envNames | typeof envNamesBas
     clientSuffix: clientSuffixField,
     generateClient: generateClientField,
     webviewerScriptName: webviewerScriptNameField,
+    fmHttp: fmHttpField,
   });
 
 const createFmodataConfig = (envNamesSchema: typeof envNames | typeof envNamesBase) =>
@@ -279,4 +310,5 @@ export interface BuildSchemaArgs {
   layoutName: string;
   strictNumbers?: boolean;
   webviewerScriptName?: string;
+  fmHttp?: { scriptName?: string };
 }

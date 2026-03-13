@@ -11,14 +11,23 @@ export interface EnvValues {
   apiKey: string | undefined;
   username: string | undefined;
   password: string | undefined;
+  fmHttpBaseUrl: string | undefined;
+  fmHttpConnectedFileName: string | undefined;
 }
 
 export type EnvValidationResult =
   | {
       success: true;
+      mode: "standard";
       server: string;
       db: string;
       auth: { apiKey: string } | { username: string; password: string };
+    }
+  | {
+      success: true;
+      mode: "fmHttp";
+      baseUrl: string;
+      connectedFileName: string;
     }
   | {
       success: false;
@@ -61,12 +70,27 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
   const username = process.env[usernameEnvName];
   const password = process.env[passwordEnvName];
 
+  // FM HTTP env vars
+  const fmHttpBaseUrlEnvName =
+    envNames?.fmHttp && "baseUrl" in envNames.fmHttp
+      ? getEnvName(envNames.fmHttp.baseUrl, defaultEnvNames.fmHttpBaseUrl)
+      : defaultEnvNames.fmHttpBaseUrl;
+  const fmHttpConnectedFileNameEnvName =
+    envNames?.fmHttp && "connectedFileName" in envNames.fmHttp
+      ? getEnvName(envNames.fmHttp.connectedFileName, defaultEnvNames.fmHttpConnectedFileName)
+      : defaultEnvNames.fmHttpConnectedFileName;
+
+  const fmHttpBaseUrl = process.env[fmHttpBaseUrlEnvName];
+  const fmHttpConnectedFileName = process.env[fmHttpConnectedFileNameEnvName];
+
   return {
     server,
     db,
     apiKey,
     username,
     password,
+    fmHttpBaseUrl,
+    fmHttpConnectedFileName,
   };
 }
 
@@ -78,12 +102,49 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
  * @param envNames - Optional custom environment variable names (for error messages)
  * @returns Validation result with success flag and either data or error message
  */
-export function validateEnvValues(envValues: EnvValues, envNames?: EnvNames): EnvValidationResult {
-  const { server, db, apiKey, username, password } = envValues;
+export function validateEnvValues(
+  envValues: EnvValues,
+  envNames?: EnvNames,
+  options?: { fmHttp?: boolean },
+): EnvValidationResult {
+  const { server, db, apiKey, username, password, fmHttpBaseUrl, fmHttpConnectedFileName } = envValues;
 
   // Helper to get env name, treating empty strings as undefined
   const getEnvName = (customName: string | undefined, defaultName: string) =>
     customName && customName.trim() !== "" ? customName : defaultName;
+
+  // FM HTTP mode: only need baseUrl + connectedFileName
+  if (options?.fmHttp) {
+    const missingVars: string[] = [];
+    if (!fmHttpBaseUrl) {
+      missingVars.push(
+        getEnvName(
+          envNames?.fmHttp && "baseUrl" in envNames.fmHttp ? envNames.fmHttp.baseUrl : undefined,
+          defaultEnvNames.fmHttpBaseUrl,
+        ),
+      );
+    }
+    if (!fmHttpConnectedFileName) {
+      missingVars.push(
+        getEnvName(
+          envNames?.fmHttp && "connectedFileName" in envNames.fmHttp ? envNames.fmHttp.connectedFileName : undefined,
+          defaultEnvNames.fmHttpConnectedFileName,
+        ),
+      );
+    }
+    if (missingVars.length > 0) {
+      return {
+        success: false,
+        errorMessage: `Missing required environment variables for FM HTTP mode: ${missingVars.join(", ")}`,
+      };
+    }
+    return {
+      success: true,
+      mode: "fmHttp",
+      baseUrl: fmHttpBaseUrl as string,
+      connectedFileName: fmHttpConnectedFileName as string,
+    };
+  }
 
   // Validate required env vars (server, db, and at least one auth method)
   if (!(server && db && (apiKey || username))) {
@@ -159,6 +220,7 @@ export function validateEnvValues(envValues: EnvValues, envNames?: EnvNames): En
 
   return {
     success: true,
+    mode: "standard",
     server,
     db,
     auth,
@@ -173,8 +235,12 @@ export function validateEnvValues(envValues: EnvValues, envNames?: EnvNames): En
  * @param envNames - Optional custom environment variable names (for error messages)
  * @returns Validated values or undefined if validation failed
  */
-export function validateAndLogEnvValues(envValues: EnvValues, envNames?: EnvNames): EnvValidationResult | undefined {
-  const result = validateEnvValues(envValues, envNames);
+export function validateAndLogEnvValues(
+  envValues: EnvValues,
+  envNames?: EnvNames,
+  options?: { fmHttp?: boolean },
+): EnvValidationResult | undefined {
+  const result = validateEnvValues(envValues, envNames, options);
 
   if (!result.success) {
     console.log(chalk.red("ERROR: Could not get all required config values"));

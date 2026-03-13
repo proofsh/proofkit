@@ -1,6 +1,7 @@
 import path from "node:path";
 import DataApi from "@proofkit/fmdapi";
 import { FetchAdapter } from "@proofkit/fmdapi/adapters/fetch";
+import { FmHttpAdapter } from "@proofkit/fmdapi/adapters/fm-http";
 import { OttoAdapter, type OttoAPIKey } from "@proofkit/fmdapi/adapters/otto";
 import { memoryStore } from "@proofkit/fmdapi/tokenStore/memory";
 import chalk from "chalk";
@@ -120,16 +121,30 @@ const generateTypedClientsSingle = async (
     },
   });
 
+  const isFmHttpMode = !!config.fmHttp;
   const envValues = getEnvValues(envNames);
-  const validationResult = validateAndLogEnvValues(envValues, envNames);
+  const validationResult = validateAndLogEnvValues(envValues, envNames, { fmHttp: isFmHttpMode });
 
   if (!validationResult?.success) {
     return;
   }
 
-  const { server, db, auth: validatedAuth } = validationResult;
-  const auth: { apiKey: OttoAPIKey } | { username: string; password: string } =
-    "apiKey" in validatedAuth ? { apiKey: validatedAuth.apiKey as OttoAPIKey } : validatedAuth;
+  // Extract connection details based on mode
+  let server: string | undefined;
+  let db: string | undefined;
+  let auth: { apiKey: OttoAPIKey } | { username: string; password: string } | undefined;
+  let fmHttpBaseUrl: string | undefined;
+  let fmHttpConnectedFileName: string | undefined;
+
+  if (validationResult.mode === "fmHttp") {
+    fmHttpBaseUrl = validationResult.baseUrl;
+    fmHttpConnectedFileName = validationResult.connectedFileName;
+  } else {
+    server = validationResult.server;
+    db = validationResult.db;
+    const validatedAuth = validationResult.auth;
+    auth = "apiKey" in validatedAuth ? { apiKey: validatedAuth.apiKey as OttoAPIKey } : validatedAuth;
+  }
 
   await fs.ensureDir(rootDir);
   if (clearOldFiles) {
@@ -145,17 +160,25 @@ const generateTypedClientsSingle = async (
 
   for await (const item of layouts) {
     totalCount++;
-    const client =
-      "apiKey" in auth
+    const client = isFmHttpMode
+      ? DataApi({
+          adapter: new FmHttpAdapter({
+            baseUrl: fmHttpBaseUrl as string,
+            connectedFileName: fmHttpConnectedFileName as string,
+            scriptName: config.fmHttp?.scriptName,
+          }),
+          layout: item.layoutName,
+        })
+      : auth && "apiKey" in auth
         ? DataApi({
-            adapter: new OttoAdapter({ auth, server, db }),
+            adapter: new OttoAdapter({ auth, server: server as string, db: db as string }),
             layout: item.layoutName,
           })
         : DataApi({
             adapter: new FetchAdapter({
-              auth,
-              server,
-              db,
+              auth: auth as { username: string; password: string },
+              server: server as string,
+              db: db as string,
               tokenStore: memoryStore(),
             }),
             layout: item.layoutName,
@@ -180,7 +203,18 @@ const generateTypedClientsSingle = async (
       type: validator === "zod" || validator === "zod/v4" || validator === "zod/v3" ? validator : "ts",
       strictNumbers: item.strictNumbers,
       webviewerScriptName: config?.type === "fmdapi" ? config.webviewerScriptName : undefined,
+      fmHttp: config?.type === "fmdapi" ? config.fmHttp : undefined,
       envNames: (() => {
+        // FM HTTP mode: only need baseUrl + connectedFileName
+        if (isFmHttpMode) {
+          return {
+            fmHttp: {
+              baseUrl: envNames?.fmHttp?.baseUrl ?? defaultEnvNames.fmHttpBaseUrl,
+              connectedFileName: envNames?.fmHttp?.connectedFileName ?? defaultEnvNames.fmHttpConnectedFileName,
+            },
+          };
+        }
+
         // Determine the intended auth type based on config AND runtime.
         // Priority:
         // 1. If user explicitly specified apiKey in config → use OttoAdapter
@@ -192,7 +226,7 @@ const generateTypedClientsSingle = async (
         // so both exist on the object but with undefined values when not specified.
         const configHasApiKey = envNames?.auth?.apiKey !== undefined;
         const configHasUsername = envNames?.auth?.username !== undefined;
-        const runtimeUsedApiKey = "apiKey" in auth;
+        const runtimeUsedApiKey = auth ? "apiKey" in auth : false;
 
         // Use apiKey if: explicitly specified in config, OR not explicitly set to username AND runtime used apiKey
         const useApiKey = configHasApiKey || (!configHasUsername && runtimeUsedApiKey);

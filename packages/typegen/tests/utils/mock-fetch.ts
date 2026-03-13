@@ -29,6 +29,7 @@ import type { LayoutMetadata, MockLayoutMetadataKey } from "../fixtures/layout-m
 // Move regex to top level for performance
 const LAYOUT_URL_PATTERN = /\/layouts\/([^/?]+)(?:\?|$)/;
 const SESSIONS_URL_PATTERN = /\/sessions$/;
+const CALL_SCRIPT_URL_PATTERN = /\/callScript$/;
 
 /**
  * Extract URL string from various input types
@@ -53,6 +54,50 @@ function getUrlString(input: RequestInfo | URL): string {
 export function createLayoutMetadataMock(layouts: Record<string, LayoutMetadata>): typeof fetch {
   return (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
     const url = getUrlString(input);
+
+    // Handle FmHttpAdapter requests to /callScript
+    if (CALL_SCRIPT_URL_PATTERN.test(url)) {
+      const body = _init?.body ? JSON.parse(String(_init.body)) : {};
+      const scriptData = body?.data ? JSON.parse(String(body.data)) : {};
+      const layoutName = scriptData.layouts;
+      const action = scriptData.action;
+
+      if (action === "metaData" && layoutName && layouts[layoutName]) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              result: {
+                messages: [{ code: "0", message: "OK" }],
+                response: layouts[layoutName],
+              },
+            }),
+            {
+              status: 200,
+              statusText: "OK",
+              headers: { "content-type": "application/json" },
+            },
+          ),
+        );
+      }
+
+      if (action === "metaData" && layoutName && !layouts[layoutName]) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              result: {
+                messages: [{ code: "105", message: "Layout is missing" }],
+                response: {},
+              },
+            }),
+            {
+              status: 200,
+              statusText: "OK",
+              headers: { "content-type": "application/json" },
+            },
+          ),
+        );
+      }
+    }
 
     // Handle FetchAdapter session/token requests
     // FetchAdapter expects token in X-FM-Data-Access-Token header

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://btca.dev/btca.schema.json",
+  "resources": [
+    {
+      "type": "git",
+      "name": "fm-mcp",
+      "url": "https://github.com/proofgeist/fm-mcp",
+      "branch": "main"
+    }
+  ],
+  "model": "GPT-5.3-Codex",
+  "provider": "openai"
+}

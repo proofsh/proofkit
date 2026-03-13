@@ -1,6 +1,7 @@
 import path from "node:path";
 import DataApi from "@proofkit/fmdapi";
 import { FetchAdapter } from "@proofkit/fmdapi/adapters/fetch";
+import { FmHttpAdapter } from "@proofkit/fmdapi/adapters/fm-http";
 import { OttoAdapter, type OttoAPIKey } from "@proofkit/fmdapi/adapters/otto";
 import { memoryStore } from "@proofkit/fmdapi/tokenStore/memory";
 import { type Database, FMServerConnection } from "@proofkit/fmodata";
@@ -13,11 +14,11 @@ import type { ApiContext } from "./app";
 
 export interface CreateClientResult {
   // biome-ignore lint/suspicious/noExplicitAny: DataApi is a generic type
-  client: ReturnType<typeof DataApi<any, any, any, OttoAdapter>>;
+  client: ReturnType<typeof DataApi<any, any, any, any>>;
   config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }>;
   server: string;
   db: string;
-  authType: "apiKey" | "username";
+  authType: "apiKey" | "username" | "fmHttp";
 }
 
 export interface CreateClientError {
@@ -195,13 +196,59 @@ export function createOdataClientFromConfig(config: FmodataConfig): OdataClientR
  * @returns The client, server, and db, or an error object
  */
 export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientResult, "config"> | CreateClientError {
+  // FM HTTP mode
+  if (config.fmHttp) {
+    const getEnvName = (customName: string | undefined, defaultName: string) =>
+      customName && customName.trim() !== "" ? customName : defaultName;
+
+    const baseUrl =
+      process.env[getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl)];
+    const connectedFileName =
+      process.env[getEnvName(config.envNames?.fmHttp?.connectedFileName, defaultEnvNames.fmHttpConnectedFileName)];
+
+    if (!baseUrl || !connectedFileName) {
+      const missing: string[] = [];
+      if (!baseUrl) missing.push(getEnvName(config.envNames?.fmHttp?.baseUrl, defaultEnvNames.fmHttpBaseUrl));
+      if (!connectedFileName)
+        missing.push(getEnvName(config.envNames?.fmHttp?.connectedFileName, defaultEnvNames.fmHttpConnectedFileName));
+      return {
+        error: "Missing required environment variables for FM HTTP mode",
+        statusCode: 400,
+        kind: "missing_env",
+        details: { missing: { baseUrl: !baseUrl, connectedFileName: !connectedFileName } },
+        suspectedField: !baseUrl ? "server" : "db",
+        message: `Missing: ${missing.join(", ")}`,
+      };
+    }
+
+    try {
+      // biome-ignore lint/suspicious/noExplicitAny: DataApi is a generic type
+      const client: ReturnType<typeof DataApi<any, any, any, any>> = DataApi({
+        adapter: new FmHttpAdapter({
+          baseUrl,
+          connectedFileName,
+          scriptName: config.fmHttp.scriptName,
+        }),
+        layout: "",
+      });
+      return { client, server: baseUrl, db: connectedFileName, authType: "fmHttp" };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create FM HTTP adapter";
+      return {
+        error: errorMessage,
+        statusCode: 400,
+        kind: "adapter_error",
+        suspectedField: "server",
+        message: errorMessage,
+      };
+    }
+  }
+
   const result = getEnvVarsFromConfig(config.envNames);
   if ("error" in result) {
     return result;
   }
   const { server, db, authType, auth } = result;
-
-  // Determine which auth method will be used (prefer API key if available)
 
   // Create DataApi client with error handling for adapter construction
   // biome-ignore lint/suspicious/noExplicitAny: DataApi is a generic type
