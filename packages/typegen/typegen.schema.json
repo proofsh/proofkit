@@ -125,6 +125,14 @@
                   "$ref": "#/definitions/__schema14"
                 }
               ]
+            },
+            "fmHttp": {
+              "description": "If set, typegen will use the FmHttpAdapter to fetch metadata through a local FM HTTP server during generation. Generated clients will still use the @proofkit/webviewer adapter.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/__schema15"
+                }
+              ]
             }
           },
           "required": ["type", "layouts"],
@@ -154,7 +162,7 @@
               "description": "If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema15"
+                  "$ref": "#/definitions/__schema17"
                 }
               ]
             },
@@ -165,7 +173,7 @@
               "description": "If true (default), field names will always be updated to match metadata, even when matching by entity ID. If false, existing field names are preserved when matching by entity ID.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema16"
+                  "$ref": "#/definitions/__schema18"
                 }
               ]
             },
@@ -174,7 +182,7 @@
               "description": "Required array of tables to generate. Only the tables specified here will be downloaded and generated. Each table can have field-level overrides for excluding fields, renaming variables, and overriding field types.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema17"
+                  "$ref": "#/definitions/__schema19"
                 }
               ]
             },
@@ -182,7 +190,7 @@
               "description": "If true, all fields will be included by default. If false, only fields that are explicitly listed in the `fields` array will be included.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema25"
+                  "$ref": "#/definitions/__schema27"
                 }
               ]
             }
@@ -219,6 +227,18 @@
               "type": "string"
             },
             "password": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fmHttp": {
+          "type": "object",
+          "properties": {
+            "baseUrl": {
+              "type": "string"
+            },
+            "connectedFileName": {
               "type": "string"
             }
           },
@@ -286,13 +306,30 @@
       "type": "string"
     },
     "__schema15": {
-      "type": "boolean"
+      "type": "object",
+      "properties": {
+        "scriptName": {
+          "description": "The name of the FileMaker script that executes Data API calls. Defaults to \"execute_data_api\".",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema16"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "__schema16": {
+      "type": "string"
+    },
+    "__schema17": {
+      "type": "boolean"
+    },
+    "__schema18": {
       "default": true,
       "type": "boolean"
     },
-    "__schema17": {
+    "__schema19": {
       "type": "array",
       "items": {
         "type": "object",
@@ -305,7 +342,7 @@
             "description": "Override the generated TypeScript variable name. The original entity set name is still used for the OData path.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema18"
+                "$ref": "#/definitions/__schema20"
               }
             ]
           },
@@ -313,7 +350,7 @@
             "description": "Field-specific overrides as an array",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema19"
+                "$ref": "#/definitions/__schema21"
               }
             ]
           },
@@ -321,7 +358,7 @@
             "description": "If undefined, the top-level setting will be used. If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema22"
+                "$ref": "#/definitions/__schema24"
               }
             ]
           },
@@ -329,7 +366,7 @@
             "description": "If undefined, the top-level setting will be used. If true, field names will always be updated to match metadata, even when matching by entity ID. If false, existing field names are preserved when matching by entity ID.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema23"
+                "$ref": "#/definitions/__schema25"
               }
             ]
           },
@@ -337,7 +374,7 @@
             "description": "If true, all fields will be included by default. If false, only fields that are explicitly listed in the `fields` array will be included.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema24"
+                "$ref": "#/definitions/__schema26"
               }
             ]
           }
@@ -346,10 +383,10 @@
         "additionalProperties": false
       }
     },
-    "__schema18": {
+    "__schema20": {
       "type": "string"
     },
-    "__schema19": {
+    "__schema21": {
       "type": "array",
       "items": {
         "type": "object",
@@ -362,7 +399,7 @@
             "description": "If true, this field will be excluded from generation",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema20"
+                "$ref": "#/definitions/__schema22"
               }
             ]
           },
@@ -370,7 +407,7 @@
             "description": "Override the inferred field type from metadata. Options: text, number, boolean, date, timestamp, container, list",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema21"
+                "$ref": "#/definitions/__schema23"
               }
             ]
           }
@@ -379,10 +416,10 @@
         "additionalProperties": false
       }
     },
-    "__schema20": {
+    "__schema22": {
       "type": "boolean"
     },
-    "__schema21": {
+    "__schema23": {
       "type": "string",
       "enum": [
         "text",
@@ -394,16 +431,16 @@
         "list"
       ]
     },
-    "__schema22": {
-      "type": "boolean"
-    },
-    "__schema23": {
-      "type": "boolean"
-    },
     "__schema24": {
       "type": "boolean"
     },
     "__schema25": {
+      "type": "boolean"
+    },
+    "__schema26": {
+      "type": "boolean"
+    },
+    "__schema27": {
       "default": true,
       "type": "boolean"
     }

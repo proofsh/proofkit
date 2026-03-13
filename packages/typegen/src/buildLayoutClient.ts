@@ -2,21 +2,33 @@ import { type CodeBlockWriter, type SourceFile, VariableDeclarationKind } from "
 import { defaultEnvNames } from "./constants";
 import type { BuildSchemaArgs } from "./types";
 
+const defaultWebviewerScriptName = "execute_data_api";
+
+function getGeneratedWebviewerScriptName(args: Pick<BuildSchemaArgs, "webviewerScriptName" | "fmHttp">) {
+  if (args.webviewerScriptName) {
+    return args.webviewerScriptName;
+  }
+  if (args.fmHttp) {
+    return args.fmHttp.scriptName ?? defaultWebviewerScriptName;
+  }
+  return undefined;
+}
+
 export function buildLayoutClient(sourceFile: SourceFile, args: BuildSchemaArgs) {
   const { schemaName, portalSchema, envNames, type, webviewerScriptName, fmHttp, layoutName } = args;
+  const generatedWebviewerScriptName = getGeneratedWebviewerScriptName({ webviewerScriptName, fmHttp });
+  const usesWebviewerAdapter = generatedWebviewerScriptName !== undefined;
 
   const fmdapiImport = sourceFile.addImportDeclaration({
     moduleSpecifier: "@proofkit/fmdapi",
     namedImports: ["DataApi"],
   });
   const hasPortals = (portalSchema ?? []).length > 0;
-  if (webviewerScriptName) {
+  if (usesWebviewerAdapter) {
     sourceFile.addImportDeclaration({
       moduleSpecifier: "@proofkit/webviewer/adapter",
       namedImports: ["WebViewerAdapter"],
     });
-  } else if (fmHttp) {
-    fmdapiImport.addNamedImport({ name: "FmHttpAdapter" });
   } else if (typeof envNames.auth === "object" && "apiKey" in envNames.auth && envNames.auth.apiKey !== undefined) {
     // if otto, add the OttoAdapter and OttoAPIKey imports
     fmdapiImport.addNamedImports([{ name: "OttoAdapter" }, { name: "OttoAPIKey", isTypeOnly: true }]);
@@ -47,15 +59,7 @@ export function buildLayoutClient(sourceFile: SourceFile, args: BuildSchemaArgs)
     }
   }
 
-  if (fmHttp) {
-    // FM HTTP mode: guard baseUrl + connectedFileName
-    addTypeGuardStatements(sourceFile, {
-      envVarName: envNames.fmHttp?.baseUrl ?? defaultEnvNames.fmHttpBaseUrl,
-    });
-    addTypeGuardStatements(sourceFile, {
-      envVarName: envNames.fmHttp?.connectedFileName ?? defaultEnvNames.fmHttpConnectedFileName,
-    });
-  } else if (!webviewerScriptName) {
+  if (!usesWebviewerAdapter) {
     addTypeGuardStatements(sourceFile, {
       envVarName: envNames.db ?? defaultEnvNames.db,
     });
@@ -120,25 +124,13 @@ function addTypeGuardStatements(sourceFile: SourceFile, { envVarName }: { envVar
 }
 
 function buildAdapter(writer: CodeBlockWriter, args: BuildSchemaArgs): string {
-  const { envNames, webviewerScriptName, fmHttp } = args;
+  const { envNames } = args;
+  const generatedWebviewerScriptName = getGeneratedWebviewerScriptName(args);
 
-  if (webviewerScriptName) {
+  if (generatedWebviewerScriptName) {
     writer.write("new WebViewerAdapter({scriptName: ");
-    writer.quote(webviewerScriptName);
+    writer.quote(generatedWebviewerScriptName);
     writer.write("})");
-  } else if (fmHttp) {
-    const baseUrlEnv = envNames.fmHttp?.baseUrl ?? defaultEnvNames.fmHttpBaseUrl;
-    const connectedFileEnv = envNames.fmHttp?.connectedFileName ?? defaultEnvNames.fmHttpConnectedFileName;
-    writer
-      .write("new FmHttpAdapter(")
-      .inlineBlock(() => {
-        writer.write(`baseUrl: process.env.${baseUrlEnv}`).write(",").newLine();
-        writer.write(`connectedFileName: process.env.${connectedFileEnv}`).write(",").newLine();
-        if (fmHttp.scriptName) {
-          writer.write("scriptName: ").quote(fmHttp.scriptName).write(",").newLine();
-        }
-      })
-      .write(")");
   } else if (typeof envNames.auth === "object" && "apiKey" in envNames.auth && envNames.auth.apiKey !== undefined) {
     writer
       .write("new OttoAdapter(")

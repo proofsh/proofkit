@@ -467,7 +467,7 @@ describe("typegen unit tests", () => {
     expect(content).toContain("suffixSchemaLayout");
   });
 
-  it("generates client using FmHttpAdapter when fmHttp config is provided", async () => {
+  it("generates client using WebViewerAdapter when fmHttp config is provided", async () => {
     process.env.FM_HTTP_BASE_URL = "http://127.0.0.1:1365";
     process.env.FM_CONNECTED_FILE_NAME = "TestFile";
 
@@ -500,9 +500,10 @@ describe("typegen unit tests", () => {
     const clientPath = path.join(__dirname, "unit-typegen-output/fm-http/client/fmHttpSchema.ts");
     const content = await fs.readFile(clientPath, "utf-8");
 
-    expect(content).toContain("FmHttpAdapter");
-    expect(content).toContain("FM_HTTP_BASE_URL");
-    expect(content).toContain("FM_CONNECTED_FILE_NAME");
+    expect(content).toContain("WebViewerAdapter");
+    expect(content).not.toContain("FmHttpAdapter");
+    expect(content).not.toContain("FM_HTTP_BASE_URL");
+    expect(content).not.toContain("FM_CONNECTED_FILE_NAME");
     expect(content).toContain('scriptName: "execute_data_api_custom"');
 
     expect(fetchMock).toHaveBeenCalled();

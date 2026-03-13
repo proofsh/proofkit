@@ -75,6 +75,11 @@ The typegen tool is configured using the `proofkit-typegen-config.jsonc` file at
       description:
         "If set, will generate the client using the @proofkit/webviewer package",
     },
+    fmHttp: {
+      type: "{ scriptName?: string }",
+      description:
+        "Optional local-only adapter mode for typegen metadata fetch. Generated clients still use the @proofkit/webviewer adapter.",
+    },
     generateClient: {
       type: "boolean",
       default: "true",
@@ -89,6 +94,9 @@ If set to `false`, will only generate the zod schema and/or typescript types, bu
 
 ### `webviewerScriptName`
 If set, will generate the client using the [@proofkit/webviewer](/docs/webviewer) package. This allows all calls to run via a FileMaker script rather than a network request. For more information, see the [@proofkit/webviewer](/docs/webviewer) documentation.
+
+### `fmHttp`
+If set, typegen uses the local FM HTTP adapter only while generating schemas and clients. The generated runtime client still uses [@proofkit/webviewer](/docs/webviewer). If `webviewerScriptName` is not set, `fmHttp.scriptName` (or `"execute_data_api"`) is used for the generated webviewer client script name.
 
 ### `clientSuffix` (default: `"Layout"`)
 The suffix to add to the client name.

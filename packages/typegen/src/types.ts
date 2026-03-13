@@ -193,14 +193,13 @@ const webviewerScriptNameField = z.string().optional().meta({
 const fmHttpField = z
   .object({
     scriptName: z.string().optional().meta({
-      description:
-        'The name of the FileMaker script that executes Data API calls. Defaults to "execute_data_api".',
+      description: 'The name of the FileMaker script that executes Data API calls. Defaults to "execute_data_api".',
     }),
   })
   .optional()
   .meta({
     description:
-      "If set, the generated client will use the FmHttpAdapter to connect via a local FM HTTP server instead of OttoFMS or direct FileMaker Data API.",
+      "If set, typegen will use the FmHttpAdapter to fetch metadata through a local FM HTTP server during generation. Generated clients will still use the @proofkit/webviewer adapter.",
   });
 
 const reduceMetadataField = z.boolean().optional().meta({
