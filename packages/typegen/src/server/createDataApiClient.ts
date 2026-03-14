@@ -26,7 +26,7 @@ export interface CreateClientError {
   statusCode: number;
   details?: Record<string, unknown>;
   kind?: "missing_env" | "adapter_error" | "connection_error" | "unknown";
-  suspectedField?: string;
+  suspectedField?: "server" | "db" | "auth";
   fmErrorCode?: string;
   message?: string;
 }
@@ -170,7 +170,7 @@ export interface OdataClientError {
   error: string;
   statusCode: number;
   kind?: "missing_env" | "adapter_error" | "connection_error" | "unknown";
-  suspectedField?: string;
+  suspectedField?: "server" | "db" | "auth";
 }
 
 export function createOdataClientFromConfig(config: FmodataConfig): OdataClientResult | OdataClientError {
@@ -222,7 +222,7 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
         statusCode: 400,
         kind: "missing_env",
         details: { missing: { baseUrl: !baseUrl, connectedFileName: !connectedFileName } },
-        suspectedField: baseUrl ? connectedFileNameEnvName : baseUrlEnvName,
+        suspectedField: baseUrl ? "db" : "server",
         message: `Missing: ${missing.join(", ")}`,
       };
     }
@@ -244,7 +244,7 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
         error: errorMessage,
         statusCode: 400,
         kind: "adapter_error",
-        suspectedField: baseUrlEnvName,
+        suspectedField: "server",
         message: errorMessage,
       };
     }
