@@ -119,10 +119,11 @@ export class FmHttpAdapter implements Adapter {
 
     const respData = scriptResult as RawFMResponse;
 
-    if (respData.messages?.[0].code !== "0") {
+    const errorCode = respData.messages?.[0]?.code;
+    if (errorCode !== undefined && errorCode !== "0") {
       throw new FileMakerError(
-        respData?.messages?.[0].code ?? "500",
-        `Filemaker Data API failed with (${respData.messages?.[0].code}): ${JSON.stringify(respData, null, 2)}`,
+        errorCode,
+        `Filemaker Data API failed with (${errorCode}): ${JSON.stringify(respData, null, 2)}`,
       );
     }
 
