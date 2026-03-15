@@ -1,7 +1,8 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { requestFromService, runAsResult, withSpan } from "../effect";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import { requestFromService, runLayerOrThrow } from "../effect";
+import type { FMODataLayer, ODataConfig } from "../services";
+import { createClientRuntime } from "./runtime";
 
 interface GenericField {
   name: string;
@@ -60,15 +61,12 @@ export class SchemaManager {
   private readonly config: ODataConfig;
 
   constructor(layer: FMODataLayer) {
-    this.layer = layer;
-    this.config = extractConfigFromLayer(this.layer).config;
+    const runtime = createClientRuntime(layer);
+    this.layer = runtime.layer;
+    this.config = runtime.config;
   }
 
-  async createTable(
-    tableName: string,
-    fields: Field[],
-    options?: RequestInit & FFetchOptions,
-  ): Promise<TableDefinition> {
+  createTable(tableName: string, fields: Field[], options?: RequestInit & FFetchOptions): Promise<TableDefinition> {
     const pipeline = Effect.gen(this, function* () {
       return yield* requestFromService<TableDefinition>(`/${this.config.databaseName}/FileMaker_Tables`, {
         method: "POST",
@@ -80,14 +78,10 @@ export class SchemaManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.createTable"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.schema.createTable");
   }
 
-  async addFields(tableName: string, fields: Field[], options?: RequestInit & FFetchOptions): Promise<TableDefinition> {
+  addFields(tableName: string, fields: Field[], options?: RequestInit & FFetchOptions): Promise<TableDefinition> {
     const pipeline = Effect.gen(this, function* () {
       return yield* requestFromService<TableDefinition>(`/${this.config.databaseName}/FileMaker_Tables/${tableName}`, {
         method: "PATCH",
@@ -98,11 +92,7 @@ export class SchemaManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.addFields"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.schema.addFields");
   }
 
   async deleteTable(tableName: string, options?: RequestInit & FFetchOptions): Promise<void> {
@@ -113,10 +103,7 @@ export class SchemaManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.deleteTable"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
+    await runLayerOrThrow(this.layer, pipeline, "fmodata.schema.deleteTable");
   }
 
   async deleteField(tableName: string, fieldName: string, options?: RequestInit & FFetchOptions): Promise<void> {
@@ -127,13 +114,10 @@ export class SchemaManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.deleteField"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
+    await runLayerOrThrow(this.layer, pipeline, "fmodata.schema.deleteField");
   }
 
-  async createIndex(
+  createIndex(
     tableName: string,
     fieldName: string,
     options?: RequestInit & FFetchOptions,
@@ -149,11 +133,7 @@ export class SchemaManager {
       );
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.createIndex"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.schema.createIndex");
   }
 
   async deleteIndex(tableName: string, fieldName: string, options?: RequestInit & FFetchOptions): Promise<void> {
@@ -164,10 +144,7 @@ export class SchemaManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.deleteIndex"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
+    await runLayerOrThrow(this.layer, pipeline, "fmodata.schema.deleteIndex");
   }
 
   private static compileFieldDefinition(field: Field): FileMakerField {

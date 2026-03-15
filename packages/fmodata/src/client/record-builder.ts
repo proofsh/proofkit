@@ -1,12 +1,13 @@
 /** biome-ignore-all lint/complexity/noBannedTypes: Empty object type represents no expands by default */
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { requestFromService, runAsResult, withSpan } from "../effect";
+import { requestFromService, runLayerResult } from "../effect";
+import { BuilderInvariantError } from "../errors";
 import type { InternalLogger } from "../logger";
 import type { Column } from "../orm/column";
 import type { ExtractTableName, FMTable, InferSchemaOutputFromFMTable, ValidExpandTarget } from "../orm/table";
 import { getNavigationPaths, getTableName } from "../orm/table";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import type { FMODataLayer, ODataConfig } from "../services";
 import type {
   ConditionallyWithODataAnnotations,
   ConditionallyWithSpecialColumns,
@@ -19,19 +20,21 @@ import type {
 } from "../types";
 import {
   buildSelectExpandQueryString,
+  cloneRecordReadBuilderState,
+  createInitialRecordReadBuilderState,
   createODataRequest,
   ExpandBuilder,
   type ExpandConfig,
   type ExpandedRelations,
-  getSchemaFromTable,
   mergeExecuteOptions,
-  processODataResponse,
+  processRecordResponse,
   processSelectWithRenames,
   resolveTableId,
 } from "./builders/index";
 import { parseErrorResponse } from "./error-parser";
 import type { ResolveExpandedRelations, SystemColumnsFromOption, SystemColumnsOption } from "./query/types";
 import { QueryBuilder } from "./query-builder";
+import { createClientRuntime } from "./runtime";
 import { safeJsonParse } from "./sanitize-json";
 
 /**
@@ -116,17 +119,52 @@ export class RecordBuilder<
   private readonly navigateRelation?: string;
   private readonly navigateSourceTableName?: string;
 
-  // Properties for select/expand support
-  private readonly selectedFields?: string[];
-  private readonly expandConfigs: ExpandConfig[] = [];
-  // Mapping from field names to output keys (for renamed fields in select)
-  private readonly fieldMapping?: Record<string, string>;
-  // System columns requested via select() second argument
-  private readonly systemColumns?: SystemColumnsOption;
+  private readState = createInitialRecordReadBuilderState();
 
   private readonly layer: FMODataLayer;
   private readonly config: ODataConfig;
   private readonly logger: InternalLogger;
+
+  // Compatibility accessors for internal modules that inspect builder internals via `as any`.
+  private get selectedFields(): string[] | undefined {
+    return this.readState.selectedFields;
+  }
+
+  private set selectedFields(selectedFields: string[] | undefined) {
+    this.readState = cloneRecordReadBuilderState(this.readState, {
+      selectedFields,
+    });
+  }
+
+  private get expandConfigs(): ExpandConfig[] {
+    return this.readState.expandConfigs;
+  }
+
+  private set expandConfigs(expandConfigs: ExpandConfig[]) {
+    this.readState = cloneRecordReadBuilderState(this.readState, {
+      expandConfigs,
+    });
+  }
+
+  private get fieldMapping(): Record<string, string> | undefined {
+    return this.readState.fieldMapping;
+  }
+
+  private set fieldMapping(fieldMapping: Record<string, string> | undefined) {
+    this.readState = cloneRecordReadBuilderState(this.readState, {
+      fieldMapping,
+    });
+  }
+
+  private get systemColumns(): SystemColumnsOption | undefined {
+    return this.readState.systemColumns;
+  }
+
+  private set systemColumns(systemColumns: SystemColumnsOption | undefined) {
+    this.readState = cloneRecordReadBuilderState(this.readState, {
+      systemColumns,
+    });
+  }
 
   constructor(config: {
     occurrence: Occ;
@@ -134,12 +172,11 @@ export class RecordBuilder<
     recordId: string | number;
   }) {
     this.table = config.occurrence;
-    this.layer = config.layer;
     this.recordId = config.recordId;
-    // Extract config from layer for sync access
-    const extracted = extractConfigFromLayer(this.layer);
-    this.config = extracted.config;
-    this.logger = extracted.logger;
+    const runtime = createClientRuntime(config.layer);
+    this.layer = runtime.layer;
+    this.config = runtime.config;
+    this.logger = runtime.logger;
   }
 
   /**
@@ -163,7 +200,7 @@ export class RecordBuilder<
    */
   private getTableId(useEntityIds?: boolean): string {
     if (!this.table) {
-      throw new Error("Table occurrence is required");
+      throw new BuilderInvariantError("RecordBuilder", "table occurrence is required");
     }
     return resolveTableId(this.table, getTableName(this.table), useEntityIds ?? this.config.useEntityIds);
   }
@@ -200,10 +237,12 @@ export class RecordBuilder<
 
     // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern
     const mutableBuilder = newBuilder as any;
-    mutableBuilder.selectedFields = "selectedFields" in changes ? changes.selectedFields : this.selectedFields;
-    mutableBuilder.fieldMapping = "fieldMapping" in changes ? changes.fieldMapping : this.fieldMapping;
-    mutableBuilder.systemColumns = changes.systemColumns !== undefined ? changes.systemColumns : this.systemColumns;
-    mutableBuilder.expandConfigs = [...this.expandConfigs];
+    mutableBuilder.readState = cloneRecordReadBuilderState(this.readState, {
+      selectedFields: "selectedFields" in changes ? changes.selectedFields : this.selectedFields,
+      fieldMapping: "fieldMapping" in changes ? changes.fieldMapping : this.fieldMapping,
+      systemColumns: changes.systemColumns !== undefined ? changes.systemColumns : this.systemColumns,
+      expandConfigs: this.expandConfigs,
+    });
     // Preserve navigation context
     mutableBuilder.isNavigateFromEntitySet = this.isNavigateFromEntitySet;
     mutableBuilder.navigateRelation = this.navigateRelation;
@@ -226,7 +265,10 @@ export class RecordBuilder<
     // Runtime validation: ensure column is from the correct table
     const tableName = getTableName(this.table);
     if (!column.isFromTable(tableName)) {
-      throw new Error(`Column ${column.toString()} is not from table ${tableName}`);
+      throw new BuilderInvariantError(
+        "RecordBuilder.getSingleField",
+        `column ${column.toString()} is not from table ${tableName}`,
+      );
     }
 
     const newBuilder = new RecordBuilder<
@@ -391,10 +433,12 @@ export class RecordBuilder<
     // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern
     const mutableBuilder = newBuilder as any;
     // Copy existing state
-    mutableBuilder.selectedFields = this.selectedFields;
-    mutableBuilder.fieldMapping = this.fieldMapping;
-    mutableBuilder.systemColumns = this.systemColumns;
-    mutableBuilder.expandConfigs = [...this.expandConfigs];
+    mutableBuilder.readState = cloneRecordReadBuilderState(this.readState, {
+      selectedFields: this.selectedFields,
+      fieldMapping: this.fieldMapping,
+      systemColumns: this.systemColumns,
+      expandConfigs: this.expandConfigs,
+    });
     mutableBuilder.isNavigateFromEntitySet = this.isNavigateFromEntitySet;
     mutableBuilder.navigateRelation = this.navigateRelation;
     mutableBuilder.navigateSourceTableName = this.navigateSourceTableName;
@@ -415,7 +459,9 @@ export class RecordBuilder<
         }),
     );
 
-    mutableBuilder.expandConfigs.push(expandConfig);
+    mutableBuilder.readState = cloneRecordReadBuilderState(mutableBuilder.readState, {
+      expandConfigs: [...this.expandConfigs, expandConfig],
+    });
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion needed as expand changes generic parameters in complex way that TypeScript cannot infer
     return newBuilder as any;
   }
@@ -466,18 +512,11 @@ export class RecordBuilder<
       // Normal record navigation: /tableName('recordId')/relation
       // Use table ID if available, otherwise table name
       if (!this.table) {
-        throw new Error("Table occurrence is required for navigation");
+        throw new BuilderInvariantError("RecordBuilder.navigate", "table occurrence is required for navigation");
       }
       sourceTableName = resolveTableId(this.table, getTableName(this.table), this.config.useEntityIds);
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern
-    (builder as any).navigation = {
-      recordId: this.recordId,
-      relation: relationId,
-      sourceTableName,
-      baseRelation,
-    };
     // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern
     (builder as any).navigation = {
       recordId: this.recordId,
@@ -577,22 +616,17 @@ export class RecordBuilder<
         return fieldResponse.value as any;
       }
 
-      // Use shared response processor
-      const expandBuilder = new ExpandBuilder(mergedOptions.useEntityIds ?? false, this.logger);
-      const expandValidationConfigs = expandBuilder.buildValidationConfigs(this.expandConfigs);
-
       const result = yield* Effect.tryPromise({
         try: () =>
-          processODataResponse(response, {
+          processRecordResponse(response, {
             table: this.table,
-            schema: getSchemaFromTable(this.table),
-            singleMode: "exact",
             selectedFields: this.selectedFields,
-            expandValidationConfigs,
+            expandConfigs: this.expandConfigs,
             skipValidation: options?.skipValidation,
             useEntityIds: mergedOptions.useEntityIds,
             includeSpecialColumns: mergedOptions.includeSpecialColumns,
             fieldMapping: this.fieldMapping,
+            logger: this.logger,
           }),
         catch: (e) => (e instanceof Error ? e : new Error(String(e))),
       });
@@ -604,12 +638,9 @@ export class RecordBuilder<
       return result.data;
     });
 
-    const result = runAsResult(
-      Effect.provide(
-        withSpan(pipeline, "fmodata.record.get", { "fmodata.table": getTableName(this.table) }),
-        this.layer,
-      ),
-    );
+    const result = runLayerResult(this.layer, pipeline, "fmodata.record.get", {
+      "fmodata.table": getTableName(this.table),
+    });
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for complex generic return type
     return result as Promise<Result<any>>;
   }
@@ -716,19 +747,15 @@ export class RecordBuilder<
 
     // Use shared response processor
     const mergedOptions = this.mergeExecuteOptions(options);
-    const expandBuilder = new ExpandBuilder(mergedOptions.useEntityIds ?? false, this.logger);
-    const expandValidationConfigs = expandBuilder.buildValidationConfigs(this.expandConfigs);
-
-    return processODataResponse(rawResponse, {
+    return processRecordResponse(rawResponse, {
       table: this.table,
-      schema: getSchemaFromTable(this.table),
-      singleMode: "exact",
       selectedFields: this.selectedFields,
-      expandValidationConfigs,
+      expandConfigs: this.expandConfigs,
       skipValidation: options?.skipValidation,
       useEntityIds: mergedOptions.useEntityIds,
       includeSpecialColumns: mergedOptions.includeSpecialColumns,
       fieldMapping: this.fieldMapping,
+      logger: this.logger,
     });
   }
 }

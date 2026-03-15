@@ -12,7 +12,7 @@ import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect, Schedule } from "effect";
 import type { FMODataErrorType } from "./errors";
 import { isTransientError } from "./errors";
-import { HttpClient } from "./services";
+import { type FMODataLayer, HttpClient } from "./services";
 import type { Result, RetryPolicy } from "./types";
 
 /**
@@ -54,6 +54,61 @@ export function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Prom
       Effect.catchAll((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
     ),
   );
+}
+
+function withOptionalSpan<T, E, R>(
+  effect: Effect.Effect<T, E, R>,
+  spanName?: string,
+  attributes?: Record<string, string>,
+): Effect.Effect<T, E, R> {
+  if (!spanName) {
+    return effect;
+  }
+  return withSpan(effect, spanName, attributes);
+}
+
+/**
+ * Runs an Effect by providing the shared DI layer and returns fmodata Result<T>.
+ */
+export function runLayerResult<T, R>(
+  layer: FMODataLayer,
+  effect: Effect.Effect<T, FMODataErrorType, R>,
+  spanName?: string,
+  attributes?: Record<string, string>,
+): Promise<Result<T>> {
+  const provided = Effect.provide(withOptionalSpan(effect, spanName, attributes), layer) as Effect.Effect<
+    T,
+    FMODataErrorType
+  >;
+  return runAsResult(provided);
+}
+
+/**
+ * Runs an Effect by providing the shared DI layer and throws on fmodata errors.
+ */
+export async function runLayerOrThrow<T, R>(
+  layer: FMODataLayer,
+  effect: Effect.Effect<T, FMODataErrorType, R>,
+  spanName?: string,
+  attributes?: Record<string, string>,
+): Promise<T> {
+  const result = await runLayerResult(layer, effect, spanName, attributes);
+  if (result.error) {
+    throw result.error;
+  }
+  return result.data;
+}
+
+/**
+ * Convenience wrapper for request-like effects where span instrumentation is always desired.
+ */
+export function requestWithSpan<T, R>(
+  layer: FMODataLayer,
+  spanName: string,
+  requestEffect: Effect.Effect<T, FMODataErrorType, R>,
+  attributes?: Record<string, string>,
+): Promise<Result<T>> {
+  return runLayerResult(layer, requestEffect, spanName, attributes);
 }
 
 /**

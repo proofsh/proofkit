@@ -2,7 +2,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
 import buildQuery, { type QueryOptions } from "odata-query";
-import { requestFromService, runAsResult, withSpan } from "../../effect";
+import { requestFromService, runLayerResult } from "../../effect";
 import { RecordCountMismatchError } from "../../errors";
 import type { InternalLogger } from "../../logger";
 import { type Column, isColumn } from "../../orm/column";
@@ -14,7 +14,7 @@ import {
   type InferSchemaOutputFromFMTable,
   type ValidExpandTarget,
 } from "../../orm/table";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../../services";
+import type { FMODataLayer, ODataConfig } from "../../services";
 import { transformOrderByField } from "../../transform";
 import type {
   ConditionallyWithODataAnnotations,
@@ -27,6 +27,8 @@ import type {
 } from "../../types";
 import {
   buildSelectExpandQueryString,
+  cloneQueryReadBuilderState,
+  createInitialQueryReadBuilderState,
   createODataRequest,
   ExpandBuilder,
   type ExpandConfig,
@@ -36,6 +38,7 @@ import {
   processSelectWithRenames,
 } from "../builders/index";
 import { parseErrorResponse } from "../error-parser";
+import { createClientRuntime } from "../runtime";
 import { safeJsonParse } from "../sanitize-json";
 import type { QueryReturnType, SystemColumnsOption, TypeSafeOrderBy } from "./types";
 import { type NavigationConfig, QueryUrlBuilder } from "./url-builder";
@@ -69,39 +72,94 @@ export class QueryBuilder<
       QueryReturnType<InferSchemaOutputFromFMTable<Occ>, Selected, SingleMode, IsCount, Expands, SystemCols>
     >
 {
-  // These properties are reassigned in cloneWithChanges() on new instances, not on this
-  private queryOptions: Partial<QueryOptions<InferSchemaOutputFromFMTable<Occ>>>;
-  private expandConfigs: ExpandConfig[];
-  private singleMode: SingleMode;
-  private isCountMode: IsCount;
+  private readState = createInitialQueryReadBuilderState<InferSchemaOutputFromFMTable<Occ>>();
   private readonly occurrence: Occ;
-  private navigation?: NavigationConfig;
   private readonly expandBuilder: ExpandBuilder;
   private urlBuilder: QueryUrlBuilder;
-  // Mapping from field names to output keys (for renamed fields in select)
-  private fieldMapping?: Record<string, string>;
-  // System columns requested via select() second argument
-  private systemColumns?: SystemColumnsOption;
   private readonly layer: FMODataLayer;
   private readonly config: ODataConfig;
   private readonly logger: InternalLogger;
+
+  // Compatibility accessors for internal modules that inspect builder internals via `as any`.
+  private get queryOptions(): Partial<QueryOptions<InferSchemaOutputFromFMTable<Occ>>> {
+    return this.readState.queryOptions;
+  }
+
+  private set queryOptions(queryOptions: Partial<QueryOptions<InferSchemaOutputFromFMTable<Occ>>>) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      queryOptions,
+    });
+  }
+
+  private get expandConfigs(): ExpandConfig[] {
+    return this.readState.expandConfigs;
+  }
+
+  private set expandConfigs(expandConfigs: ExpandConfig[]) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      expandConfigs,
+    });
+  }
+
+  private get singleMode(): SingleMode {
+    return this.readState.singleMode as SingleMode;
+  }
+
+  private set singleMode(singleMode: SingleMode) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      singleMode,
+    });
+  }
+
+  private get isCountMode(): IsCount {
+    return this.readState.isCountMode as IsCount;
+  }
+
+  private set isCountMode(isCountMode: IsCount) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      isCountMode,
+    });
+  }
+
+  private get fieldMapping(): Record<string, string> | undefined {
+    return this.readState.fieldMapping;
+  }
+
+  private set fieldMapping(fieldMapping: Record<string, string> | undefined) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      fieldMapping,
+    });
+  }
+
+  private get systemColumns(): SystemColumnsOption | undefined {
+    return this.readState.systemColumns;
+  }
+
+  private set systemColumns(systemColumns: SystemColumnsOption | undefined) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      systemColumns,
+    });
+  }
+
+  private get navigation(): NavigationConfig | undefined {
+    return this.readState.navigation;
+  }
+
+  private set navigation(navigation: NavigationConfig | undefined) {
+    this.setNavigation(navigation);
+  }
 
   constructor(config: {
     occurrence: Occ;
     layer: FMODataLayer;
   }) {
     this.occurrence = config.occurrence;
-    this.layer = config.layer;
-    // Extract config and logger from the DI layer
-    const extracted = extractConfigFromLayer(this.layer);
-    this.config = extracted.config;
-    this.logger = extracted.logger;
+    const runtime = createClientRuntime(config.layer);
+    this.layer = runtime.layer;
+    this.config = runtime.config;
+    this.logger = runtime.logger;
     this.expandBuilder = new ExpandBuilder(this.config.useEntityIds, this.logger);
     this.urlBuilder = new QueryUrlBuilder(this.config.databaseName, this.occurrence, this.config.useEntityIds);
-    this.queryOptions = {};
-    this.expandConfigs = [];
-    this.singleMode = false as SingleMode;
-    this.isCountMode = false as IsCount;
   }
 
   /**
@@ -117,6 +175,18 @@ export class QueryBuilder<
       ...merged,
       includeSpecialColumns: options?.includeSpecialColumns ?? this.config.includeSpecialColumns,
     };
+  }
+
+  private patchQueryOptions(patch: Partial<QueryOptions<InferSchemaOutputFromFMTable<Occ>>>): void {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      queryOptions: patch,
+    });
+  }
+
+  private setNavigation(navigation: NavigationConfig | undefined): void {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      navigation,
+    });
   }
 
   /**
@@ -151,19 +221,17 @@ export class QueryBuilder<
       occurrence: this.occurrence,
       layer: this.layer,
     });
-    newBuilder.queryOptions = {
-      ...this.queryOptions,
-      ...changes.queryOptions,
-    };
-    newBuilder.expandConfigs = [...this.expandConfigs];
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
-    newBuilder.singleMode = (changes.singleMode ?? this.singleMode) as any;
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
-    newBuilder.isCountMode = (changes.isCountMode ?? this.isCountMode) as any;
-    newBuilder.fieldMapping = "fieldMapping" in changes ? changes.fieldMapping : this.fieldMapping;
-    newBuilder.systemColumns = changes.systemColumns !== undefined ? changes.systemColumns : this.systemColumns;
-    // Copy navigation metadata
-    newBuilder.navigation = this.navigation;
+    newBuilder.readState = cloneQueryReadBuilderState(this.readState, {
+      queryOptions: changes.queryOptions,
+      expandConfigs: this.readState.expandConfigs,
+      // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
+      singleMode: (changes.singleMode ?? this.readState.singleMode) as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
+      isCountMode: (changes.isCountMode ?? this.readState.isCountMode) as any,
+      fieldMapping: "fieldMapping" in changes ? changes.fieldMapping : this.readState.fieldMapping,
+      systemColumns: changes.systemColumns !== undefined ? changes.systemColumns : this.readState.systemColumns,
+      navigation: this.readState.navigation,
+    });
     newBuilder.urlBuilder = new QueryUrlBuilder(this.config.databaseName, this.occurrence, this.config.useEntityIds);
     return newBuilder;
   }
@@ -266,12 +334,12 @@ export class QueryBuilder<
   ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
     // Handle raw string filters (escape hatch)
     if (typeof expression === "string") {
-      this.queryOptions.filter = expression;
+      this.patchQueryOptions({ filter: expression });
       return this;
     }
     // Convert FilterExpression to OData filter string
     const filterString = expression.toODataFilter(this.config.useEntityIds);
-    this.queryOptions.filter = filterString;
+    this.patchQueryOptions({ filter: filterString });
     return this;
   }
 
@@ -343,7 +411,7 @@ export class QueryBuilder<
         }
         throw new Error("Variadic orderBy() only accepts Column or OrderByExpression arguments");
       });
-      this.queryOptions.orderBy = orderByParts;
+      this.patchQueryOptions({ orderBy: orderByParts });
       return this;
     }
 
@@ -360,7 +428,7 @@ export class QueryBuilder<
       }
       const fieldName = orderBy.column.fieldName;
       const transformedField = this.occurrence ? transformOrderByField(fieldName, this.occurrence) : fieldName;
-      this.queryOptions.orderBy = `${transformedField} ${orderBy.direction}`;
+      this.patchQueryOptions({ orderBy: `${transformedField} ${orderBy.direction}` });
       return this;
     }
 
@@ -374,7 +442,9 @@ export class QueryBuilder<
       }
       // Single Column reference without direction (defaults to ascending)
       const fieldName = orderBy.fieldName;
-      this.queryOptions.orderBy = this.occurrence ? transformOrderByField(fieldName, this.occurrence) : fieldName;
+      this.patchQueryOptions({
+        orderBy: this.occurrence ? transformOrderByField(fieldName, this.occurrence) : fieldName,
+      });
       return this;
     }
     // Transform field names to FMFIDs if using entity IDs
@@ -389,19 +459,20 @@ export class QueryBuilder<
           // Single tuple: [field, direction] or [column, direction]
           const field = isColumn(orderBy[0]) ? orderBy[0].fieldName : orderBy[0];
           const direction = orderBy[1] as "asc" | "desc";
-          this.queryOptions.orderBy = `${transformOrderByField(field, this.occurrence)} ${direction}`;
+          this.patchQueryOptions({ orderBy: `${transformOrderByField(field, this.occurrence)} ${direction}` });
         } else {
           // Array of tuples: [[field, dir], [field, dir], ...]
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic orderBy tuple type from user input
-          this.queryOptions.orderBy = (orderBy as [any, "asc" | "desc"][]).map(([fieldOrCol, direction]) => {
-            const field = isColumn(fieldOrCol) ? fieldOrCol.fieldName : String(fieldOrCol);
-            const transformedField = this.occurrence ? transformOrderByField(field, this.occurrence) : field;
-            return `${transformedField} ${direction}`;
+          this.patchQueryOptions({
+            orderBy: (orderBy as [unknown, "asc" | "desc"][]).map(([fieldOrCol, direction]) => {
+              const field = isColumn(fieldOrCol) ? fieldOrCol.fieldName : String(fieldOrCol);
+              const transformedField = this.occurrence ? transformOrderByField(field, this.occurrence) : field;
+              return `${transformedField} ${direction}`;
+            }),
           });
         }
       } else {
         // Single field name (string)
-        this.queryOptions.orderBy = transformOrderByField(String(orderBy), this.occurrence);
+        this.patchQueryOptions({ orderBy: transformOrderByField(String(orderBy), this.occurrence) });
       }
     } else if (Array.isArray(orderBy)) {
       if (
@@ -412,17 +483,18 @@ export class QueryBuilder<
         // Single tuple: [field, direction] or [column, direction]
         const field = isColumn(orderBy[0]) ? orderBy[0].fieldName : orderBy[0];
         const direction = orderBy[1] as "asc" | "desc";
-        this.queryOptions.orderBy = `${field} ${direction}`;
+        this.patchQueryOptions({ orderBy: `${field} ${direction}` });
       } else {
         // Array of tuples
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic orderBy tuple type from user input
-        this.queryOptions.orderBy = (orderBy as [any, "asc" | "desc"][]).map(([fieldOrCol, direction]) => {
-          const field = isColumn(fieldOrCol) ? fieldOrCol.fieldName : String(fieldOrCol);
-          return `${field} ${direction}`;
+        this.patchQueryOptions({
+          orderBy: (orderBy as [unknown, "asc" | "desc"][]).map(([fieldOrCol, direction]) => {
+            const field = isColumn(fieldOrCol) ? fieldOrCol.fieldName : String(fieldOrCol);
+            return `${field} ${direction}`;
+          }),
         });
       }
     } else {
-      this.queryOptions.orderBy = orderBy;
+      this.patchQueryOptions({ orderBy });
     }
     return this;
   }
@@ -430,14 +502,14 @@ export class QueryBuilder<
   top(
     count: number,
   ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
-    this.queryOptions.top = count;
+    this.patchQueryOptions({ top: count });
     return this;
   }
 
   skip(
     count: number,
   ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
-    this.queryOptions.skip = count;
+    this.patchQueryOptions({ skip: count });
     return this;
   }
 
@@ -497,7 +569,9 @@ export class QueryBuilder<
         }),
     );
 
-    this.expandConfigs.push(expandConfig);
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      expandConfigs: [...this.readState.expandConfigs, expandConfig],
+    });
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for complex generic return type
     return this as any;
   }
@@ -522,7 +596,7 @@ export class QueryBuilder<
    */
   private buildQueryString(includeSpecialColumns?: boolean, useEntityIds?: boolean): string {
     // Build query without expand and select (we'll add them manually if using entity IDs)
-    const queryOptionsWithoutExpandAndSelect = { ...this.queryOptions };
+    const queryOptionsWithoutExpandAndSelect = { ...this.readState.queryOptions };
     const originalSelect = queryOptionsWithoutExpandAndSelect.select;
     queryOptionsWithoutExpandAndSelect.expand = undefined;
     queryOptionsWithoutExpandAndSelect.select = undefined;
@@ -543,7 +617,7 @@ export class QueryBuilder<
 
     const selectExpandString = buildSelectExpandQueryString({
       selectedFields: selectArray,
-      expandConfigs: this.expandConfigs,
+      expandConfigs: this.readState.expandConfigs,
       table: this.occurrence,
       useEntityIds: finalUseEntityIds,
       logger: this.logger,
@@ -582,68 +656,79 @@ export class QueryBuilder<
       >
     >
   > {
+    type ExecuteResponse = ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        QueryReturnType<InferSchemaOutputFromFMTable<Occ>, Selected, SingleMode, IsCount, Expands, SystemCols>,
+        NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
+        // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+        Selected extends Record<string, Column<any, any, any>>
+          ? true
+          : Selected extends keyof InferSchemaOutputFromFMTable<Occ>
+            ? false
+            : true
+      >,
+      EO["includeODataAnnotations"] extends true ? true : false
+    >;
+
     const mergedOptions = this.mergeExecuteOptions(options);
     const queryString = this.buildQueryString(mergedOptions.includeSpecialColumns, mergedOptions.useEntityIds);
 
     // Handle $count endpoint
-    if (this.isCountMode) {
+    if (this.readState.isCountMode) {
       const url = this.urlBuilder.build(queryString, {
         isCount: true,
         useEntityIds: mergedOptions.useEntityIds,
-        navigation: this.navigation,
+        navigation: this.readState.navigation,
       });
 
-      const pipeline = withSpan(
-        requestFromService(url, mergedOptions).pipe(
-          Effect.map((data) => {
-            const count = typeof data === "string" ? Number(data) : data;
-            return count as number;
-          }),
-        ),
-        "fmodata.query.count",
-        { "fmodata.table": getTableName(this.occurrence) },
+      const pipeline = requestFromService(url, mergedOptions).pipe(
+        Effect.map((data) => {
+          const count = typeof data === "string" ? Number(data) : data;
+          return count as number;
+        }),
       );
 
-      // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-      return runAsResult(Effect.provide(pipeline, this.layer)) as any;
+      return runLayerResult(this.layer, pipeline, "fmodata.query.count", {
+        "fmodata.table": getTableName(this.occurrence),
+      }) as Promise<Result<ExecuteResponse>>;
     }
 
     const url = this.urlBuilder.build(queryString, {
-      isCount: this.isCountMode,
+      isCount: this.readState.isCountMode,
       useEntityIds: mergedOptions.useEntityIds,
-      navigation: this.navigation,
+      navigation: this.readState.navigation,
     });
 
-    const pipeline = withSpan(
-      requestFromService(url, mergedOptions).pipe(
-        Effect.flatMap((data) =>
-          Effect.tryPromise({
-            try: () =>
-              processQueryResponse(data, {
-                occurrence: this.occurrence,
-                singleMode: this.singleMode,
-                // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
-                queryOptions: this.queryOptions as any,
-                expandConfigs: this.expandConfigs,
-                skipValidation: options?.skipValidation,
-                useEntityIds: mergedOptions.useEntityIds,
-                includeSpecialColumns: mergedOptions.includeSpecialColumns,
-                fieldMapping: this.fieldMapping,
-                logger: this.logger,
-              }),
-            // biome-ignore lint/suspicious/noExplicitAny: Type assertion for error mapping
-            catch: (e) => e as any,
-          }),
-        ),
-        // processQueryResponse returns a Result, so we need to unwrap it
-        Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))),
+    const pipeline = requestFromService(url, mergedOptions).pipe(
+      Effect.flatMap((data) =>
+        Effect.tryPromise({
+          try: () =>
+            processQueryResponse(data, {
+              occurrence: this.occurrence,
+              singleMode: this.readState.singleMode as SingleMode,
+              queryOptions: this.readState.queryOptions as {
+                select?: (keyof InferSchemaOutputFromFMTable<Occ>)[] | string[];
+              },
+              expandConfigs: this.readState.expandConfigs,
+              skipValidation: options?.skipValidation,
+              useEntityIds: mergedOptions.useEntityIds,
+              includeSpecialColumns: mergedOptions.includeSpecialColumns,
+              fieldMapping: this.readState.fieldMapping,
+              logger: this.logger,
+            }),
+          catch: (e) => (e instanceof Error ? e : new Error(String(e))),
+        }),
       ),
-      this.singleMode ? "fmodata.query.single" : "fmodata.query.list",
-      { "fmodata.table": getTableName(this.occurrence) },
+      // processQueryResponse returns a Result, so we need to unwrap it
+      Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))),
     );
 
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(Effect.provide(pipeline, this.layer)) as any;
+    return runLayerResult(
+      this.layer,
+      pipeline,
+      this.readState.singleMode ? "fmodata.query.single" : "fmodata.query.list",
+      { "fmodata.table": getTableName(this.occurrence) },
+    ) as Promise<Result<ExecuteResponse>>;
   }
 
   getQueryString(options?: { useEntityIds?: boolean }): string {
@@ -651,7 +736,7 @@ export class QueryBuilder<
     const queryString = this.buildQueryString(undefined, useEntityIds);
     return this.urlBuilder.buildPath(queryString, {
       useEntityIds,
-      navigation: this.navigation,
+      navigation: this.readState.navigation,
     });
   }
 
@@ -659,9 +744,9 @@ export class QueryBuilder<
   getRequestConfig(): { method: string; url: string; body?: any } {
     const queryString = this.buildQueryString();
     const url = this.urlBuilder.build(queryString, {
-      isCount: this.isCountMode,
+      isCount: this.readState.isCountMode,
       useEntityIds: this.config.useEntityIds,
-      navigation: this.navigation,
+      navigation: this.readState.navigation,
     });
 
     return {
@@ -693,8 +778,8 @@ export class QueryBuilder<
     // Handle 204 No Content (shouldn't happen for queries, but handle it gracefully)
     if (response.status === 204) {
       // Return empty list for list queries, null for single queries
-      if (this.singleMode !== false) {
-        if (this.singleMode === "maybe") {
+      if (this.readState.singleMode !== false) {
+        if (this.readState.singleMode === "maybe") {
           // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
           return { data: null as any, error: undefined };
         }
@@ -743,18 +828,18 @@ export class QueryBuilder<
 
     const mergedOptions = this.mergeExecuteOptions(options);
     // Check if select was applied (runtime check)
-    const _hasSelect = this.queryOptions.select !== undefined;
+    const _hasSelect = this.readState.queryOptions.select !== undefined;
 
     return processQueryResponse(rawData, {
       occurrence: this.occurrence,
-      singleMode: this.singleMode,
+      singleMode: this.readState.singleMode as SingleMode,
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
-      queryOptions: this.queryOptions as any,
-      expandConfigs: this.expandConfigs,
+      queryOptions: this.readState.queryOptions as any,
+      expandConfigs: this.readState.expandConfigs,
       skipValidation: options?.skipValidation,
       useEntityIds: mergedOptions.useEntityIds,
       includeSpecialColumns: mergedOptions.includeSpecialColumns,
-      fieldMapping: this.fieldMapping,
+      fieldMapping: this.readState.fieldMapping,
       logger: this.logger,
     });
   }

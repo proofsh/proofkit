@@ -17,13 +17,7 @@ export type TypeSafeOrderBy<T> =
   | [keyof T & string, "asc" | "desc"][]; // Multiple fields with directions
 
 // Internal type for expand configuration
-export interface ExpandConfig {
-  relation: string;
-  // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryOptions configuration
-  options?: Partial<import("odata-query").QueryOptions<any>>;
-  // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
-  targetTable?: import("../../orm/table").FMTable<any, any>;
-}
+export type { ExpandConfig } from "../builders/shared-types";
 
 // Type to represent expanded relations
 // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema and selected types from user input

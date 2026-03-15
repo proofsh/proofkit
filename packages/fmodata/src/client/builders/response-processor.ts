@@ -277,3 +277,37 @@ export async function processQueryResponse<T>(
 
   return processedResponse;
 }
+
+/**
+ * Processes record response by delegating to the canonical query processor.
+ * Record reads are query reads with singleMode fixed to "exact".
+ */
+export async function processRecordResponse<T>(
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
+  response: any,
+  config: {
+    // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
+    table?: FMTable<any, any>;
+    selectedFields?: string[];
+    expandConfigs: ExpandConfig[];
+    skipValidation?: boolean;
+    useEntityIds?: boolean;
+    includeSpecialColumns?: boolean;
+    fieldMapping?: Record<string, string>;
+    logger: InternalLogger;
+  },
+): Promise<Result<T>> {
+  const result = await processQueryResponse<T>(response, {
+    occurrence: config.table,
+    singleMode: "exact",
+    queryOptions: { select: config.selectedFields },
+    expandConfigs: config.expandConfigs,
+    skipValidation: config.skipValidation,
+    useEntityIds: config.useEntityIds,
+    includeSpecialColumns: config.includeSpecialColumns,
+    fieldMapping: config.fieldMapping,
+    logger: config.logger,
+  });
+
+  return result as Result<T>;
+}

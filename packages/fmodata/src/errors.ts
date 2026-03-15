@@ -181,6 +181,59 @@ export class BatchTruncatedError extends FMODataError {
 }
 
 // ============================================
+// Internal Runtime/Invariant Errors
+// ============================================
+
+export class MissingLayerServiceError extends FMODataError {
+  readonly kind = "MissingLayerServiceError" as const;
+  readonly service: string;
+
+  constructor(service: string, options?: { cause?: Error }) {
+    super(
+      `Required layer service "${service}" is not available`,
+      options?.cause ? { cause: options.cause } : undefined,
+    );
+    this.service = service;
+  }
+}
+
+export class MetadataNotFoundError extends FMODataError {
+  readonly kind = "MetadataNotFoundError" as const;
+  readonly databaseName: string;
+
+  constructor(databaseName: string) {
+    super(`Metadata for database "${databaseName}" not found in response`);
+    this.databaseName = databaseName;
+  }
+}
+
+export class BuilderInvariantError extends FMODataError {
+  readonly kind = "BuilderInvariantError" as const;
+  readonly builder: string;
+
+  constructor(builder: string, message: string, options?: { cause?: Error }) {
+    super(`${builder} invariant violation: ${message}`, options?.cause ? { cause: options.cause } : undefined);
+    this.builder = builder;
+  }
+}
+
+export class SchemaValidationFailedError extends FMODataError {
+  readonly kind = "SchemaValidationFailedError" as const;
+  readonly operation: string;
+  readonly issues?: readonly StandardSchemaV1.Issue[];
+
+  constructor(
+    operation: string,
+    message: string,
+    options?: { issues?: readonly StandardSchemaV1.Issue[]; cause?: Error },
+  ) {
+    super(`${operation} schema validation failed: ${message}`, options?.cause ? { cause: options.cause } : undefined);
+    this.operation = operation;
+    this.issues = options?.issues;
+  }
+}
+
+// ============================================
 // Type Guards
 // ============================================
 
@@ -214,6 +267,22 @@ export function isResponseParseError(error: unknown): error is ResponseParseErro
 
 export function isBatchTruncatedError(error: unknown): error is BatchTruncatedError {
   return error instanceof BatchTruncatedError;
+}
+
+export function isMissingLayerServiceError(error: unknown): error is MissingLayerServiceError {
+  return error instanceof MissingLayerServiceError;
+}
+
+export function isMetadataNotFoundError(error: unknown): error is MetadataNotFoundError {
+  return error instanceof MetadataNotFoundError;
+}
+
+export function isBuilderInvariantError(error: unknown): error is BuilderInvariantError {
+  return error instanceof BuilderInvariantError;
+}
+
+export function isSchemaValidationFailedError(error: unknown): error is SchemaValidationFailedError {
+  return error instanceof SchemaValidationFailedError;
 }
 
 export function isFMODataError(error: unknown): error is FMODataError {
@@ -272,4 +341,8 @@ export type FMODataErrorType =
   | RecordCountMismatchError
   | InvalidLocationHeaderError
   | ResponseParseError
-  | BatchTruncatedError;
+  | BatchTruncatedError
+  | MissingLayerServiceError
+  | MetadataNotFoundError
+  | BuilderInvariantError
+  | SchemaValidationFailedError;

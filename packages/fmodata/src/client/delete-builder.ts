@@ -1,13 +1,19 @@
-import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { requestFromService, runAsResult, withSpan } from "../effect";
+import { requestFromService, runLayerResult } from "../effect";
 import type { FMTable } from "../orm/table";
-import { getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import { getTableName } from "../orm/table";
+import type { FMODataLayer, ODataConfig } from "../services";
 import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, Result } from "../types";
 import { getAcceptHeader } from "../types";
+import {
+  buildMutationUrl,
+  extractAffectedRows,
+  mergeMutationExecuteOptions,
+  resolveMutationTableId,
+} from "./builders/mutation-helpers";
 import { parseErrorResponse } from "./error-parser";
 import { QueryBuilder } from "./query-builder";
+import { createClientRuntime } from "./runtime";
 
 /**
  * Initial delete builder returned from EntitySet.delete()
@@ -24,8 +30,9 @@ export class DeleteBuilder<Occ extends FMTable<any, any>> {
     layer: FMODataLayer;
   }) {
     this.table = config.occurrence;
-    this.layer = config.layer;
-    this.config = extractConfigFromLayer(this.layer).config;
+    const runtime = createClientRuntime(config.layer);
+    this.layer = runtime.layer;
+    this.config = runtime.config;
   }
 
   /**
@@ -90,70 +97,23 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     this.mode = config.mode;
     this.recordId = config.recordId;
     this.queryBuilder = config.queryBuilder;
-    this.config = extractConfigFromLayer(this.layer).config;
-  }
-
-  /**
-   * Helper to merge database-level useEntityIds with per-request options
-   */
-  private mergeExecuteOptions(
-    options?: RequestInit & FFetchOptions & ExecuteOptions,
-  ): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
-    return {
-      ...options,
-      useEntityIds: options?.useEntityIds ?? this.config.useEntityIds,
-    };
-  }
-
-  /**
-   * Gets the table ID (FMTID) if using entity IDs, otherwise returns the table name
-   * @param useEntityIds - Optional override for entity ID usage
-   */
-  private getTableId(useEntityIds?: boolean): string {
-    const shouldUseIds = useEntityIds ?? this.config.useEntityIds;
-
-    if (shouldUseIds) {
-      if (!isUsingEntityIds(this.table)) {
-        throw new Error(
-          `useEntityIds is true but table "${getTableName(this.table)}" does not have entity IDs configured`,
-        );
-      }
-      return getTableIdHelper(this.table);
-    }
-
-    return getTableName(this.table);
-  }
-
-  /**
-   * Builds the URL for the delete request based on mode (byId or byFilter).
-   */
-  private buildUrl(tableId: string): string {
-    if (this.mode === "byId") {
-      return `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
-    }
-
-    if (!this.queryBuilder) {
-      throw new Error("Query builder is required for filter-based delete");
-    }
-
-    const queryString = this.queryBuilder.getQueryString();
-    const tableName = getTableName(this.table);
-    let queryParams: string;
-    if (queryString.startsWith(`/${tableId}`)) {
-      queryParams = queryString.slice(`/${tableId}`.length);
-    } else if (queryString.startsWith(`/${tableName}`)) {
-      queryParams = queryString.slice(`/${tableName}`.length);
-    } else {
-      queryParams = queryString;
-    }
-
-    return `/${this.config.databaseName}/${tableId}${queryParams}`;
+    this.config = createClientRuntime(this.layer).config;
   }
 
   execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
-    const mergedOptions = this.mergeExecuteOptions(options);
-    const tableId = this.getTableId(mergedOptions.useEntityIds);
-    const url = this.buildUrl(tableId);
+    const mergedOptions = mergeMutationExecuteOptions(options, this.config.useEntityIds);
+    const useEntityIds = mergedOptions.useEntityIds ?? this.config.useEntityIds;
+    const tableId = resolveMutationTableId(this.table, useEntityIds, "ExecutableDeleteBuilder");
+    const url = buildMutationUrl({
+      databaseName: this.config.databaseName,
+      tableId,
+      tableName: getTableName(this.table),
+      mode: this.mode,
+      recordId: this.recordId,
+      queryBuilder: this.queryBuilder,
+      useEntityIds,
+      builderName: "ExecutableDeleteBuilder",
+    });
 
     const pipeline = Effect.gen(this, function* () {
       // Make DELETE request via DI
@@ -162,49 +122,28 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
         ...mergedOptions,
       });
 
-      // Extract deleted count from response
-      let deletedCount = 0;
-      if (typeof response === "number") {
-        deletedCount = response;
-      } else if (response && typeof response === "object") {
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-        deletedCount = (response as any).deletedCount || 0;
-      }
-
+      const deletedCount = extractAffectedRows(response, undefined, 0, "deletedCount");
       return { deletedCount };
     });
 
-    return runAsResult(
-      Effect.provide(withSpan(pipeline, "fmodata.delete", { "fmodata.table": getTableName(this.table) }), this.layer),
-    );
+    return runLayerResult(this.layer, pipeline, "fmodata.delete", {
+      "fmodata.table": getTableName(this.table),
+    });
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
   getRequestConfig(): { method: string; url: string; body?: any } {
-    const tableId = this.getTableId(this.config.useEntityIds);
-
-    let url: string;
-
-    if (this.mode === "byId") {
-      url = `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
-    } else {
-      if (!this.queryBuilder) {
-        throw new Error("Query builder is required for filter-based delete");
-      }
-
-      const queryString = this.queryBuilder.getQueryString();
-      const tableName = getTableName(this.table);
-      let queryParams: string;
-      if (queryString.startsWith(`/${tableId}`)) {
-        queryParams = queryString.slice(`/${tableId}`.length);
-      } else if (queryString.startsWith(`/${tableName}`)) {
-        queryParams = queryString.slice(`/${tableName}`.length);
-      } else {
-        queryParams = queryString;
-      }
-
-      url = `/${this.config.databaseName}/${tableId}${queryParams}`;
-    }
+    const tableId = resolveMutationTableId(this.table, this.config.useEntityIds, "ExecutableDeleteBuilder");
+    const url = buildMutationUrl({
+      databaseName: this.config.databaseName,
+      tableId,
+      tableName: getTableName(this.table),
+      mode: this.mode,
+      recordId: this.recordId,
+      queryBuilder: this.queryBuilder,
+      useEntityIds: this.config.useEntityIds,
+      builderName: "ExecutableDeleteBuilder",
+    });
 
     return {
       method: "DELETE",
@@ -235,26 +174,13 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     // Check for empty response (204 No Content)
     const text = await response.text();
     if (!text || text.trim() === "") {
-      // For 204 No Content, check the fmodata.affected_rows header
-      const affectedRows = response.headers.get("fmodata.affected_rows");
-      const deletedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 1;
+      const deletedCount = extractAffectedRows(undefined, response.headers, 1, "deletedCount");
       return { data: { deletedCount }, error: undefined };
     }
 
     const rawResponse = JSON.parse(text);
 
-    // OData returns 204 No Content with fmodata.affected_rows header
-    // The _makeRequest should handle extracting the header value
-    // For now, we'll check if response contains the count
-    let deletedCount = 0;
-
-    if (typeof rawResponse === "number") {
-      deletedCount = rawResponse;
-    } else if (rawResponse && typeof rawResponse === "object") {
-      // Check if the response has a count property (fallback)
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-      deletedCount = (rawResponse as any).deletedCount || 0;
-    }
+    const deletedCount = extractAffectedRows(rawResponse, response.headers, 0, "deletedCount");
 
     return { data: { deletedCount }, error: undefined };
   }

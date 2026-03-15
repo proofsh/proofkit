@@ -1,11 +1,12 @@
 import { Effect } from "effect";
-import { requestFromService, runAsResult, withSpan } from "../effect";
+import { requestFromService, runLayerOrThrow } from "../effect";
 import { type FMTable, getTableName } from "../orm";
 import { type Column, isColumn } from "../orm/column";
 import { FilterExpression } from "../orm/operators";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import type { FMODataLayer, ODataConfig } from "../services";
 import type { ExecuteMethodOptions } from "../types";
 import { formatSelectFields } from "./builders/select-utils";
+import { createClientRuntime } from "./runtime";
 
 export interface Webhook<TableName = string> {
   webhook: string;
@@ -53,8 +54,9 @@ export class WebhookManager {
   private readonly config: ODataConfig;
 
   constructor(layer: FMODataLayer) {
-    this.layer = layer;
-    this.config = extractConfigFromLayer(this.layer).config;
+    const runtime = createClientRuntime(layer);
+    this.layer = runtime.layer;
+    this.config = runtime.config;
   }
 
   /**
@@ -87,7 +89,7 @@ export class WebhookManager {
    * });
    * ```
    */
-  async add(webhook: Webhook<FMTable>, options?: ExecuteMethodOptions): Promise<WebhookAddResponse> {
+  add(webhook: Webhook<FMTable>, options?: ExecuteMethodOptions): Promise<WebhookAddResponse> {
     // Extract the string table name from the FMTable instance
     const tableName = getTableName(webhook.tableName);
 
@@ -157,11 +159,7 @@ export class WebhookManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.add"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.webhook.add");
   }
 
   /**
@@ -181,10 +179,7 @@ export class WebhookManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.remove"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
+    await runLayerOrThrow(this.layer, pipeline, "fmodata.webhook.remove");
   }
 
   /**
@@ -197,16 +192,12 @@ export class WebhookManager {
    * // webhook.webhookID, webhook.tableName, webhook.webhook, etc.
    * ```
    */
-  async get(webhookId: number, options?: ExecuteMethodOptions): Promise<WebhookInfo> {
+  get(webhookId: number, options?: ExecuteMethodOptions): Promise<WebhookInfo> {
     const pipeline = Effect.gen(this, function* () {
       return yield* requestFromService<WebhookInfo>(`/${this.config.databaseName}/Webhook.Get(${webhookId})`, options);
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.get"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.webhook.get");
   }
 
   /**
@@ -219,16 +210,12 @@ export class WebhookManager {
    * // result.webhooks contains the array of webhooks
    * ```
    */
-  async list(options?: ExecuteMethodOptions): Promise<WebhookListResponse> {
+  list(options?: ExecuteMethodOptions): Promise<WebhookListResponse> {
     const pipeline = Effect.gen(this, function* () {
       return yield* requestFromService<WebhookListResponse>(`/${this.config.databaseName}/Webhook.GetAll`, options);
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.list"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.webhook.list");
   }
 
   /**
@@ -246,11 +233,7 @@ export class WebhookManager {
    * await db.webhook.invoke(1, { rowIDs: [63, 61] });
    * ```
    */
-  async invoke(
-    webhookId: number,
-    options?: { rowIDs?: number[] },
-    executeOptions?: ExecuteMethodOptions,
-  ): Promise<unknown> {
+  invoke(webhookId: number, options?: { rowIDs?: number[] }, executeOptions?: ExecuteMethodOptions): Promise<unknown> {
     const body: { rowIDs?: number[] } = {};
     if (options?.rowIDs !== undefined) {
       body.rowIDs = options.rowIDs;
@@ -264,10 +247,6 @@ export class WebhookManager {
       });
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.invoke"), this.layer));
-    if (result.error) {
-      throw result.error;
-    }
-    return result.data;
+    return runLayerOrThrow(this.layer, pipeline, "fmodata.webhook.invoke");
   }
 }

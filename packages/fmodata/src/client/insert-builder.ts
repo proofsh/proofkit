@@ -1,12 +1,11 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { fromValidation, requestFromService, runAsResult, tryEffect, withSpan } from "../effect";
+import { fromValidation, requestFromService, runLayerResult, tryEffect } from "../effect";
 import type { FMODataErrorType } from "../errors";
-import { InvalidLocationHeaderError } from "../errors";
-import type { InternalLogger } from "../logger";
+import { BuilderInvariantError, InvalidLocationHeaderError } from "../errors";
 import type { FMTable } from "../orm/table";
-import { getBaseTableConfig, getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import { getBaseTableConfig, getTableName } from "../orm/table";
+import type { FMODataLayer, ODataConfig } from "../services";
 import { transformFieldNamesToIds, transformResponseFields } from "../transform";
 import type {
   ConditionallyWithODataAnnotations,
@@ -17,11 +16,15 @@ import type {
 } from "../types";
 import { getAcceptHeader } from "../types";
 import { validateAndTransformInput, validateSingleResponse } from "../validation";
+import {
+  getLocationHeader,
+  mergeMutationExecuteOptions,
+  parseRowIdFromLocationHeader,
+  resolveMutationTableId,
+} from "./builders/mutation-helpers";
 import { parseErrorResponse } from "./error-parser";
+import { createClientRuntime } from "./runtime";
 import { safeJsonParse } from "./sanitize-json";
-
-const ROWID_MATCH_REGEX = /ROWID=(\d+)/;
-const PAREN_VALUE_REGEX = /\(['"]?([^'"]+)['"]?\)/;
 
 export interface InsertOptions {
   return?: "minimal" | "representation";
@@ -43,7 +46,6 @@ export class InsertBuilder<
   private readonly returnPreference: ReturnPreference;
   private readonly layer: FMODataLayer;
   private readonly config: ODataConfig;
-  private readonly logger: InternalLogger;
 
   constructor(config: {
     occurrence?: Occ;
@@ -56,9 +58,8 @@ export class InsertBuilder<
     this.data = config.data;
     this.returnPreference = (config.returnPreference || "representation") as ReturnPreference;
     // Extract config from layer for sync method access
-    const extracted = extractConfigFromLayer(this.layer);
-    this.config = extracted.config;
-    this.logger = extracted.logger;
+    const runtime = createClientRuntime(this.layer);
+    this.config = runtime.config;
   }
 
   /**
@@ -67,10 +68,7 @@ export class InsertBuilder<
   private mergeExecuteOptions(
     options?: RequestInit & FFetchOptions & ExecuteOptions,
   ): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
-    return {
-      ...options,
-      useEntityIds: options?.useEntityIds ?? this.config.useEntityIds,
-    };
+    return mergeMutationExecuteOptions(options, this.config.useEntityIds);
   }
 
   /**
@@ -80,30 +78,7 @@ export class InsertBuilder<
    * - contacts('some-uuid')
    */
   private parseLocationHeader(locationHeader: string | undefined): number {
-    if (!locationHeader) {
-      throw new InvalidLocationHeaderError("Location header is required but was not provided");
-    }
-
-    // Try to match ROWID=number pattern
-    const rowidMatch = locationHeader.match(ROWID_MATCH_REGEX);
-    if (rowidMatch?.[1]) {
-      return Number.parseInt(rowidMatch[1], 10);
-    }
-
-    // Try to extract value from parentheses and parse as number
-    const parenMatch = locationHeader.match(PAREN_VALUE_REGEX);
-    if (parenMatch?.[1]) {
-      const value = parenMatch[1];
-      const numValue = Number.parseInt(value, 10);
-      if (!Number.isNaN(numValue)) {
-        return numValue;
-      }
-    }
-
-    throw new InvalidLocationHeaderError(
-      `Could not extract ROWID from Location header: ${locationHeader}`,
-      locationHeader,
-    );
+    return parseRowIdFromLocationHeader(locationHeader);
   }
 
   /**
@@ -112,21 +87,9 @@ export class InsertBuilder<
    */
   private getTableId(useEntityIds?: boolean): string {
     if (!this.table) {
-      throw new Error("Table occurrence is required");
+      throw new BuilderInvariantError("InsertBuilder", "table occurrence is required");
     }
-
-    const shouldUseIds = useEntityIds ?? this.config.useEntityIds;
-
-    if (shouldUseIds) {
-      if (!isUsingEntityIds(this.table)) {
-        throw new Error(
-          `useEntityIds is true but table "${getTableName(this.table)}" does not have entity IDs configured`,
-        );
-      }
-      return getTableIdHelper(this.table);
-    }
-
-    return getTableName(this.table);
+    return resolveMutationTableId(this.table, useEntityIds ?? this.config.useEntityIds, "InsertBuilder");
   }
 
   /**
@@ -172,7 +135,10 @@ export class InsertBuilder<
         const baseTableConfig = getBaseTableConfig(this.table);
         validatedData = yield* tryEffect(
           () => validateAndTransformInput(this.data, baseTableConfig.inputSchema),
-          (e) => (e instanceof Error ? e : new Error(String(e))) as FMODataErrorType,
+          (e) =>
+            (e instanceof Error
+              ? e
+              : new BuilderInvariantError("InsertBuilder.execute", String(e))) as FMODataErrorType,
         );
       }
 
@@ -227,17 +193,22 @@ export class InsertBuilder<
       );
 
       if (validated === null) {
-        return yield* Effect.fail(new Error("Insert operation returned null response") as FMODataErrorType);
+        return yield* Effect.fail(
+          new BuilderInvariantError(
+            "InsertBuilder.execute",
+            "insert operation returned null response",
+          ) as FMODataErrorType,
+        );
       }
 
       return validated;
     });
 
-    return runAsResult(
-      Effect.provide(
-        withSpan(pipeline, "fmodata.insert", this.table ? { "fmodata.table": getTableName(this.table) } : undefined),
-        this.layer,
-      ),
+    return runLayerResult(
+      this.layer,
+      pipeline,
+      "fmodata.insert",
+      this.table ? { "fmodata.table": getTableName(this.table) } : undefined,
     ) as Promise<
       Result<
         ReturnPreference extends "minimal"
@@ -301,7 +272,7 @@ export class InsertBuilder<
     if (response.status === 204) {
       // Check for Location header (for return=minimal)
       if (this.returnPreference === "minimal") {
-        const locationHeader = response.headers.get("Location") || response.headers.get("location");
+        const locationHeader = getLocationHeader(response.headers);
         if (locationHeader) {
           const rowid = this.parseLocationHeader(locationHeader);
           // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
@@ -365,7 +336,8 @@ export class InsertBuilder<
       } catch (error) {
         return {
           data: undefined,
-          error: error instanceof Error ? error : new Error(String(error)),
+          error:
+            error instanceof Error ? error : new BuilderInvariantError("InsertBuilder.processResponse", String(error)),
           // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
         } as any;
       }
@@ -414,7 +386,7 @@ export class InsertBuilder<
     if (validation.data === null) {
       return {
         data: undefined,
-        error: new Error("Insert operation returned null response"),
+        error: new BuilderInvariantError("InsertBuilder.processResponse", "insert operation returned null response"),
       };
     }
 

@@ -3,7 +3,9 @@
 
 export * from "./default-select";
 export * from "./expand-builder";
+export * from "./mutation-helpers";
 export * from "./query-string-builder";
+export * from "./read-builder-state";
 export * from "./response-processor";
 export * from "./select-mixin";
 export * from "./select-utils";

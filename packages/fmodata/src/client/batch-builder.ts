@@ -1,8 +1,8 @@
 import { Effect } from "effect";
-import { requestFromService, runAsResult, withSpan } from "../effect";
+import { requestFromService, runLayerResult } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { BatchTruncatedError } from "../errors";
-import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import type { FMODataLayer, ODataConfig } from "../services";
 import type {
   BatchItemResult,
   BatchResult,
@@ -12,6 +12,7 @@ import type {
   Result,
 } from "../types";
 import { formatBatchRequestFromNative, type ParsedBatchResponse, parseBatchResponse } from "./batch-request";
+import { createClientRuntime } from "./runtime";
 
 /**
  * Helper type to extract result types from a tuple of ExecutableBuilders.
@@ -73,8 +74,9 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
   constructor(builders: Builders, layer: FMODataLayer) {
     // Convert readonly tuple to mutable array for dynamic additions
     this.builders = [...builders];
-    this.layer = layer;
-    this.config = extractConfigFromLayer(this.layer).config;
+    const runtime = createClientRuntime(layer);
+    this.layer = runtime.layer;
+    this.config = runtime.config;
   }
 
   /**
@@ -269,7 +271,7 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
     });
 
     // For batch, errors at the transport level fail all operations
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.batch"), this.layer));
+    const result = await runLayerResult(this.layer, pipeline, "fmodata.batch");
     if (result.error) {
       return this.failAllResults(result.error);
     }

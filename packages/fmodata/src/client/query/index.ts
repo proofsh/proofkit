@@ -2,8 +2,8 @@
 
 // Re-export QueryBuilder as the main export
 
-// Export ExpandConfig from expand-builder
-export type { ExpandConfig } from "./expand-builder";
+// Export ExpandConfig from canonical shared builder types
+export type { ExpandConfig } from "../builders/shared-types";
 
 // Export types
 export type {

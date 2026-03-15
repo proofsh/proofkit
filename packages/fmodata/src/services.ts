@@ -14,6 +14,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Context, Effect, Layer } from "effect";
 import type { FMODataErrorType } from "./errors";
+import { MissingLayerServiceError } from "./errors";
 import type { InternalLogger } from "./logger";
 
 // --- HttpClient Service ---
@@ -64,8 +65,12 @@ export type FMODataLayer = Layer.Layer<HttpClient | ODataConfig | ODataLogger>;
  */
 export function extractConfigFromLayer(layer: FMODataLayer): { config: ODataConfig; logger: InternalLogger } {
   const effect = Effect.gen(function* () {
-    const config = yield* ODataConfig;
-    const { logger } = yield* ODataLogger;
+    const config = yield* ODataConfig.pipe(
+      Effect.mapError((error) => new MissingLayerServiceError("ODataConfig", { cause: error as Error })),
+    );
+    const { logger } = yield* ODataLogger.pipe(
+      Effect.mapError((error) => new MissingLayerServiceError("ODataLogger", { cause: error as Error })),
+    );
     return { config, logger };
   });
   return Effect.runSync(Effect.provide(effect, layer));

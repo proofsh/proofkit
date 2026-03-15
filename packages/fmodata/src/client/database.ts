@@ -1,9 +1,9 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { Effect } from "effect";
-import { requestFromService, runAsResult, withSpan } from "../effect";
+import { requestFromService, runLayerOrThrow, runLayerResult } from "../effect";
+import { BuilderInvariantError, MetadataNotFoundError, SchemaValidationFailedError } from "../errors";
 import { FMTable } from "../orm/table";
-import { createDatabaseLayer, extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import { createDatabaseLayer, type FMODataLayer } from "../services";
 import type { ExecutableBuilder, ExecutionContext, Metadata, Result } from "../types";
 import { BatchBuilder } from "./batch-builder";
 import { EntitySet } from "./entity-set";
@@ -33,7 +33,6 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
   private readonly _includeSpecialColumns: IncludeSpecialColumns;
   /** @internal Database-scoped Effect Layer for dependency injection */
   readonly _layer: FMODataLayer;
-  private readonly config: ODataConfig;
 
   constructor(
     databaseName: string,
@@ -65,10 +64,11 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
         includeSpecialColumns: this._includeSpecialColumns,
       });
     } else {
-      throw new Error("ExecutionContext must implement _getLayer() for dependency injection");
+      throw new BuilderInvariantError(
+        "Database",
+        "ExecutionContext must implement _getLayer() for dependency injection",
+      );
     }
-
-    this.config = extractConfigFromLayer(this._layer).config;
 
     // Initialize schema and webhook managers with the database layer
     this.schema = new SchemaManager(this._layer);
@@ -102,7 +102,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
    */
   _makeRequest<T>(path: string, options?: RequestInit & FFetchOptions): Promise<Result<T>> {
     const pipeline = requestFromService<T>(`/${this.databaseName}${path}`, options);
-    return runAsResult(Effect.provide(pipeline, this._layer));
+    return runLayerResult(this._layer, pipeline);
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
@@ -162,20 +162,16 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     }
 
     const pipeline = requestFromService<Record<string, Metadata> | string>(url, { headers });
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.metadata"), this._layer));
-
-    if (result.error) {
-      throw result.error;
-    }
+    const data = await runLayerOrThrow(this._layer, pipeline, "fmodata.metadata");
 
     if (args?.format === "xml") {
-      return result.data as string;
+      return data as string;
     }
 
-    const data = result.data as Record<string, Metadata>;
-    const metadata = data[this.databaseName] ?? data[this.databaseName.replace(FMP12_EXT_REGEX, "")];
+    const metadataMap = data as Record<string, Metadata>;
+    const metadata = metadataMap[this.databaseName] ?? metadataMap[this.databaseName.replace(FMP12_EXT_REGEX, "")];
     if (!metadata) {
-      throw new Error(`Metadata for database "${this.databaseName}" not found in response`);
+      throw new MetadataNotFoundError(this.databaseName);
     }
     return metadata;
   }
@@ -189,13 +185,9 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       value?: Array<{ name: string }>;
     }>(`/${this.databaseName}`);
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.listTableNames"), this._layer));
-
-    if (result.error) {
-      throw result.error;
-    }
-    if (result.data.value && Array.isArray(result.data.value)) {
-      return result.data.value.map((item) => item.name);
+    const data = await runLayerOrThrow(this._layer, pipeline, "fmodata.listTableNames");
+    if (data.value && Array.isArray(data.value)) {
+      return data.value.map((item) => item.name);
     }
     return [];
   }
@@ -236,13 +228,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
     });
 
-    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.runScript"), this._layer));
-
-    if (result.error) {
-      throw result.error;
-    }
-
-    const response = result.data;
+    const response = await runLayerOrThrow(this._layer, pipeline, "fmodata.runScript");
 
     // If resultSchema is provided, validate the result through it
     if (options?.resultSchema && response.scriptResult !== undefined) {
@@ -251,7 +237,9 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       const validated = validationResult instanceof Promise ? await validationResult : validationResult;
 
       if (validated.issues) {
-        throw new Error(`Script result validation failed: ${JSON.stringify(validated.issues)}`);
+        throw new SchemaValidationFailedError("Database.runScript", JSON.stringify(validated.issues), {
+          issues: validated.issues,
+        });
       }
 
       return {
