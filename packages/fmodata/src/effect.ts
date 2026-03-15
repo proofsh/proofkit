@@ -12,8 +12,16 @@ import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect, Schedule } from "effect";
 import type { FMODataErrorType } from "./errors";
 import { BuilderInvariantError, isTransientError } from "./errors";
-import { type FMODataLayer, HttpClient } from "./services";
+import type {
+  FMODataLayer,
+  HttpClient as HttpClientService,
+  ODataConfig as ODataConfigService,
+  ODataLogger as ODataLoggerService,
+} from "./services";
+import { HttpClient } from "./services";
 import type { Result, RetryPolicy } from "./types";
+
+type FMODataServices = HttpClientService | ODataConfigService | ODataLoggerService;
 
 /**
  * Converts a Promise<Result<T>> into an Effect with typed error channel.
@@ -76,25 +84,22 @@ function withOptionalSpan<T, E, R>(
 /**
  * Runs an Effect by providing the shared DI layer and returns fmodata Result<T>.
  */
-export function runLayerResult<T, R>(
+export function runLayerResult<T>(
   layer: FMODataLayer,
-  effect: Effect.Effect<T, FMODataErrorType, R>,
+  effect: Effect.Effect<T, FMODataErrorType, FMODataServices>,
   spanName?: string,
   attributes?: Record<string, string>,
 ): Promise<Result<T>> {
-  const provided = Effect.provide(withOptionalSpan(effect, spanName, attributes), layer) as Effect.Effect<
-    T,
-    FMODataErrorType
-  >;
+  const provided = Effect.provide(withOptionalSpan(effect, spanName, attributes), layer);
   return runAsResult(provided);
 }
 
 /**
  * Runs an Effect by providing the shared DI layer and throws on fmodata errors.
  */
-export async function runLayerOrThrow<T, R>(
+export async function runLayerOrThrow<T>(
   layer: FMODataLayer,
-  effect: Effect.Effect<T, FMODataErrorType, R>,
+  effect: Effect.Effect<T, FMODataErrorType, FMODataServices>,
   spanName?: string,
   attributes?: Record<string, string>,
 ): Promise<T> {
@@ -108,10 +113,10 @@ export async function runLayerOrThrow<T, R>(
 /**
  * Convenience wrapper for request-like effects where span instrumentation is always desired.
  */
-export function requestWithSpan<T, R>(
+export function requestWithSpan<T>(
   layer: FMODataLayer,
   spanName: string,
-  requestEffect: Effect.Effect<T, FMODataErrorType, R>,
+  requestEffect: Effect.Effect<T, FMODataErrorType, FMODataServices>,
   attributes?: Record<string, string>,
 ): Promise<Result<T>> {
   return runLayerResult(layer, requestEffect, spanName, attributes);
