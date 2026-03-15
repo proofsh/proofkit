@@ -89,9 +89,6 @@ describe("Mock Fetch Tests", () => {
         .execute();
 
       expect(result).toBeDefined();
-      if (result.error) {
-        console.log(result.error);
-      }
       expect(result.error).toBeUndefined();
       expect(result.data).toBeDefined();
       if (!result.data) {

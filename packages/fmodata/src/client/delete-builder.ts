@@ -198,29 +198,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
   getRequestConfig(): { method: string; url: string; body?: any } {
     // For batch operations, use database-level setting (no per-request override available here)
     const tableId = this.getTableId(this.databaseUseEntityIds);
-
-    let url: string;
-
-    if (this.mode === "byId") {
-      url = `/${this.databaseName}/${tableId}('${this.recordId}')`;
-    } else {
-      if (!this.queryBuilder) {
-        throw new Error("Query builder is required for filter-based delete");
-      }
-
-      const queryString = this.queryBuilder.getQueryString();
-      const tableName = getTableName(this.table);
-      let queryParams: string;
-      if (queryString.startsWith(`/${tableId}`)) {
-        queryParams = queryString.slice(`/${tableId}`.length);
-      } else if (queryString.startsWith(`/${tableName}`)) {
-        queryParams = queryString.slice(`/${tableName}`.length);
-      } else {
-        queryParams = queryString;
-      }
-
-      url = `/${this.databaseName}/${tableId}${queryParams}`;
-    }
+    const url = this.buildUrl(tableId);
 
     return {
       method: "DELETE",
@@ -253,7 +231,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     if (!text || text.trim() === "") {
       // For 204 No Content, check the fmodata.affected_rows header
       const affectedRows = response.headers.get("fmodata.affected_rows");
-      const deletedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 1;
+      const deletedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 0;
       return { data: { deletedCount }, error: undefined };
     }
 

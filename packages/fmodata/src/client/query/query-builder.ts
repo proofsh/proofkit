@@ -642,8 +642,7 @@ export class QueryBuilder<
                 fieldMapping: this.fieldMapping,
                 logger: this.logger,
               }),
-            // biome-ignore lint/suspicious/noExplicitAny: Type assertion for error mapping
-            catch: (e) => e as any,
+            catch: (e) => (e instanceof Error ? e : new Error(String(e))),
           }),
         ),
         // processQueryResponse returns a Result, so we need to unwrap it

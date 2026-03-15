@@ -17,12 +17,12 @@ import { HttpClient, ODataConfig, ODataLogger } from "./services";
 import type { ExecutionContext, Result, RetryPolicy } from "./types";
 
 /**
- * Converts a Promise<Result<T>> into an Effect with typed error channel.
+ * Converts a Promise<Result<T>> factory into an Effect with typed error channel.
  * This is the bridge between the existing Result pattern and Effect pipelines.
  */
-export function fromResult<T>(promise: Promise<Result<T>>): Effect.Effect<T, FMODataErrorType> {
+export function fromResult<T>(run: () => Promise<Result<T>>): Effect.Effect<T, FMODataErrorType> {
   return Effect.tryPromise({
-    try: () => promise,
+    try: run,
     catch: (e) => e as FMODataErrorType,
   }).pipe(Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))));
 }
@@ -62,7 +62,7 @@ export async function runWithContext<T>(
   const fallbackLayer = Layer.mergeAll(
     Layer.succeed(HttpClient, {
       request: <U>(url: string, options?: RequestInit & FFetchOptions) =>
-        fromResult(context._makeRequest<U>(url, options)),
+        fromResult(() => context._makeRequest<U>(url, options)),
     }),
     Layer.succeed(ODataConfig, {
       baseUrl: context._getBaseUrl?.() ?? "",
@@ -85,7 +85,7 @@ export function makeRequestEffect<T>(
   url: string,
   options?: Parameters<ExecutionContext["_makeRequest"]>[1],
 ): Effect.Effect<T, FMODataErrorType> {
-  return fromResult(context._makeRequest<T>(url, options));
+  return fromResult(() => context._makeRequest<T>(url, options));
 }
 
 /**
@@ -171,7 +171,7 @@ export function withSpan<T, E, R>(
 ): Effect.Effect<T, E, R> {
   return effect.pipe(
     Effect.withSpan(name, {
-      attributes: attributes ? attributes : undefined,
+      attributes,
     }),
   );
 }

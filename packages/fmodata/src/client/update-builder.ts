@@ -265,28 +265,7 @@ export class ExecutableUpdateBuilder<
     const transformedData =
       this.table && this.databaseUseEntityIds ? transformFieldNamesToIds(this.data, this.table) : this.data;
 
-    let url: string;
-
-    if (this.mode === "byId") {
-      url = `/${this.databaseName}/${tableId}('${this.recordId}')`;
-    } else {
-      if (!this.queryBuilder) {
-        throw new Error("Query builder is required for filter-based update");
-      }
-
-      const queryString = this.queryBuilder.getQueryString();
-      const tableName = getTableName(this.table);
-      let queryParams: string;
-      if (queryString.startsWith(`/${tableId}`)) {
-        queryParams = queryString.slice(`/${tableId}`.length);
-      } else if (queryString.startsWith(`/${tableName}`)) {
-        queryParams = queryString.slice(`/${tableName}`.length);
-      } else {
-        queryParams = queryString;
-      }
-
-      url = `/${this.databaseName}/${tableId}${queryParams}`;
-    }
+    const url = this.buildUrl(tableId);
 
     return {
       method: "PATCH",
@@ -327,7 +306,7 @@ export class ExecutableUpdateBuilder<
     if (!text || text.trim() === "") {
       // For 204 No Content, check the fmodata.affected_rows header
       const affectedRows = response.headers.get("fmodata.affected_rows");
-      const updatedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 1;
+      const updatedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 0;
       return {
         data: { updatedCount } as ReturnPreference extends "minimal"
           ? { updatedCount: number }

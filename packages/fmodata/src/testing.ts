@@ -109,7 +109,11 @@ function createRouterFetch(
           init.headers.forEach((v, k) => {
             headers[k] = v;
           });
-        } else if (!Array.isArray(init.headers)) {
+        } else if (Array.isArray(init.headers)) {
+          for (const [key, value] of init.headers) {
+            headers[key] = value;
+          }
+        } else {
           Object.assign(headers, init.headers);
         }
       } else if (input instanceof Request) {
@@ -167,7 +171,10 @@ function createRouterFetch(
     } else if (init?.headers) {
       if (init.headers instanceof Headers) {
         acceptHeader = init.headers.get("Accept") ?? "";
-      } else if (!Array.isArray(init.headers)) {
+      } else if (Array.isArray(init.headers)) {
+        const found = init.headers.find(([key]) => key.toLowerCase() === "accept");
+        acceptHeader = found?.[1] ?? "";
+      } else {
         acceptHeader =
           (init.headers as Record<string, string>).Accept ?? (init.headers as Record<string, string>).accept ?? "";
       }

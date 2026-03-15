@@ -3,8 +3,9 @@ import { describe, it } from "vitest";
 import { users } from "./utils/test-setup";
 
 const mock = new MockFMServerConnection();
-mock.addRoute({ urlPattern: "test.fmp12", response: { value: [] } });
-const db = mock.database("test_db");
+const DB_NAME = "test_db";
+mock.addRoute({ urlPattern: DB_NAME, response: { value: [] } });
+const db = mock.database(DB_NAME);
 
 describe("list methods", () => {
   it("should not run query unless you await the method", async () => {

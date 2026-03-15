@@ -203,11 +203,20 @@ export async function validateRecord<T extends Record<string, any>>(
 
           validatedRecord[fieldName] = result.value;
         } catch (originalError) {
-          // Accumulate thrown errors
-          allIssues.push({
-            message: originalError instanceof Error ? originalError.message : String(originalError),
-            path: [fieldName],
-          });
+          if (originalError instanceof ValidationError) {
+            for (const issue of originalError.issues) {
+              allIssues.push({
+                ...issue,
+                path: issue.path ? [fieldName, ...issue.path] : [fieldName],
+              });
+            }
+          } else {
+            // Accumulate thrown errors
+            allIssues.push({
+              message: originalError instanceof Error ? originalError.message : String(originalError),
+              path: [fieldName],
+            });
+          }
           failedFields.push(fieldName);
         }
       } else {
@@ -376,11 +385,20 @@ export async function validateRecord<T extends Record<string, any>>(
 
       validatedRecord[fieldName] = result.value;
     } catch (originalError) {
-      // Accumulate thrown errors
-      allIssuesAll.push({
-        message: originalError instanceof Error ? originalError.message : String(originalError),
-        path: [fieldName],
-      });
+      if (originalError instanceof ValidationError) {
+        for (const issue of originalError.issues) {
+          allIssuesAll.push({
+            ...issue,
+            path: issue.path ? [fieldName, ...issue.path] : [fieldName],
+          });
+        }
+      } else {
+        // Accumulate thrown errors
+        allIssuesAll.push({
+          message: originalError instanceof Error ? originalError.message : String(originalError),
+          path: [fieldName],
+        });
+      }
       failedFieldsAll.push(fieldName);
     }
   }

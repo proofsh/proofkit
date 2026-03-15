@@ -34,6 +34,8 @@ function createBatchMockFetch(batchResponseBody: string): typeof fetch {
 }
 
 describe("Batch Error Messages - Improved Error Parsing", () => {
+  // Batch tests use a custom fetchHandler because multipart responses are easier
+  // to model directly than via per-route JSON response helpers.
   const mock = new MockFMServerConnection();
 
   // Define simple schemas for batch testing
@@ -123,13 +125,6 @@ describe("Batch Error Messages - Improved Error Parsing", () => {
       expect(r2.error.code).toBe("-1020");
       expect(r2.error.message).toContain("Table 'Purchase_Orders' not defined");
       expect(r2.error.kind).toBe("ODataError");
-
-      // The error message is now helpful instead of:
-      // "Invalid response structure: expected 'value' property to be an array"
-      console.log("\n✅ Fixed Error Message:");
-      console.log(`   Code: ${r2.error.code}`);
-      console.log(`   Message: ${r2.error.message}`);
-      console.log(`   Kind: ${r2.error.kind}\n`);
     }
 
     // Third query succeeded (not truncated in this mock)
