@@ -11,7 +11,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect, Schedule } from "effect";
 import type { FMODataErrorType } from "./errors";
-import { BuilderInvariantError, isTransientError } from "./errors";
+import { BuilderInvariantError, isFMODataError, isTransientError } from "./errors";
 import type {
   FMODataLayer,
   HttpClient as HttpClientService,
@@ -63,10 +63,7 @@ export function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Prom
     ),
   ).catch((defect) => ({
     data: undefined,
-    error:
-      defect instanceof Error
-        ? (defect as FMODataErrorType)
-        : (new BuilderInvariantError("runAsResult", String(defect)) as FMODataErrorType),
+    error: isFMODataError(defect) ? defect : new BuilderInvariantError("runAsResult", String(defect)),
   }));
 }
 

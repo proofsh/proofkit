@@ -176,13 +176,15 @@ export class ExecutableUpdateBuilder<
         this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
 
       // Step 3: Make PATCH request via DI
+      const requestHeaders = new Headers(callerHeaders);
+      for (const [key, value] of Object.entries(headers)) {
+        requestHeaders.set(key, value);
+      }
+
       const response = yield* requestFromService(url, {
         ...requestOptions,
         method: "PATCH",
-        headers: {
-          ...(callerHeaders || {}),
-          ...headers,
-        },
+        headers: requestHeaders,
         body: JSON.stringify(transformedData),
       });
 
