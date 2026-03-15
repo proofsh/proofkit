@@ -475,8 +475,7 @@ describe("Field ID Transformation", () => {
       // For this test, we'll skip full validation since expanded relations
       // add dynamic fields not in the schema. Just verify the transformation happened.
       if (result.error) {
-        // If validation failed, check raw response to ensure transformation occurred
-        console.log("Note: Validation failed for expanded data (expected - dynamic fields)");
+        expect(result.error).toBeDefined();
       } else {
         expect(result.data).toBeDefined();
         expect(result.data).toHaveLength(1);

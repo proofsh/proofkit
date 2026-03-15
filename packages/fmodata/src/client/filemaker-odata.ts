@@ -319,11 +319,15 @@ export class FMServerConnection implements ExecutionContext {
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for optional property access
     const retryPolicy = (options as any)?.retryPolicy;
+    const method = (finalOptions.method ?? "GET").toUpperCase();
+    const isRetrySafeMethod = method === "GET" || method === "HEAD" || method === "OPTIONS" || method === "PUT";
+
+    const requestEffect = retryPolicy && isRetrySafeMethod ? withRetryPolicy(pipeline, retryPolicy) : pipeline;
 
     // Apply retry policy and tracing span
-    return withSpan(withRetryPolicy(pipeline, retryPolicy), "fmodata.request", {
+    return withSpan(requestEffect, "fmodata.request", {
       "fmodata.url": url,
-      "fmodata.method": finalOptions.method ?? "GET",
+      "fmodata.method": method,
     });
   }
 

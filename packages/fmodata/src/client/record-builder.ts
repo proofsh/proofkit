@@ -6,7 +6,7 @@ import { BuilderInvariantError } from "../errors";
 import type { InternalLogger } from "../logger";
 import type { Column } from "../orm/column";
 import type { ExtractTableName, FMTable, InferSchemaOutputFromFMTable, ValidExpandTarget } from "../orm/table";
-import { getNavigationPaths, getTableName } from "../orm/table";
+import { getNavigationPaths, getTableName, isUsingEntityIds } from "../orm/table";
 import type { FMODataLayer, ODataConfig } from "../services";
 import type {
   ConditionallyWithODataAnnotations,
@@ -117,7 +117,9 @@ export class RecordBuilder<
   private readonly operationColumn?: Column<any, any, any, any>;
   private readonly isNavigateFromEntitySet?: boolean;
   private readonly navigateRelation?: string;
+  private readonly navigateRelationEntityId?: string;
   private readonly navigateSourceTableName?: string;
+  private readonly navigateSourceTableEntityId?: string;
 
   private readState = createInitialRecordReadBuilderState();
 
@@ -246,7 +248,9 @@ export class RecordBuilder<
     // Preserve navigation context
     mutableBuilder.isNavigateFromEntitySet = this.isNavigateFromEntitySet;
     mutableBuilder.navigateRelation = this.navigateRelation;
+    mutableBuilder.navigateRelationEntityId = this.navigateRelationEntityId;
     mutableBuilder.navigateSourceTableName = this.navigateSourceTableName;
+    mutableBuilder.navigateSourceTableEntityId = this.navigateSourceTableEntityId;
     mutableBuilder.operationColumn = this.operationColumn;
     return newBuilder;
   }
@@ -289,7 +293,6 @@ export class RecordBuilder<
     const mutableBuilder = newBuilder as any;
     mutableBuilder.operation = "getSingleField";
     mutableBuilder.operationColumn = column;
-    mutableBuilder.operationParam = column.getFieldIdentifier(this.config.useEntityIds);
     // Preserve navigation context
     mutableBuilder.isNavigateFromEntitySet = this.isNavigateFromEntitySet;
     mutableBuilder.navigateRelation = this.navigateRelation;
@@ -441,7 +444,9 @@ export class RecordBuilder<
     });
     mutableBuilder.isNavigateFromEntitySet = this.isNavigateFromEntitySet;
     mutableBuilder.navigateRelation = this.navigateRelation;
+    mutableBuilder.navigateRelationEntityId = this.navigateRelationEntityId;
     mutableBuilder.navigateSourceTableName = this.navigateSourceTableName;
+    mutableBuilder.navigateSourceTableEntityId = this.navigateSourceTableEntityId;
     mutableBuilder.operationColumn = this.operationColumn;
 
     // Use ExpandBuilder.processExpand to handle the expand logic
@@ -499,30 +504,42 @@ export class RecordBuilder<
     });
 
     // Store the navigation info - resolve entity ID for relation if needed
-    const relationId = resolveTableId(targetTable, relationName, this.config.useEntityIds);
+    const relationEntityId = isUsingEntityIds(targetTable)
+      ? resolveTableId(targetTable, relationName, true)
+      : relationName;
 
     // If this RecordBuilder came from a navigated EntitySet, we need to preserve that base path
     let sourceTableName: string;
+    let sourceTableEntityId: string;
     let baseRelation: string | undefined;
+    let baseRelationEntityId: string | undefined;
     if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
       // Build the base path: /sourceTable/relation('recordId')/newRelation
       sourceTableName = this.navigateSourceTableName;
+      sourceTableEntityId = this.navigateSourceTableEntityId ?? sourceTableName;
       baseRelation = this.navigateRelation;
+      baseRelationEntityId = this.navigateRelationEntityId ?? baseRelation;
     } else {
       // Normal record navigation: /tableName('recordId')/relation
       // Use table ID if available, otherwise table name
       if (!this.table) {
         throw new BuilderInvariantError("RecordBuilder.navigate", "table occurrence is required for navigation");
       }
-      sourceTableName = resolveTableId(this.table, getTableName(this.table), this.config.useEntityIds);
+      sourceTableName = getTableName(this.table);
+      sourceTableEntityId = isUsingEntityIds(this.table)
+        ? resolveTableId(this.table, sourceTableName, true)
+        : sourceTableName;
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern
     (builder as any).navigation = {
       recordId: this.recordId,
-      relation: relationId,
+      relation: relationName,
+      relationEntityId,
       sourceTableName,
+      sourceTableEntityId,
       baseRelation,
+      baseRelationEntityId,
     };
 
     return builder;
@@ -577,21 +594,28 @@ export class RecordBuilder<
       >
     >
   > {
+    const mergedOptions = this.mergeExecuteOptions(options);
     let url: string;
 
     // Build the base URL depending on whether this came from a navigated EntitySet
     if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
+      const sourceSegment = mergedOptions.useEntityIds
+        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
+        : this.navigateSourceTableName;
+      const relationSegment = mergedOptions.useEntityIds
+        ? (this.navigateRelationEntityId ?? this.navigateRelation)
+        : this.navigateRelation;
       // From navigated EntitySet: /sourceTable/relation('recordId')
-      url = `/${this.config.databaseName}/${this.navigateSourceTableName}/${this.navigateRelation}('${this.recordId}')`;
+      url = `/${this.config.databaseName}/${sourceSegment}/${relationSegment}('${this.recordId}')`;
     } else {
       // Normal record: /tableName('recordId') - use FMTID if configured
-      const tableId = this.getTableId(options?.useEntityIds ?? this.config.useEntityIds);
+      const tableId = this.getTableId(mergedOptions.useEntityIds);
       url = `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
     }
 
-    const mergedOptions = this.mergeExecuteOptions(options);
-
-    if (this.operation === "getSingleField" && this.operationParam) {
+    if (this.operation === "getSingleField" && this.operationColumn) {
+      url += `/${this.operationColumn.getFieldIdentifier(mergedOptions.useEntityIds)}`;
+    } else if (this.operation === "getSingleField" && this.operationParam) {
       url += `/${this.operationParam}`;
     } else {
       // Add query string for select/expand (only when not getting a single field)
@@ -651,8 +675,14 @@ export class RecordBuilder<
 
     // Build the base URL depending on whether this came from a navigated EntitySet
     if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
+      const sourceSegment = this.config.useEntityIds
+        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
+        : this.navigateSourceTableName;
+      const relationSegment = this.config.useEntityIds
+        ? (this.navigateRelationEntityId ?? this.navigateRelation)
+        : this.navigateRelation;
       // From navigated EntitySet: /sourceTable/relation('recordId')
-      url = `/${this.config.databaseName}/${this.navigateSourceTableName}/${this.navigateRelation}('${this.recordId}')`;
+      url = `/${this.config.databaseName}/${sourceSegment}/${relationSegment}('${this.recordId}')`;
     } else {
       // For batch operations, use database-level setting (no per-request override available here)
       const tableId = this.getTableId(this.config.useEntityIds);
@@ -686,7 +716,13 @@ export class RecordBuilder<
 
     // Build the path depending on navigation context
     if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
-      path = `/${this.navigateSourceTableName}/${this.navigateRelation}('${this.recordId}')`;
+      const sourceSegment = useEntityIds
+        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
+        : this.navigateSourceTableName;
+      const relationSegment = useEntityIds
+        ? (this.navigateRelationEntityId ?? this.navigateRelation)
+        : this.navigateRelation;
+      path = `/${sourceSegment}/${relationSegment}('${this.recordId}')`;
     } else {
       // Use getTableId to respect entity ID settings (same as getRequestConfig)
       const tableId = this.getTableId(useEntityIds);

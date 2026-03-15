@@ -302,9 +302,9 @@ export function isTransientError(error: unknown): boolean {
     return true;
   }
   // Check ffetch error types by name since they aren't subclasses of FMODataError
-  if (error && typeof error === "object" && "name" in error) {
-    const name = (error as { name: string }).name;
-    if (name === "NetworkError" || name === "TimeoutError") {
+  if (error && typeof error === "object") {
+    const name = Reflect.get(error, "name");
+    if (typeof name === "string" && (name === "NetworkError" || name === "TimeoutError")) {
       return true;
     }
   }

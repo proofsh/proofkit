@@ -78,7 +78,7 @@ describe("Validation Tests", () => {
       const result = await db
         .from(contacts)
         .list()
-        .expand(users, (b: any) => b.select({ name: users.name, fake_field: users.fake_field }))
+        .expand(users, (b) => b.select({ name: users.name, fake_field: users.fake_field }))
         .execute();
 
       assert(result.data, "Result data should be defined");

@@ -13,10 +13,9 @@
  * 3. The mock fetch will automatically match the request URL to the stored response
  */
 
-import { assert } from "node:console";
 import { eq } from "@proofkit/fmodata";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { assert, describe, expect, expectTypeOf, it } from "vitest";
 import { mockResponses } from "./fixtures/responses";
 import { contacts } from "./utils/test-setup";
 

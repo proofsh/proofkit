@@ -26,6 +26,18 @@
         "default": "./dist/esm/testing.js"
       }
     },
+    "./services": {
+      "import": {
+        "types": "./dist/esm/services.d.ts",
+        "default": "./dist/esm/services.js"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/esm/types.d.ts",
+        "default": "./dist/esm/types.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "scripts": {

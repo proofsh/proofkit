@@ -1,10 +1,12 @@
 import type { QueryOptions } from "odata-query";
+import type { FilterExpression } from "../../orm/operators";
 import type { SystemColumnsOption } from "../query/types";
 import type { NavigationConfig } from "../query/url-builder";
 import type { ExpandConfig } from "./shared-types";
 
 export interface QueryReadBuilderState<TSchema> {
   queryOptions: Partial<QueryOptions<TSchema>>;
+  filterExpression?: FilterExpression;
   expandConfigs: ExpandConfig[];
   singleMode: "exact" | "maybe" | false;
   isCountMode: boolean;
@@ -28,6 +30,11 @@ export function cloneQueryReadBuilderState<TSchema>(
     queryOptions?: Partial<QueryOptions<TSchema>>;
   },
 ): QueryReadBuilderState<TSchema> {
+  let fieldMapping = state.fieldMapping ? { ...state.fieldMapping } : undefined;
+  if ("fieldMapping" in (changes ?? {})) {
+    fieldMapping = changes?.fieldMapping ? { ...changes.fieldMapping } : undefined;
+  }
+
   return {
     ...state,
     ...changes,
@@ -36,6 +43,7 @@ export function cloneQueryReadBuilderState<TSchema>(
       ...(changes?.queryOptions ?? {}),
     },
     expandConfigs: changes?.expandConfigs ? [...changes.expandConfigs] : [...state.expandConfigs],
+    fieldMapping,
   };
 }
 
@@ -58,12 +66,12 @@ export function cloneRecordReadBuilderState(
 ): RecordReadBuilderState {
   let selectedFields = state.selectedFields ? [...state.selectedFields] : undefined;
   if ("selectedFields" in (changes ?? {})) {
-    selectedFields = changes?.selectedFields;
+    selectedFields = changes?.selectedFields ? [...changes.selectedFields] : undefined;
   }
 
   let fieldMapping = state.fieldMapping ? { ...state.fieldMapping } : undefined;
   if ("fieldMapping" in (changes ?? {})) {
-    fieldMapping = changes?.fieldMapping;
+    fieldMapping = changes?.fieldMapping ? { ...changes.fieldMapping } : undefined;
   }
 
   return {

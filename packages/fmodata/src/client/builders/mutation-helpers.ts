@@ -49,6 +49,9 @@ export function buildMutationUrl(config: {
   const { databaseName, tableId, tableName, mode, recordId, queryBuilder, useEntityIds, builderName } = config;
 
   if (mode === "byId") {
+    if (recordId === undefined || recordId === null || recordId === "") {
+      throw new BuilderInvariantError(builderName, "recordId is required for byId mode");
+    }
     return `/${databaseName}/${tableId}('${recordId}')`;
   }
 

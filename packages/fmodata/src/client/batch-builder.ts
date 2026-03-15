@@ -84,7 +84,7 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
    * This allows building up batch operations programmatically.
    *
    * @param builder - An executable builder to add to the batch
-   * @returns This BatchBuilder for method chaining
+   * @returns A BatchBuilder typed with the appended request result
    * @example
    * ```ts
    * const batch = db.batch([]);
@@ -93,9 +93,9 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
    * const result = await batch.execute();
    * ```
    */
-  addRequest<T>(builder: ExecutableBuilder<T>): this {
+  addRequest<T>(builder: ExecutableBuilder<T>): BatchBuilder<[...Builders, ExecutableBuilder<T>]> {
     this.builders.push(builder);
-    return this;
+    return this as unknown as BatchBuilder<[...Builders, ExecutableBuilder<T>]>;
   }
 
   /**
@@ -153,7 +153,7 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
       successCount: 0,
       errorCount,
       truncated: false,
-      firstErrorIndex: 0,
+      firstErrorIndex: errorCount > 0 ? 0 : null,
     };
   }
 

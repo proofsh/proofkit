@@ -27,6 +27,18 @@ const contactsTO = fmTableOccurrence(
 );
 
 describe("Per-request useEntityIds override", () => {
+  const makeLocalContactsTO = () =>
+    fmTableOccurrence(
+      "contacts",
+      {
+        id: textField().primaryKey().entityId("FMFID:1"),
+        name: textField().entityId("FMFID:2"),
+      },
+      {
+        entityId: "FMTID:100",
+      },
+    );
+
   it("should allow disabling entity IDs for a specific request", async () => {
     const mock = new MockFMServerConnection({ enableSpy: true });
     mock.addRoute({
@@ -84,16 +96,7 @@ describe("Per-request useEntityIds override", () => {
   });
 
   it("should work with insert operations", async () => {
-    const localContactsTO = fmTableOccurrence(
-      "contacts",
-      {
-        id: textField().primaryKey().entityId("FMFID:1"),
-        name: textField().entityId("FMFID:2"),
-      },
-      {
-        entityId: "FMTID:100",
-      },
-    );
+    const localContactsTO = makeLocalContactsTO();
 
     const mock = new MockFMServerConnection({ enableSpy: true });
     mock.addRoute({
@@ -120,16 +123,7 @@ describe("Per-request useEntityIds override", () => {
   });
 
   it("should work with update operations", async () => {
-    const localContactsTO = fmTableOccurrence(
-      "contacts",
-      {
-        id: textField().primaryKey().entityId("FMFID:1"),
-        name: textField().entityId("FMFID:2"),
-      },
-      {
-        entityId: "FMTID:100",
-      },
-    );
+    const localContactsTO = makeLocalContactsTO();
 
     const mock = new MockFMServerConnection({ enableSpy: true });
     mock.addRoute({
@@ -154,16 +148,7 @@ describe("Per-request useEntityIds override", () => {
   });
 
   it("should work with delete operations", async () => {
-    const localContactsTO = fmTableOccurrence(
-      "contacts",
-      {
-        id: textField().primaryKey().entityId("FMFID:1"),
-        name: textField().entityId("FMFID:2"),
-      },
-      {
-        entityId: "FMTID:100",
-      },
-    );
+    const localContactsTO = makeLocalContactsTO();
 
     const mock = new MockFMServerConnection({ enableSpy: true });
     mock.addRoute({

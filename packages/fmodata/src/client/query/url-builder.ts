@@ -8,9 +8,13 @@ import { resolveTableId } from "../builders/table-utils";
 export interface NavigationConfig {
   recordId?: string | number;
   relation: string;
+  relationEntityId?: string;
   sourceTableName: string;
+  sourceTableEntityId?: string;
   baseRelation?: string; // For chained navigations from navigated EntitySets
+  baseRelationEntityId?: string;
   basePath?: string; // Full base path for chained entity set navigations
+  basePathEntityId?: string;
 }
 
 /**
@@ -53,10 +57,10 @@ export class QueryUrlBuilder {
 
     const navigation = options.navigation;
     if (navigation?.recordId && navigation?.relation) {
-      return this.buildRecordNavigation(queryString, tableId, navigation);
+      return this.buildRecordNavigation(queryString, tableId, navigation, effectiveUseEntityIds);
     }
     if (navigation?.relation) {
-      return this.buildEntitySetNavigation(queryString, tableId, navigation);
+      return this.buildEntitySetNavigation(queryString, tableId, navigation, effectiveUseEntityIds);
     }
     if (options.isCount) {
       return `/${this.databaseName}/${tableId}/$count${queryString}`;
@@ -68,11 +72,21 @@ export class QueryUrlBuilder {
    * Builds URL for record navigation: /database/sourceTable('recordId')/relation
    * or /database/sourceTable/baseRelation('recordId')/relation for chained navigations
    */
-  private buildRecordNavigation(queryString: string, _tableId: string, navigation: NavigationConfig): string {
-    const { sourceTableName, baseRelation, recordId, relation } = navigation;
-    const base = baseRelation
-      ? `${sourceTableName}/${baseRelation}('${recordId}')`
-      : `${sourceTableName}('${recordId}')`;
+  private buildRecordNavigation(
+    queryString: string,
+    _tableId: string,
+    navigation: NavigationConfig,
+    useEntityIds: boolean,
+  ): string {
+    const sourceTable = useEntityIds
+      ? (navigation.sourceTableEntityId ?? navigation.sourceTableName)
+      : navigation.sourceTableName;
+    const baseRelation = useEntityIds
+      ? (navigation.baseRelationEntityId ?? navigation.baseRelation)
+      : navigation.baseRelation;
+    const relation = useEntityIds ? (navigation.relationEntityId ?? navigation.relation) : navigation.relation;
+    const { recordId } = navigation;
+    const base = baseRelation ? `${sourceTable}/${baseRelation}('${recordId}')` : `${sourceTable}('${recordId}')`;
     return `/${this.databaseName}/${base}/${relation}${queryString}`;
   }
 
@@ -80,9 +94,18 @@ export class QueryUrlBuilder {
    * Builds URL for entity set navigation: /database/sourceTable/relation
    * or /database/basePath/relation for chained navigations
    */
-  private buildEntitySetNavigation(queryString: string, _tableId: string, navigation: NavigationConfig): string {
-    const { sourceTableName, basePath, relation } = navigation;
-    const base = basePath || sourceTableName;
+  private buildEntitySetNavigation(
+    queryString: string,
+    _tableId: string,
+    navigation: NavigationConfig,
+    useEntityIds: boolean,
+  ): string {
+    const sourceTable = useEntityIds
+      ? (navigation.sourceTableEntityId ?? navigation.sourceTableName)
+      : navigation.sourceTableName;
+    const basePath = useEntityIds ? (navigation.basePathEntityId ?? navigation.basePath) : navigation.basePath;
+    const relation = useEntityIds ? (navigation.relationEntityId ?? navigation.relation) : navigation.relation;
+    const base = basePath || sourceTable;
     return `/${this.databaseName}/${base}/${relation}${queryString}`;
   }
 
@@ -96,15 +119,30 @@ export class QueryUrlBuilder {
     const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), effectiveUseEntityIds);
 
     if (navigation?.recordId && navigation?.relation) {
-      const { sourceTableName, baseRelation, recordId, relation } = navigation;
-      const base = baseRelation
-        ? `${sourceTableName}/${baseRelation}('${recordId}')`
-        : `${sourceTableName}('${recordId}')`;
+      const sourceTable = effectiveUseEntityIds
+        ? (navigation.sourceTableEntityId ?? navigation.sourceTableName)
+        : navigation.sourceTableName;
+      const baseRelation = effectiveUseEntityIds
+        ? (navigation.baseRelationEntityId ?? navigation.baseRelation)
+        : navigation.baseRelation;
+      const relation = effectiveUseEntityIds
+        ? (navigation.relationEntityId ?? navigation.relation)
+        : navigation.relation;
+      const { recordId } = navigation;
+      const base = baseRelation ? `${sourceTable}/${baseRelation}('${recordId}')` : `${sourceTable}('${recordId}')`;
       return queryString ? `/${base}/${relation}${queryString}` : `/${base}/${relation}`;
     }
     if (navigation?.relation) {
-      const { sourceTableName, basePath, relation } = navigation;
-      const base = basePath || sourceTableName;
+      const sourceTable = effectiveUseEntityIds
+        ? (navigation.sourceTableEntityId ?? navigation.sourceTableName)
+        : navigation.sourceTableName;
+      const basePath = effectiveUseEntityIds
+        ? (navigation.basePathEntityId ?? navigation.basePath)
+        : navigation.basePath;
+      const relation = effectiveUseEntityIds
+        ? (navigation.relationEntityId ?? navigation.relation)
+        : navigation.relation;
+      const base = basePath || sourceTable;
       return queryString ? `/${base}/${relation}${queryString}` : `/${base}/${relation}`;
     }
     return queryString ? `/${tableId}${queryString}` : `/${tableId}`;

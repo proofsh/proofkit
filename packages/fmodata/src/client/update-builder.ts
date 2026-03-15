@@ -137,6 +137,8 @@ export class ExecutableUpdateBuilder<
     Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
   > {
     const mergedOptions = mergeMutationExecuteOptions(options, this.config.useEntityIds);
+    // biome-ignore lint/suspicious/noExplicitAny: Execute options include dynamic fetch fields
+    const { method: _method, body: _body, headers: callerHeaders, ...requestOptions } = mergedOptions as any;
     const shouldUseIds = mergedOptions.useEntityIds ?? this.config.useEntityIds;
     const tableId = resolveMutationTableId(this.table, shouldUseIds, "ExecutableUpdateBuilder");
     const url = buildMutationUrl({
@@ -175,10 +177,13 @@ export class ExecutableUpdateBuilder<
 
       // Step 3: Make PATCH request via DI
       const response = yield* requestFromService(url, {
+        ...requestOptions,
         method: "PATCH",
-        headers,
+        headers: {
+          ...(callerHeaders || {}),
+          ...headers,
+        },
         body: JSON.stringify(transformedData),
-        ...mergedOptions,
       });
 
       // Step 4: Handle response based on return preference

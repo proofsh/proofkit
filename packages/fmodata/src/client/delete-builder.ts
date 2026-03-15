@@ -102,6 +102,8 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
 
   execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
     const mergedOptions = mergeMutationExecuteOptions(options, this.config.useEntityIds);
+    // biome-ignore lint/suspicious/noExplicitAny: Execute options include dynamic fetch fields
+    const { method: _method, body: _body, ...requestOptions } = mergedOptions as any;
     const useEntityIds = mergedOptions.useEntityIds ?? this.config.useEntityIds;
     const tableId = resolveMutationTableId(this.table, useEntityIds, "ExecutableDeleteBuilder");
     const url = buildMutationUrl({
@@ -118,8 +120,8 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     const pipeline = Effect.gen(this, function* () {
       // Make DELETE request via DI
       const response = yield* requestFromService(url, {
+        ...requestOptions,
         method: "DELETE",
-        ...mergedOptions,
       });
 
       const deletedCount = extractAffectedRows(response, undefined, 0, "deletedCount");

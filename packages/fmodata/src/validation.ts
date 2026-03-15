@@ -243,7 +243,7 @@ export async function validateRecord<T extends Record<string, any>>(
         error: new ValidationError(
           `Validation failed for field${failedFields.length > 1 ? "s" : ""} '${failedFields.join("', '")}'`,
           allIssues,
-          { field: failedFields[0], value: record, cause: allIssues },
+          { field: failedFields[0], value: record },
         ),
       };
     }
@@ -355,8 +355,8 @@ export async function validateRecord<T extends Record<string, any>>(
   // Validate all fields in schema, but exclude ROWID/ROWMODID by default (unless includeSpecialColumns is enabled)
   // biome-ignore lint/suspicious/noExplicitAny: Dynamic field validation
   const validatedRecord: Record<string, any> = { ...restWithoutSystemFields };
-  const allIssuesAll: StandardSchemaV1.Issue[] = [];
-  const failedFieldsAll: string[] = [];
+  const allIssues: StandardSchemaV1.Issue[] = [];
+  const failedFields: string[] = [];
 
   for (const [fieldName, fieldSchema] of Object.entries(schema)) {
     // Skip if no schema for this field
@@ -374,12 +374,12 @@ export async function validateRecord<T extends Record<string, any>>(
       // if the `issues` field exists, accumulate and continue
       if (result.issues) {
         for (const issue of result.issues) {
-          allIssuesAll.push({
+          allIssues.push({
             ...issue,
             path: issue.path ? [fieldName, ...issue.path] : [fieldName],
           });
         }
-        failedFieldsAll.push(fieldName);
+        failedFields.push(fieldName);
         continue;
       }
 
@@ -387,30 +387,30 @@ export async function validateRecord<T extends Record<string, any>>(
     } catch (originalError) {
       if (originalError instanceof ValidationError) {
         for (const issue of originalError.issues) {
-          allIssuesAll.push({
+          allIssues.push({
             ...issue,
             path: issue.path ? [fieldName, ...issue.path] : [fieldName],
           });
         }
       } else {
         // Accumulate thrown errors
-        allIssuesAll.push({
+        allIssues.push({
           message: originalError instanceof Error ? originalError.message : String(originalError),
           path: [fieldName],
         });
       }
-      failedFieldsAll.push(fieldName);
+      failedFields.push(fieldName);
     }
   }
 
   // If any field validations failed, return accumulated error
-  if (allIssuesAll.length > 0) {
+  if (allIssues.length > 0) {
     return {
       valid: false,
       error: new ValidationError(
-        `Validation failed for field${failedFieldsAll.length > 1 ? "s" : ""} '${failedFieldsAll.join("', '")}'`,
-        allIssuesAll,
-        { field: failedFieldsAll[0], value: record, cause: allIssuesAll },
+        `Validation failed for field${failedFields.length > 1 ? "s" : ""} '${failedFields.join("', '")}'`,
+        allIssues,
+        { field: failedFields[0], value: record },
       ),
     };
   }

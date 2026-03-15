@@ -183,6 +183,12 @@ export class QueryBuilder<
     });
   }
 
+  private setFilterExpression(expression: FilterExpression | undefined): void {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      filterExpression: expression,
+    });
+  }
+
   private setNavigation(navigation: NavigationConfig | undefined): void {
     this.readState = cloneQueryReadBuilderState(this.readState, {
       navigation,
@@ -334,12 +340,14 @@ export class QueryBuilder<
   ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
     // Handle raw string filters (escape hatch)
     if (typeof expression === "string") {
+      this.setFilterExpression(undefined);
       this.patchQueryOptions({ filter: expression });
       return this;
     }
-    // Convert FilterExpression to OData filter string
-    const filterString = expression.toODataFilter(this.config.useEntityIds);
-    this.patchQueryOptions({ filter: filterString });
+
+    // Defer serialization until execute/getQueryString so per-request useEntityIds is honored
+    this.setFilterExpression(expression);
+    this.patchQueryOptions({ filter: undefined });
     return this;
   }
 
@@ -595,8 +603,14 @@ export class QueryBuilder<
    * Builds the OData query string from current query options and expand configs.
    */
   private buildQueryString(includeSpecialColumns?: boolean, useEntityIds?: boolean): string {
+    // Use provided useEntityIds if provided, otherwise use database-level default
+    const finalUseEntityIds = useEntityIds ?? this.config.useEntityIds;
+
     // Build query without expand and select (we'll add them manually if using entity IDs)
     const queryOptionsWithoutExpandAndSelect = { ...this.readState.queryOptions };
+    if (this.readState.filterExpression) {
+      queryOptionsWithoutExpandAndSelect.filter = this.readState.filterExpression.toODataFilter(finalUseEntityIds);
+    }
     const originalSelect = queryOptionsWithoutExpandAndSelect.select;
     queryOptionsWithoutExpandAndSelect.expand = undefined;
     queryOptionsWithoutExpandAndSelect.select = undefined;
@@ -611,9 +625,6 @@ export class QueryBuilder<
 
     // Use merged includeSpecialColumns if provided, otherwise use database-level default
     const finalIncludeSpecialColumns = includeSpecialColumns ?? this.config.includeSpecialColumns;
-
-    // Use provided useEntityIds if provided, otherwise use database-level default
-    const finalUseEntityIds = useEntityIds ?? this.config.useEntityIds;
 
     const selectExpandString = buildSelectExpandQueryString({
       selectedFields: selectArray,

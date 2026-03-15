@@ -123,6 +123,9 @@ export class InsertBuilder<
     >
   > {
     const mergedOptions = this.mergeExecuteOptions(options);
+    // Prevent caller options from overriding required request shape
+    // biome-ignore lint/suspicious/noExplicitAny: Execute options include dynamic fetch fields
+    const { method: _method, headers: callerHeaders, body: _body, ...requestOptions } = mergedOptions as any;
     const tableId = this.getTableId(mergedOptions.useEntityIds);
     const url = `/${this.config.databaseName}/${tableId}`;
     const shouldUseIds = mergedOptions.useEntityIds ?? false;
@@ -149,15 +152,14 @@ export class InsertBuilder<
       // Step 3: Make HTTP request via DI
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
       const responseData = yield* requestFromService<any>(url, {
+        ...requestOptions,
         method: "POST",
         headers: {
+          ...(callerHeaders || {}),
           "Content-Type": "application/json",
           Prefer: preferHeader,
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for headers object
-          ...((mergedOptions as any)?.headers || {}),
         },
         body: JSON.stringify(transformedData),
-        ...mergedOptions,
       });
 
       // Step 4: Handle return=minimal case

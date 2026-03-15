@@ -120,7 +120,7 @@ function createRouterFetch(
       spy.calls.push({ url, method, body, headers });
     }
 
-    // Find matching route
+    // Find matching route (first-match-wins)
     const route = routes.find((r) => {
       const urlMatch = typeof r.urlPattern === "string" ? url.includes(r.urlPattern) : r.urlPattern.test(url);
       const methodMatch = !r.method || r.method.toUpperCase() === method.toUpperCase();
@@ -167,7 +167,10 @@ function createRouterFetch(
     } else if (init?.headers) {
       if (init.headers instanceof Headers) {
         acceptHeader = init.headers.get("Accept") ?? "";
-      } else if (!Array.isArray(init.headers)) {
+      } else if (Array.isArray(init.headers)) {
+        const acceptEntry = init.headers.find(([key]) => key.toLowerCase() === "accept");
+        acceptHeader = acceptEntry?.[1] ?? "";
+      } else {
         acceptHeader =
           (init.headers as Record<string, string>).Accept ?? (init.headers as Record<string, string>).accept ?? "";
       }
@@ -236,7 +239,8 @@ export class MockFMServerConnection {
 
   /**
    * Add a route to the mock. Routes added after construction are picked up
-   * automatically by subsequent requests.
+   * automatically by subsequent requests. Routes are matched in order,
+   * and the first matching route wins.
    */
   addRoute(route: MockRoute): this {
     this.routes.push(route);

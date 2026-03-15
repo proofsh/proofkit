@@ -11,7 +11,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect, Schedule } from "effect";
 import type { FMODataErrorType } from "./errors";
-import { isTransientError } from "./errors";
+import { BuilderInvariantError, isTransientError } from "./errors";
 import { type FMODataLayer, HttpClient } from "./services";
 import type { Result, RetryPolicy } from "./types";
 
@@ -53,7 +53,13 @@ export function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Prom
       Effect.map((data): Result<T> => ({ data, error: undefined })),
       Effect.catchAll((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
     ),
-  );
+  ).catch((defect) => ({
+    data: undefined,
+    error:
+      defect instanceof Error
+        ? (defect as FMODataErrorType)
+        : (new BuilderInvariantError("runAsResult", String(defect)) as FMODataErrorType),
+  }));
 }
 
 function withOptionalSpan<T, E, R>(

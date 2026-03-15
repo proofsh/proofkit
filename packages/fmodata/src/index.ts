@@ -114,8 +114,6 @@ export {
   toupper,
   trim,
 } from "./orm/index";
-// Effect services for composable dependency injection
-export { type FMODataLayer, HttpClient, ODataConfig, ODataLogger } from "./services";
 // Utility types for type annotations
 export type {
   BatchItemResult,

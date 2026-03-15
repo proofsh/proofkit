@@ -130,14 +130,15 @@ describe("insert and update operations with returnFullRecord", () => {
     expectTypeOf(result.data).not.toEqualTypeOf<{ updatedCount: number } | undefined>();
 
     // Test without returnFullRecord (default - returns count)
-    const countResult = await db
+    const countBuilder = db
       .from(contacts)
       .update({ name: "Updated name" })
-      .byId("331F5862-2ABF-4FB6-AA24-A00F7359BDDA")
-      .execute();
+      .byId("331F5862-2ABF-4FB6-AA24-A00F7359BDDA");
 
     // Type check: default should return count
-    expectTypeOf(countResult.data).toEqualTypeOf<{ updatedCount: number } | undefined>();
+    expectTypeOf(countBuilder.execute).returns.resolves.toMatchTypeOf<{
+      data: { updatedCount: number } | undefined;
+    }>();
 
     expect(result.error).toBeUndefined();
     expect(result.data).toBeDefined();
