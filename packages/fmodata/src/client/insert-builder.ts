@@ -1,17 +1,18 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { fromValidation, makeRequestEffect, runAsResult, tryEffect, withSpan } from "../effect";
+import { fromValidation, requestFromService, runAsResult, tryEffect, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { InvalidLocationHeaderError } from "../errors";
+import type { InternalLogger } from "../logger";
 import type { FMTable } from "../orm/table";
 import { getBaseTableConfig, getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
 import { transformFieldNamesToIds, transformResponseFields } from "../transform";
 import type {
   ConditionallyWithODataAnnotations,
   ExecutableBuilder,
   ExecuteMethodOptions,
   ExecuteOptions,
-  ExecutionContext,
   Result,
 } from "../types";
 import { getAcceptHeader } from "../types";
@@ -38,30 +39,26 @@ export class InsertBuilder<
     >
 {
   private readonly table?: Occ;
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private readonly data: Partial<InferSchemaOutputFromFMTable<NonNullable<Occ>>>;
   private readonly returnPreference: ReturnPreference;
-
-  private readonly databaseUseEntityIds: boolean;
-  private readonly databaseIncludeSpecialColumns: boolean;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
+  private readonly logger: InternalLogger;
 
   constructor(config: {
     occurrence?: Occ;
-    databaseName: string;
-    context: ExecutionContext;
+    layer: FMODataLayer;
     data: Partial<InferSchemaOutputFromFMTable<NonNullable<Occ>>>;
     returnPreference?: ReturnPreference;
-    databaseUseEntityIds?: boolean;
-    databaseIncludeSpecialColumns?: boolean;
   }) {
     this.table = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
+    this.layer = config.layer;
     this.data = config.data;
     this.returnPreference = (config.returnPreference || "representation") as ReturnPreference;
-    this.databaseUseEntityIds = config.databaseUseEntityIds ?? false;
-    this.databaseIncludeSpecialColumns = config.databaseIncludeSpecialColumns ?? false;
+    // Extract config from layer for sync method access
+    const extracted = extractConfigFromLayer(this.layer);
+    this.config = extracted.config;
+    this.logger = extracted.logger;
   }
 
   /**
@@ -70,10 +67,9 @@ export class InsertBuilder<
   private mergeExecuteOptions(
     options?: RequestInit & FFetchOptions & ExecuteOptions,
   ): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
-    // If useEntityIds is not set in options, use the database-level setting
     return {
       ...options,
-      useEntityIds: options?.useEntityIds ?? this.databaseUseEntityIds,
+      useEntityIds: options?.useEntityIds ?? this.config.useEntityIds,
     };
   }
 
@@ -119,8 +115,7 @@ export class InsertBuilder<
       throw new Error("Table occurrence is required");
     }
 
-    const contextDefault = this.context._getUseEntityIds?.() ?? false;
-    const shouldUseIds = useEntityIds ?? contextDefault;
+    const shouldUseIds = useEntityIds ?? this.config.useEntityIds;
 
     if (shouldUseIds) {
       if (!isUsingEntityIds(this.table)) {
@@ -139,9 +134,7 @@ export class InsertBuilder<
    */
   // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
   private getValidationSchema(): Record<string, any> | undefined {
-    if (!this.table) {
-      return undefined;
-    }
+    if (!this.table) return undefined;
     const baseTableConfig = getBaseTableConfig(this.table);
     const containerFields = baseTableConfig.containerFields || [];
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
@@ -166,7 +159,7 @@ export class InsertBuilder<
   > {
     const mergedOptions = this.mergeExecuteOptions(options);
     const tableId = this.getTableId(mergedOptions.useEntityIds);
-    const url = `/${this.databaseName}/${tableId}`;
+    const url = `/${this.config.databaseName}/${tableId}`;
     const shouldUseIds = mergedOptions.useEntityIds ?? false;
     const preferHeader = this.returnPreference === "minimal" ? "return=minimal" : "return=representation";
 
@@ -185,18 +178,18 @@ export class InsertBuilder<
       const transformedData =
         this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
 
-      // Step 3: Make HTTP request
-      const { headers: requestHeaders, ...requestOptions } = mergedOptions;
-      const headers = new Headers(requestHeaders);
-      headers.set("Content-Type", "application/json");
-      headers.set("Prefer", preferHeader);
-
+      // Step 3: Make HTTP request via DI
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-      const responseData = yield* makeRequestEffect<any>(this.context, url, {
-        ...requestOptions,
+      const responseData = yield* requestFromService<any>(url, {
         method: "POST",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+          Prefer: preferHeader,
+          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for headers object
+          ...((mergedOptions as any)?.headers || {}),
+        },
         body: JSON.stringify(transformedData),
+        ...mergedOptions,
       });
 
       // Step 4: Handle return=minimal case
@@ -238,31 +231,26 @@ export class InsertBuilder<
       return validated;
     });
 
-    return (await runAsResult(
-      withSpan(pipeline, "fmodata.insert", this.table ? { "fmodata.table": getTableName(this.table) } : undefined),
-    )) as Result<
-      ReturnPreference extends "minimal"
-        ? { ROWID: number }
-        : ConditionallyWithODataAnnotations<
-            InferSchemaOutputFromFMTable<NonNullable<Occ>>,
-            EO["includeODataAnnotations"] extends true ? true : false
-          >
-    >;
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
+    return runAsResult(
+      Effect.provide(
+        withSpan(pipeline, "fmodata.insert", this.table ? { "fmodata.table": getTableName(this.table) } : undefined),
+        this.layer,
+      ),
+    ) as any;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
   getRequestConfig(): { method: string; url: string; body?: any } {
-    // For batch operations, use database-level setting (no per-request override available here)
-    // Note: Input validation happens in execute() and processResponse() for batch operations
-    const tableId = this.getTableId(this.databaseUseEntityIds);
+    const tableId = this.getTableId(this.config.useEntityIds);
 
     // Transform field names to FMFIDs if using entity IDs
     const transformedData =
-      this.table && this.databaseUseEntityIds ? transformFieldNamesToIds(this.data, this.table) : this.data;
+      this.table && this.config.useEntityIds ? transformFieldNamesToIds(this.data, this.table) : this.data;
 
     return {
       method: "POST",
-      url: `/${this.databaseName}/${tableId}`,
+      url: `/${this.config.databaseName}/${tableId}`,
       body: JSON.stringify(transformedData),
     };
   }
@@ -294,7 +282,7 @@ export class InsertBuilder<
     // Check for error responses (important for batch operations)
     if (!response.ok) {
       const tableName = this.table ? getTableName(this.table) : "unknown";
-      const error = await parseErrorResponse(response, response.url || `/${this.databaseName}/${tableName}`);
+      const error = await parseErrorResponse(response, response.url || `/${this.config.databaseName}/${tableName}`);
       return { data: undefined, error };
     }
 
@@ -374,8 +362,7 @@ export class InsertBuilder<
     }
 
     // Transform response field IDs back to names if using entity IDs
-    // Only transform if useEntityIds resolves to true (respects per-request override)
-    const shouldUseIds = options?.useEntityIds ?? this.databaseUseEntityIds;
+    const shouldUseIds = options?.useEntityIds ?? this.config.useEntityIds;
 
     let transformedResponse = rawResponse;
     if (this.table && shouldUseIds) {

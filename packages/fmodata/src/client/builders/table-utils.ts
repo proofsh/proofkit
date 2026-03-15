@@ -1,7 +1,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import type { FMTable } from "../../orm/table";
 import { getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../../orm/table";
-import type { ExecuteOptions, ExecutionContext } from "../../types";
+import type { ExecuteOptions } from "../../types";
 import { getAcceptHeader } from "../../types";
 
 /**
@@ -12,17 +12,13 @@ export function resolveTableId(
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
   table: FMTable<any, any> | undefined,
   fallbackTableName: string,
-  context: ExecutionContext,
-  useEntityIdsOverride?: boolean,
+  useEntityIds: boolean,
 ): string {
   if (!table) {
     return fallbackTableName;
   }
 
-  const contextDefault = context._getUseEntityIds?.() ?? false;
-  const shouldUseIds = useEntityIdsOverride ?? contextDefault;
-
-  if (shouldUseIds) {
+  if (useEntityIds) {
     if (!isUsingEntityIds(table)) {
       throw new Error(`useEntityIds is true but table "${getTableName(table)}" does not have entity IDs configured`);
     }

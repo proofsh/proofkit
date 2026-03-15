@@ -1,6 +1,9 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { Effect } from "effect";
+import { requestFromService, runAsResult, withSpan } from "../effect";
 import { FMTable } from "../orm/table";
+import { createDatabaseLayer, extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
 import type { ExecutableBuilder, ExecutionContext, Metadata, Result } from "../types";
 import { BatchBuilder } from "./batch-builder";
 import { EntitySet } from "./entity-set";
@@ -26,9 +29,11 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
   readonly schema: SchemaManager;
   readonly webhook: WebhookManager;
   private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private readonly _useEntityIds: boolean;
   private readonly _includeSpecialColumns: IncludeSpecialColumns;
+  /** @internal Database-scoped Effect Layer for dependency injection */
+  readonly _layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
   constructor(
     databaseName: string,
@@ -48,12 +53,26 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     },
   ) {
     this.databaseName = databaseName;
-    this.context = context;
-    // Initialize schema manager
-    this.schema = new SchemaManager(this.databaseName, this.context);
-    this.webhook = new WebhookManager(this.databaseName, this.context);
     this._useEntityIds = config?.useEntityIds ?? false;
     this._includeSpecialColumns = (config?.includeSpecialColumns ?? false) as IncludeSpecialColumns;
+
+    // Create database-scoped layer from connection's base layer
+    const baseLayer = context._getLayer?.();
+    if (baseLayer) {
+      this._layer = createDatabaseLayer(baseLayer, {
+        databaseName: this.databaseName,
+        useEntityIds: this._useEntityIds,
+        includeSpecialColumns: this._includeSpecialColumns,
+      });
+    } else {
+      throw new Error("ExecutionContext must implement _getLayer() for dependency injection");
+    }
+
+    this.config = extractConfigFromLayer(this._layer).config;
+
+    // Initialize schema and webhook managers with the database layer
+    this.schema = new SchemaManager(this._layer);
+    this.webhook = new WebhookManager(this._layer);
   }
 
   /**
@@ -79,10 +98,11 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
 
   /**
    * @internal Used by adapter packages for raw OData requests.
-   * Delegates to the connection's _makeRequest with the database name prepended.
+   * Makes requests through the Effect DI layer.
    */
-  _makeRequest<T>(path: string, options?: RequestInit & FFetchOptions): Promise<Result<T>> {
-    return this.context._makeRequest<T>(`/${this.databaseName}${path}`, options);
+  async _makeRequest<T>(path: string, options?: RequestInit & FFetchOptions): Promise<Result<T>> {
+    const pipeline = requestFromService<T>(`/${this.databaseName}${path}`, options);
+    return runAsResult(Effect.provide(pipeline, this._layer));
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
@@ -96,12 +116,21 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
         useEntityIds = tableUseEntityIds;
       }
     }
+
+    // If table overrides useEntityIds, create a new layer with the override
+    const layer =
+      useEntityIds !== this._useEntityIds
+        ? createDatabaseLayer(this._layer, {
+            databaseName: this.databaseName,
+            useEntityIds,
+            includeSpecialColumns: this._includeSpecialColumns,
+          })
+        : this._layer;
+
     return new EntitySet<T, IncludeSpecialColumns>({
       occurrence: table as T,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer,
       database: this,
-      useEntityIds,
     });
   }
 
@@ -132,9 +161,9 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       headers.Prefer = 'include-annotations="-*"';
     }
 
-    const result = await this.context._makeRequest<Record<string, Metadata> | string>(url, {
-      headers,
-    });
+    const pipeline = requestFromService<Record<string, Metadata> | string>(url, { headers });
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.metadata"), this._layer));
+
     if (result.error) {
       throw result.error;
     }
@@ -156,9 +185,12 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
    * @returns Promise resolving to an array of table names
    */
   async listTableNames(): Promise<string[]> {
-    const result = await this.context._makeRequest<{
+    const pipeline = requestFromService<{
       value?: Array<{ name: string }>;
     }>(`/${this.databaseName}`);
+
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.listTableNames"), this._layer));
+
     if (result.error) {
       throw result.error;
     }
@@ -194,7 +226,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       body.scriptParameterValue = options.scriptParam;
     }
 
-    const result = await this.context._makeRequest<{
+    const pipeline = requestFromService<{
       scriptResult: {
         code: number;
         resultParameter?: string;
@@ -203,6 +235,8 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       method: "POST",
       body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
     });
+
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.runScript"), this._layer));
 
     if (result.error) {
       throw result.error;
@@ -214,15 +248,15 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     if (options?.resultSchema && response.scriptResult !== undefined) {
       const validationResult = options.resultSchema["~standard"].validate(response.scriptResult.resultParameter);
       // Handle both sync and async validation
-      const result = validationResult instanceof Promise ? await validationResult : validationResult;
+      const validated = validationResult instanceof Promise ? await validationResult : validationResult;
 
-      if (result.issues) {
-        throw new Error(`Script result validation failed: ${JSON.stringify(result.issues)}`);
+      if (validated.issues) {
+        throw new Error(`Script result validation failed: ${JSON.stringify(validated.issues)}`);
       }
 
       return {
         resultCode: response.scriptResult.code,
-        result: result.value,
+        result: validated.value,
         // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
       } as any;
     }
@@ -255,6 +289,6 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
    */
   // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any ExecutableBuilder result type
   batch<const Builders extends readonly ExecutableBuilder<any>[]>(builders: Builders): BatchBuilder<Builders> {
-    return new BatchBuilder(builders, this.databaseName, this.context);
+    return new BatchBuilder(builders, this._layer);
   }
 }

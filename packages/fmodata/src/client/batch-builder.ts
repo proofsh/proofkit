@@ -1,14 +1,14 @@
 import { Effect } from "effect";
-import { makeRequestEffect, runAsResult, withSpan } from "../effect";
+import { requestFromService, runAsResult, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { BatchTruncatedError } from "../errors";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
 import type {
   BatchItemResult,
   BatchResult,
   ExecutableBuilder,
   ExecuteMethodOptions,
   ExecuteOptions,
-  ExecutionContext,
   Result,
 } from "../types";
 import { formatBatchRequestFromNative, type ParsedBatchResponse, parseBatchResponse } from "./batch-request";
@@ -67,15 +67,14 @@ function parsedToResponse(parsed: ParsedBatchResponse): Response {
 export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
   // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any ExecutableBuilder result type
   private readonly builders: ExecutableBuilder<any>[];
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
-  constructor(builders: Builders, databaseName: string, context: ExecutionContext) {
+  constructor(builders: Builders, layer: FMODataLayer) {
     // Convert readonly tuple to mutable array for dynamic additions
     this.builders = [...builders];
-    // Store original tuple for type preservation
-    this.databaseName = databaseName;
-    this.context = context;
+    this.layer = layer;
+    this.config = extractConfigFromLayer(this.layer).config;
   }
 
   /**
@@ -103,19 +102,15 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
    */
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
   getRequestConfig(): { method: string; url: string; body?: any } {
-    // Note: This method is kept for compatibility but batch operations
-    // should use execute() directly which handles the full Request/Response flow
     return {
       method: "POST",
-      url: `/${this.databaseName}/$batch`,
+      url: `/${this.config.databaseName}/$batch`,
       body: undefined, // Body is constructed in execute()
     };
   }
 
   toRequest(baseUrl: string, _options?: ExecuteOptions): Request {
-    // Batch operations are not designed to be nested, but we provide
-    // a basic implementation for interface compliance
-    const fullUrl = `${baseUrl}/${this.databaseName}/$batch`;
+    const fullUrl = `${baseUrl}/${this.config.databaseName}/$batch`;
     return new Request(fullUrl, {
       method: "POST",
       headers: {
@@ -127,8 +122,6 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
 
   // biome-ignore lint/suspicious/noExplicitAny: Generic return type for interface compliance
   processResponse(_response: Response, _options?: ExecuteOptions): Promise<Result<any>> {
-    // This should not typically be called for batch operations
-    // as they handle their own response processing
     return Promise.resolve({
       data: undefined,
       error: {
@@ -171,11 +164,11 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
   async execute<EO extends ExecuteOptions>(
     options?: ExecuteMethodOptions<EO>,
   ): Promise<BatchResult<ExtractTupleTypes<Builders>>> {
-    const baseUrl = this.context._getBaseUrl?.();
+    const baseUrl = this.config.baseUrl;
     if (!baseUrl) {
       return this.failAllResults({
         name: "ConfigurationError",
-        message: "Base URL not available - execution context must implement _getBaseUrl()",
+        message: "Base URL not available in ODataConfig",
         timestamp: new Date(),
       });
     }
@@ -188,8 +181,8 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
         catch: (e) => e as FMODataErrorType,
       });
 
-      // Step 2: Execute the batch HTTP request
-      const responseData = yield* makeRequestEffect<string>(this.context, `/${this.databaseName}/$batch`, {
+      // Step 2: Execute the batch HTTP request via DI
+      const responseData = yield* requestFromService<string>(`/${this.config.databaseName}/$batch`, {
         ...options,
         method: "POST",
         headers: {
@@ -241,31 +234,20 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
             status: parsed.status,
           });
           errorCount++;
-          if (firstErrorIndex === null) {
-            firstErrorIndex = i;
-          }
+          if (firstErrorIndex === null) firstErrorIndex = i;
           continue;
         }
 
         const nativeResponse = parsedToResponse(parsed);
-        const result = yield* Effect.catchAll(
-          Effect.tryPromise({
-            try: () => builder.processResponse(nativeResponse, options),
-            catch: (e) => e as FMODataErrorType,
-          }),
-          (error) =>
-            Effect.succeed({
-              data: undefined,
-              error,
-            }),
-        );
+        const result = yield* Effect.tryPromise({
+          try: () => builder.processResponse(nativeResponse, options),
+          catch: (e) => e as FMODataErrorType,
+        });
 
         if (result.error) {
           results.push({ data: undefined, error: result.error, status: parsed.status });
           errorCount++;
-          if (firstErrorIndex === null) {
-            firstErrorIndex = i;
-          }
+          if (firstErrorIndex === null) firstErrorIndex = i;
         } else {
           results.push({ data: result.data, error: undefined, status: parsed.status });
           successCount++;
@@ -283,7 +265,7 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
     });
 
     // For batch, errors at the transport level fail all operations
-    const result = await runAsResult(withSpan(pipeline, "fmodata.batch"));
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.batch"), this.layer));
     if (result.error) {
       return this.failAllResults(result.error);
     }

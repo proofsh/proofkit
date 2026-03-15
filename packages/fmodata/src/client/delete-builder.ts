@@ -1,9 +1,10 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { makeRequestEffect, runAsResult, withSpan } from "../effect";
+import { requestFromService, runAsResult, withSpan } from "../effect";
 import type { FMTable } from "../orm/table";
 import { getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
-import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, ExecutionContext, Result } from "../types";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, Result } from "../types";
 import { getAcceptHeader } from "../types";
 import { parseErrorResponse } from "./error-parser";
 import { QueryBuilder } from "./query-builder";
@@ -14,24 +15,17 @@ import { QueryBuilder } from "./query-builder";
  */
 // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
 export class DeleteBuilder<Occ extends FMTable<any, any>> {
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private readonly table: Occ;
-  private readonly databaseUseEntityIds: boolean;
-  private readonly databaseIncludeSpecialColumns: boolean;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
   constructor(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
-    databaseUseEntityIds?: boolean;
-    databaseIncludeSpecialColumns?: boolean;
+    layer: FMODataLayer;
   }) {
     this.table = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
-    this.databaseUseEntityIds = config.databaseUseEntityIds ?? false;
-    this.databaseIncludeSpecialColumns = config.databaseIncludeSpecialColumns ?? false;
+    this.layer = config.layer;
+    this.config = extractConfigFromLayer(this.layer).config;
   }
 
   /**
@@ -40,11 +34,9 @@ export class DeleteBuilder<Occ extends FMTable<any, any>> {
   byId(id: string | number): ExecutableDeleteBuilder<Occ> {
     return new ExecutableDeleteBuilder<Occ>({
       occurrence: this.table,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       mode: "byId",
       recordId: id,
-      databaseUseEntityIds: this.databaseUseEntityIds,
     });
   }
 
@@ -56,8 +48,7 @@ export class DeleteBuilder<Occ extends FMTable<any, any>> {
     // Create a QueryBuilder for the user to configure
     const queryBuilder = new QueryBuilder<Occ>({
       occurrence: this.table,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
     });
 
     // Let the user configure it
@@ -65,11 +56,9 @@ export class DeleteBuilder<Occ extends FMTable<any, any>> {
 
     return new ExecutableDeleteBuilder<Occ>({
       occurrence: this.table,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       mode: "byFilter",
       queryBuilder: configuredBuilder,
-      databaseUseEntityIds: this.databaseUseEntityIds,
     });
   }
 }
@@ -82,30 +71,26 @@ export class DeleteBuilder<Occ extends FMTable<any, any>> {
 export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
   implements ExecutableBuilder<{ deletedCount: number }>
 {
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private readonly table: Occ;
   private readonly mode: "byId" | "byFilter";
   private readonly recordId?: string | number;
   private readonly queryBuilder?: QueryBuilder<Occ>;
-  private readonly databaseUseEntityIds: boolean;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
   constructor(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
+    layer: FMODataLayer;
     mode: "byId" | "byFilter";
     recordId?: string | number;
     queryBuilder?: QueryBuilder<Occ>;
-    databaseUseEntityIds?: boolean;
   }) {
     this.table = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
+    this.layer = config.layer;
     this.mode = config.mode;
     this.recordId = config.recordId;
     this.queryBuilder = config.queryBuilder;
-    this.databaseUseEntityIds = config.databaseUseEntityIds ?? false;
+    this.config = extractConfigFromLayer(this.layer).config;
   }
 
   /**
@@ -114,10 +99,9 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
   private mergeExecuteOptions(
     options?: RequestInit & FFetchOptions & ExecuteOptions,
   ): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
-    // If useEntityIds is not set in options, use the database-level setting
     return {
       ...options,
-      useEntityIds: options?.useEntityIds ?? this.databaseUseEntityIds,
+      useEntityIds: options?.useEntityIds ?? this.config.useEntityIds,
     };
   }
 
@@ -126,8 +110,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
    * @param useEntityIds - Optional override for entity ID usage
    */
   private getTableId(useEntityIds?: boolean): string {
-    const contextDefault = this.context._getUseEntityIds?.() ?? false;
-    const shouldUseIds = useEntityIds ?? contextDefault;
+    const shouldUseIds = useEntityIds ?? this.config.useEntityIds;
 
     if (shouldUseIds) {
       if (!isUsingEntityIds(this.table)) {
@@ -144,16 +127,9 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
   /**
    * Builds the URL for the delete request based on mode (byId or byFilter).
    */
-  private formatRecordIdForOData(recordId: string | number): string {
-    if (typeof recordId === "number") {
-      return String(recordId);
-    }
-    return `'${recordId}'`;
-  }
-
   private buildUrl(tableId: string): string {
     if (this.mode === "byId") {
-      return `/${this.databaseName}/${tableId}(${this.formatRecordIdForOData(this.recordId as string | number)})`;
+      return `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
     }
 
     if (!this.queryBuilder) {
@@ -171,7 +147,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       queryParams = queryString;
     }
 
-    return `/${this.databaseName}/${tableId}${queryParams}`;
+    return `/${this.config.databaseName}/${tableId}${queryParams}`;
   }
 
   async execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
@@ -180,10 +156,10 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     const url = this.buildUrl(tableId);
 
     const pipeline = Effect.gen(this, function* () {
-      // Make DELETE request
-      const response = yield* makeRequestEffect(this.context, url, {
-        ...mergedOptions,
+      // Make DELETE request via DI
+      const response = yield* requestFromService(url, {
         method: "DELETE",
+        ...mergedOptions,
       });
 
       // Extract deleted count from response
@@ -198,14 +174,37 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       return { deletedCount };
     });
 
-    return await runAsResult(withSpan(pipeline, "fmodata.delete", { "fmodata.table": getTableName(this.table) }));
+    return runAsResult(
+      Effect.provide(withSpan(pipeline, "fmodata.delete", { "fmodata.table": getTableName(this.table) }), this.layer),
+    );
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
   getRequestConfig(): { method: string; url: string; body?: any } {
-    // For batch operations, use database-level setting (no per-request override available here)
-    const tableId = this.getTableId(this.databaseUseEntityIds);
-    const url = this.buildUrl(tableId);
+    const tableId = this.getTableId(this.config.useEntityIds);
+
+    let url: string;
+
+    if (this.mode === "byId") {
+      url = `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
+    } else {
+      if (!this.queryBuilder) {
+        throw new Error("Query builder is required for filter-based delete");
+      }
+
+      const queryString = this.queryBuilder.getQueryString();
+      const tableName = getTableName(this.table);
+      let queryParams: string;
+      if (queryString.startsWith(`/${tableId}`)) {
+        queryParams = queryString.slice(`/${tableId}`.length);
+      } else if (queryString.startsWith(`/${tableName}`)) {
+        queryParams = queryString.slice(`/${tableName}`.length);
+      } else {
+        queryParams = queryString;
+      }
+
+      url = `/${this.config.databaseName}/${tableId}${queryParams}`;
+    }
 
     return {
       method: "DELETE",
@@ -229,7 +228,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     // Check for error responses (important for batch operations)
     if (!response.ok) {
       const tableName = getTableName(this.table);
-      const error = await parseErrorResponse(response, response.url || `/${this.databaseName}/${tableName}`);
+      const error = await parseErrorResponse(response, response.url || `/${this.config.databaseName}/${tableName}`);
       return { data: undefined, error };
     }
 
@@ -238,7 +237,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     if (!text || text.trim() === "") {
       // For 204 No Content, check the fmodata.affected_rows header
       const affectedRows = response.headers.get("fmodata.affected_rows");
-      const deletedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 0;
+      const deletedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 1;
       return { data: { deletedCount }, error: undefined };
     }
 

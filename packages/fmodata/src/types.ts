@@ -1,6 +1,5 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { InternalLogger } from "./logger";
 
 export type Auth = { username: string; password: string } | { apiKey: string };
 
@@ -28,24 +27,10 @@ export interface ExecutableBuilder<T> {
 }
 
 export interface ExecutionContext {
-  _makeRequest<T>(
-    url: string,
-    options?: RequestInit &
-      FFetchOptions & {
-        useEntityIds?: boolean;
-        includeSpecialColumns?: boolean;
-      },
-  ): Promise<Result<T>>;
-  _setUseEntityIds?(useEntityIds: boolean): void;
-  _getUseEntityIds?(): boolean;
-  _setIncludeSpecialColumns?(includeSpecialColumns: boolean): void;
-  _getIncludeSpecialColumns?(): boolean;
-  _getBaseUrl?(): string;
-  _getLogger?(): InternalLogger;
   /**
    * @internal
    * Returns the Effect Layer for this context, enabling service-based Effect pipelines.
-   * Implemented by FMServerConnection and MockFMServerConnection.
+   * All HTTP requests are made through the Layer's HttpClient service.
    */
   _getLayer?(): import("./services").FMODataLayer;
 }

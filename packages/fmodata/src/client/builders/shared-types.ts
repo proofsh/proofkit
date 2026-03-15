@@ -1,6 +1,5 @@
 import type { QueryOptions } from "odata-query";
 import type { FMTable } from "../../orm/table";
-import type { ExecutionContext } from "../../types";
 
 /**
  * Expand configuration used by both QueryBuilder and RecordBuilder
@@ -30,16 +29,4 @@ export interface NavigationContext {
   navigateSourceTableName?: string;
   navigateBaseRelation?: string;
   navigateBasePath?: string;
-}
-
-/**
- * Common builder configuration
- */
-// biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
-export interface BuilderConfig<Occ extends FMTable<any, any> | undefined> {
-  occurrence?: Occ;
-  tableName: string;
-  databaseName: string;
-  context: ExecutionContext;
-  databaseUseEntityIds?: boolean;
 }

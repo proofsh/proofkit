@@ -2,9 +2,9 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
 import buildQuery, { type QueryOptions } from "odata-query";
-import { makeRequestEffect, runAsResult, withSpan } from "../../effect";
+import { requestFromService, runAsResult, withSpan } from "../../effect";
 import { RecordCountMismatchError } from "../../errors";
-import { createLogger, type InternalLogger } from "../../logger";
+import type { InternalLogger } from "../../logger";
 import { type Column, isColumn } from "../../orm/column";
 import { type FilterExpression, isOrderByExpression, type OrderByExpression } from "../../orm/operators";
 import {
@@ -14,6 +14,7 @@ import {
   type InferSchemaOutputFromFMTable,
   type ValidExpandTarget,
 } from "../../orm/table";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../../services";
 import { transformOrderByField } from "../../transform";
 import type {
   ConditionallyWithODataAnnotations,
@@ -21,7 +22,6 @@ import type {
   ExecutableBuilder,
   ExecuteMethodOptions,
   ExecuteOptions,
-  ExecutionContext,
   NormalizeIncludeSpecialColumns,
   Result,
 } from "../../types";
@@ -75,34 +75,29 @@ export class QueryBuilder<
   private singleMode: SingleMode;
   private isCountMode: IsCount;
   private readonly occurrence: Occ;
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private navigation?: NavigationConfig;
-  private readonly databaseUseEntityIds: boolean;
-  private readonly databaseIncludeSpecialColumns: boolean;
   private readonly expandBuilder: ExpandBuilder;
   private urlBuilder: QueryUrlBuilder;
   // Mapping from field names to output keys (for renamed fields in select)
   private fieldMapping?: Record<string, string>;
   // System columns requested via select() second argument
   private systemColumns?: SystemColumnsOption;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
   private readonly logger: InternalLogger;
 
   constructor(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
-    databaseUseEntityIds?: boolean;
-    databaseIncludeSpecialColumns?: boolean;
+    layer: FMODataLayer;
   }) {
     this.occurrence = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
-    this.logger = config.context?._getLogger?.() ?? createLogger();
-    this.databaseUseEntityIds = config.databaseUseEntityIds ?? false;
-    this.databaseIncludeSpecialColumns = config.databaseIncludeSpecialColumns ?? false;
-    this.expandBuilder = new ExpandBuilder(this.databaseUseEntityIds, this.logger);
-    this.urlBuilder = new QueryUrlBuilder(this.databaseName, this.occurrence, this.context);
+    this.layer = config.layer;
+    // Extract config and logger from the DI layer
+    const extracted = extractConfigFromLayer(this.layer);
+    this.config = extracted.config;
+    this.logger = extracted.logger;
+    this.expandBuilder = new ExpandBuilder(this.config.useEntityIds, this.logger);
+    this.urlBuilder = new QueryUrlBuilder(this.config.databaseName, this.occurrence, this.config.useEntityIds);
     this.queryOptions = {};
     this.expandConfigs = [];
     this.singleMode = false as SingleMode;
@@ -117,10 +112,10 @@ export class QueryBuilder<
       useEntityIds?: boolean;
       includeSpecialColumns?: boolean;
     } {
-    const merged = mergeExecuteOptions(options, this.databaseUseEntityIds);
+    const merged = mergeExecuteOptions(options, this.config.useEntityIds);
     return {
       ...merged,
-      includeSpecialColumns: options?.includeSpecialColumns ?? this.databaseIncludeSpecialColumns,
+      includeSpecialColumns: options?.includeSpecialColumns ?? this.config.includeSpecialColumns,
     };
   }
 
@@ -154,10 +149,7 @@ export class QueryBuilder<
       NewSystemCols
     >({
       occurrence: this.occurrence,
-      databaseName: this.databaseName,
-      context: this.context,
-      databaseUseEntityIds: this.databaseUseEntityIds,
-      databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
+      layer: this.layer,
     });
     newBuilder.queryOptions = {
       ...this.queryOptions,
@@ -172,7 +164,7 @@ export class QueryBuilder<
     newBuilder.systemColumns = changes.systemColumns !== undefined ? changes.systemColumns : this.systemColumns;
     // Copy navigation metadata
     newBuilder.navigation = this.navigation;
-    newBuilder.urlBuilder = new QueryUrlBuilder(this.databaseName, this.occurrence, this.context);
+    newBuilder.urlBuilder = new QueryUrlBuilder(this.config.databaseName, this.occurrence, this.config.useEntityIds);
     return newBuilder;
   }
 
@@ -278,7 +270,7 @@ export class QueryBuilder<
       return this;
     }
     // Convert FilterExpression to OData filter string
-    const filterString = expression.toODataFilter(this.databaseUseEntityIds);
+    const filterString = expression.toODataFilter(this.config.useEntityIds);
     this.queryOptions.filter = filterString;
     return this;
   }
@@ -501,10 +493,7 @@ export class QueryBuilder<
         // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryBuilder configuration
         new QueryBuilder<TargetTable, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
           occurrence: targetTable,
-          databaseName: this.databaseName,
-          context: this.context,
-          databaseUseEntityIds: this.databaseUseEntityIds,
-          databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
+          layer: this.layer,
         }),
     );
 
@@ -547,10 +536,10 @@ export class QueryBuilder<
     }
 
     // Use merged includeSpecialColumns if provided, otherwise use database-level default
-    const finalIncludeSpecialColumns = includeSpecialColumns ?? this.databaseIncludeSpecialColumns;
+    const finalIncludeSpecialColumns = includeSpecialColumns ?? this.config.includeSpecialColumns;
 
     // Use provided useEntityIds if provided, otherwise use database-level default
-    const finalUseEntityIds = useEntityIds ?? this.databaseUseEntityIds;
+    const finalUseEntityIds = useEntityIds ?? this.config.useEntityIds;
 
     const selectExpandString = buildSelectExpandQueryString({
       selectedFields: selectArray,
@@ -605,7 +594,7 @@ export class QueryBuilder<
       });
 
       const pipeline = withSpan(
-        makeRequestEffect(this.context, url, mergedOptions).pipe(
+        requestFromService(url, mergedOptions).pipe(
           Effect.map((data) => {
             const count = typeof data === "string" ? Number(data) : data;
             return count as number;
@@ -616,7 +605,7 @@ export class QueryBuilder<
       );
 
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-      return (await runAsResult(pipeline)) as any;
+      return runAsResult(Effect.provide(pipeline, this.layer)) as any;
     }
 
     const url = this.urlBuilder.build(queryString, {
@@ -626,7 +615,7 @@ export class QueryBuilder<
     });
 
     const pipeline = withSpan(
-      makeRequestEffect(this.context, url, mergedOptions).pipe(
+      requestFromService(url, mergedOptions).pipe(
         Effect.flatMap((data) =>
           Effect.tryPromise({
             try: () =>
@@ -642,7 +631,8 @@ export class QueryBuilder<
                 fieldMapping: this.fieldMapping,
                 logger: this.logger,
               }),
-            catch: (e) => (e instanceof Error ? e : new Error(String(e))),
+            // biome-ignore lint/suspicious/noExplicitAny: Type assertion for error mapping
+            catch: (e) => e as any,
           }),
         ),
         // processQueryResponse returns a Result, so we need to unwrap it
@@ -653,11 +643,11 @@ export class QueryBuilder<
     );
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return (await runAsResult(pipeline)) as any;
+    return runAsResult(Effect.provide(pipeline, this.layer)) as any;
   }
 
   getQueryString(options?: { useEntityIds?: boolean }): string {
-    const useEntityIds = options?.useEntityIds ?? this.databaseUseEntityIds;
+    const useEntityIds = options?.useEntityIds ?? this.config.useEntityIds;
     const queryString = this.buildQueryString(undefined, useEntityIds);
     return this.urlBuilder.buildPath(queryString, {
       useEntityIds,
@@ -670,7 +660,7 @@ export class QueryBuilder<
     const queryString = this.buildQueryString();
     const url = this.urlBuilder.build(queryString, {
       isCount: this.isCountMode,
-      useEntityIds: this.databaseUseEntityIds,
+      useEntityIds: this.config.useEntityIds,
       navigation: this.navigation,
     });
 
@@ -695,7 +685,7 @@ export class QueryBuilder<
     if (!response.ok) {
       const error = await parseErrorResponse(
         response,
-        response.url || `/${this.databaseName}/${getTableName(this.occurrence)}`,
+        response.url || `/${this.config.databaseName}/${getTableName(this.occurrence)}`,
       );
       return { data: undefined, error };
     }

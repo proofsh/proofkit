@@ -1,11 +1,13 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { makeRequestEffect, runAsResult, tryEffect, withSpan } from "../effect";
+import { requestFromService, runAsResult, tryEffect, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
+import type { InternalLogger } from "../logger";
 import type { FMTable, InferSchemaOutputFromFMTable } from "../orm/table";
 import { getBaseTableConfig, getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
 import { transformFieldNamesToIds } from "../transform";
-import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, ExecutionContext, Result } from "../types";
+import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, Result } from "../types";
 import { getAcceptHeader } from "../types";
 import { validateAndTransformInput } from "../validation";
 import { parseErrorResponse } from "./error-parser";
@@ -20,31 +22,23 @@ export class UpdateBuilder<
   Occ extends FMTable<any, any>,
   ReturnPreference extends "minimal" | "representation" = "minimal",
 > {
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private readonly table: Occ;
   private readonly data: Partial<InferSchemaOutputFromFMTable<Occ>>;
   private readonly returnPreference: ReturnPreference;
-
-  private readonly databaseUseEntityIds: boolean;
-  private readonly databaseIncludeSpecialColumns: boolean;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
   constructor(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
+    layer: FMODataLayer;
     data: Partial<InferSchemaOutputFromFMTable<Occ>>;
     returnPreference: ReturnPreference;
-    databaseUseEntityIds?: boolean;
-    databaseIncludeSpecialColumns?: boolean;
   }) {
     this.table = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
+    this.layer = config.layer;
     this.data = config.data;
     this.returnPreference = config.returnPreference;
-    this.databaseUseEntityIds = config.databaseUseEntityIds ?? false;
-    this.databaseIncludeSpecialColumns = config.databaseIncludeSpecialColumns ?? false;
+    this.config = extractConfigFromLayer(this.layer).config;
   }
 
   /**
@@ -54,13 +48,11 @@ export class UpdateBuilder<
   byId(id: string | number): ExecutableUpdateBuilder<Occ, true, ReturnPreference> {
     return new ExecutableUpdateBuilder<Occ, true, ReturnPreference>({
       occurrence: this.table,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       data: this.data,
       mode: "byId",
       recordId: id,
       returnPreference: this.returnPreference,
-      databaseUseEntityIds: this.databaseUseEntityIds,
     });
   }
 
@@ -73,8 +65,7 @@ export class UpdateBuilder<
     // Create a QueryBuilder for the user to configure
     const queryBuilder = new QueryBuilder<Occ>({
       occurrence: this.table,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
     });
 
     // Let the user configure it
@@ -82,13 +73,11 @@ export class UpdateBuilder<
 
     return new ExecutableUpdateBuilder<Occ, true, ReturnPreference>({
       occurrence: this.table,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       data: this.data,
       mode: "byFilter",
       queryBuilder: configuredBuilder,
       returnPreference: this.returnPreference,
-      databaseUseEntityIds: this.databaseUseEntityIds,
     });
   }
 }
@@ -106,36 +95,35 @@ export class ExecutableUpdateBuilder<
 > implements
     ExecutableBuilder<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
 {
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
   private readonly table: Occ;
   private readonly data: Partial<InferSchemaOutputFromFMTable<Occ>>;
   private readonly mode: "byId" | "byFilter";
   private readonly recordId?: string | number;
   private readonly queryBuilder?: QueryBuilder<Occ>;
   private readonly returnPreference: ReturnPreference;
-  private readonly databaseUseEntityIds: boolean;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
+  private readonly logger: InternalLogger;
 
   constructor(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
+    layer: FMODataLayer;
     data: Partial<InferSchemaOutputFromFMTable<Occ>>;
     mode: "byId" | "byFilter";
     recordId?: string | number;
     queryBuilder?: QueryBuilder<Occ>;
     returnPreference: ReturnPreference;
-    databaseUseEntityIds?: boolean;
   }) {
     this.table = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
+    this.layer = config.layer;
     this.data = config.data;
     this.mode = config.mode;
     this.recordId = config.recordId;
     this.queryBuilder = config.queryBuilder;
     this.returnPreference = config.returnPreference;
-    this.databaseUseEntityIds = config.databaseUseEntityIds ?? false;
+    const extracted = extractConfigFromLayer(this.layer);
+    this.config = extracted.config;
+    this.logger = extracted.logger;
   }
 
   /**
@@ -144,10 +132,9 @@ export class ExecutableUpdateBuilder<
   private mergeExecuteOptions(
     options?: RequestInit & FFetchOptions & ExecuteOptions,
   ): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
-    // If useEntityIds is not set in options, use the database-level setting
     return {
       ...options,
-      useEntityIds: options?.useEntityIds ?? this.databaseUseEntityIds,
+      useEntityIds: options?.useEntityIds ?? this.config.useEntityIds,
     };
   }
 
@@ -156,8 +143,7 @@ export class ExecutableUpdateBuilder<
    * @param useEntityIds - Optional override for entity ID usage
    */
   private getTableId(useEntityIds?: boolean): string {
-    const contextDefault = this.context._getUseEntityIds?.() ?? false;
-    const shouldUseIds = useEntityIds ?? contextDefault;
+    const shouldUseIds = useEntityIds ?? this.config.useEntityIds;
 
     if (shouldUseIds) {
       if (!isUsingEntityIds(this.table)) {
@@ -174,16 +160,9 @@ export class ExecutableUpdateBuilder<
   /**
    * Builds the URL for the update request based on mode (byId or byFilter).
    */
-  private formatRecordIdForOData(recordId: string | number): string {
-    if (typeof recordId === "number") {
-      return String(recordId);
-    }
-    return `'${recordId}'`;
-  }
-
   private buildUrl(tableId: string): string {
     if (this.mode === "byId") {
-      return `/${this.databaseName}/${tableId}(${this.formatRecordIdForOData(this.recordId as string | number)})`;
+      return `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
     }
 
     if (!this.queryBuilder) {
@@ -201,7 +180,7 @@ export class ExecutableUpdateBuilder<
       queryParams = queryString;
     }
 
-    return `/${this.databaseName}/${tableId}${queryParams}`;
+    return `/${this.config.databaseName}/${tableId}${queryParams}`;
   }
 
   async execute(
@@ -214,11 +193,9 @@ export class ExecutableUpdateBuilder<
     const shouldUseIds = mergedOptions.useEntityIds ?? false;
     const url = this.buildUrl(tableId);
 
-    const { headers: requestHeaders, ...requestOptions } = mergedOptions;
-    const headers = new Headers(requestHeaders);
-    headers.set("Content-Type", "application/json");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (this.returnPreference === "representation") {
-      headers.set("Prefer", "return=representation");
+      headers.Prefer = "return=representation";
     }
 
     const pipeline = Effect.gen(this, function* () {
@@ -236,12 +213,12 @@ export class ExecutableUpdateBuilder<
       const transformedData =
         this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
 
-      // Step 3: Make PATCH request
-      const response = yield* makeRequestEffect(this.context, url, {
-        ...requestOptions,
+      // Step 3: Make PATCH request via DI
+      const response = yield* requestFromService(url, {
         method: "PATCH",
         headers,
         body: JSON.stringify(transformedData),
+        ...mergedOptions,
       });
 
       // Step 4: Handle response based on return preference
@@ -259,22 +236,42 @@ export class ExecutableUpdateBuilder<
       return { updatedCount };
     });
 
-    return (await runAsResult(
-      withSpan(pipeline, "fmodata.update", { "fmodata.table": getTableName(this.table) }),
-    )) as Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>;
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
+    return runAsResult(
+      Effect.provide(withSpan(pipeline, "fmodata.update", { "fmodata.table": getTableName(this.table) }), this.layer),
+    ) as any;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
   getRequestConfig(): { method: string; url: string; body?: any } {
-    // For batch operations, use database-level setting (no per-request override available here)
-    // Note: Input validation happens in execute() and processResponse() for batch operations
-    const tableId = this.getTableId(this.databaseUseEntityIds);
+    const tableId = this.getTableId(this.config.useEntityIds);
 
     // Transform field names to FMFIDs if using entity IDs
     const transformedData =
-      this.table && this.databaseUseEntityIds ? transformFieldNamesToIds(this.data, this.table) : this.data;
+      this.table && this.config.useEntityIds ? transformFieldNamesToIds(this.data, this.table) : this.data;
 
-    const url = this.buildUrl(tableId);
+    let url: string;
+
+    if (this.mode === "byId") {
+      url = `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
+    } else {
+      if (!this.queryBuilder) {
+        throw new Error("Query builder is required for filter-based update");
+      }
+
+      const queryString = this.queryBuilder.getQueryString();
+      const tableName = getTableName(this.table);
+      let queryParams: string;
+      if (queryString.startsWith(`/${tableId}`)) {
+        queryParams = queryString.slice(`/${tableId}`.length);
+      } else if (queryString.startsWith(`/${tableName}`)) {
+        queryParams = queryString.slice(`/${tableName}`.length);
+      } else {
+        queryParams = queryString;
+      }
+
+      url = `/${this.config.databaseName}/${tableId}${queryParams}`;
+    }
 
     return {
       method: "PATCH",
@@ -306,7 +303,7 @@ export class ExecutableUpdateBuilder<
     // Check for error responses (important for batch operations)
     if (!response.ok) {
       const tableName = getTableName(this.table);
-      const error = await parseErrorResponse(response, response.url || `/${this.databaseName}/${tableName}`);
+      const error = await parseErrorResponse(response, response.url || `/${this.config.databaseName}/${tableName}`);
       return { data: undefined, error };
     }
 
@@ -315,7 +312,7 @@ export class ExecutableUpdateBuilder<
     if (!text || text.trim() === "") {
       // For 204 No Content, check the fmodata.affected_rows header
       const affectedRows = response.headers.get("fmodata.affected_rows");
-      const updatedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 0;
+      const updatedCount = affectedRows ? Number.parseInt(affectedRows, 10) : 1;
       return {
         data: { updatedCount } as ReturnPreference extends "minimal"
           ? { updatedCount: number }

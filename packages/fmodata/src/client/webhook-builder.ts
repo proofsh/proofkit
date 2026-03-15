@@ -1,7 +1,10 @@
+import { Effect } from "effect";
+import { requestFromService, runAsResult, withSpan } from "../effect";
 import { type FMTable, getTableName } from "../orm";
 import { type Column, isColumn } from "../orm/column";
 import { FilterExpression } from "../orm/operators";
-import type { ExecuteMethodOptions, ExecutionContext } from "../types";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
+import type { ExecuteMethodOptions } from "../types";
 import { formatSelectFields } from "./builders/select-utils";
 
 export interface Webhook<TableName = string> {
@@ -46,12 +49,12 @@ export interface WebhookAddResponse {
 }
 
 export class WebhookManager {
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
-  constructor(databaseName: string, context: ExecutionContext) {
-    this.databaseName = databaseName;
-    this.context = context;
+  constructor(layer: FMODataLayer) {
+    this.layer = layer;
+    this.config = extractConfigFromLayer(this.layer).config;
   }
 
   /**
@@ -88,8 +91,8 @@ export class WebhookManager {
     // Extract the string table name from the FMTable instance
     const tableName = getTableName(webhook.tableName);
 
-    // Get useEntityIds setting (check options first, then context, default to false)
-    const useEntityIds = options?.useEntityIds ?? this.context._getUseEntityIds?.() ?? false;
+    // Get useEntityIds setting (check options first, then config, default to false)
+    const useEntityIds = options?.useEntityIds ?? this.config.useEntityIds ?? false;
 
     // Transform filter if it's a FilterExpression
     let filter: string | undefined;
@@ -146,16 +149,18 @@ export class WebhookManager {
       requestBody.filter = filter;
     }
 
-    const result = await this.context._makeRequest<WebhookAddResponse>(`/${this.databaseName}/Webhook.Add`, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-      ...options,
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<WebhookAddResponse>(`/${this.config.databaseName}/Webhook.Add`, {
+        method: "POST",
+        body: JSON.stringify(requestBody),
+        ...options,
+      });
     });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.add"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 
@@ -169,11 +174,14 @@ export class WebhookManager {
    * ```
    */
   async remove(webhookId: number, options?: ExecuteMethodOptions): Promise<void> {
-    const result = await this.context._makeRequest(`/${this.databaseName}/Webhook.Delete(${webhookId})`, {
-      method: "POST",
-      ...options,
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService(`/${this.config.databaseName}/Webhook.Delete(${webhookId})`, {
+        method: "POST",
+        ...options,
+      });
     });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.remove"), this.layer));
     if (result.error) {
       throw result.error;
     }
@@ -190,15 +198,14 @@ export class WebhookManager {
    * ```
    */
   async get(webhookId: number, options?: ExecuteMethodOptions): Promise<WebhookInfo> {
-    const result = await this.context._makeRequest<WebhookInfo>(
-      `/${this.databaseName}/Webhook.Get(${webhookId})`,
-      options,
-    );
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<WebhookInfo>(`/${this.config.databaseName}/Webhook.Get(${webhookId})`, options);
+    });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.get"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 
@@ -213,15 +220,14 @@ export class WebhookManager {
    * ```
    */
   async list(options?: ExecuteMethodOptions): Promise<WebhookListResponse> {
-    const result = await this.context._makeRequest<WebhookListResponse>(
-      `/${this.databaseName}/Webhook.GetAll`,
-      options,
-    );
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<WebhookListResponse>(`/${this.config.databaseName}/Webhook.GetAll`, options);
+    });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.list"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 
@@ -250,16 +256,18 @@ export class WebhookManager {
       body.rowIDs = options.rowIDs;
     }
 
-    const result = await this.context._makeRequest<unknown>(`/${this.databaseName}/Webhook.Invoke(${webhookId})`, {
-      method: "POST",
-      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
-      ...executeOptions,
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<unknown>(`/${this.config.databaseName}/Webhook.Invoke(${webhookId})`, {
+        method: "POST",
+        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        ...executeOptions,
+      });
     });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.webhook.invoke"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 }

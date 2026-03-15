@@ -9,20 +9,19 @@
  */
 
 import type { FFetchOptions } from "@fetchkit/ffetch";
-import { Effect, Layer, Schedule } from "effect";
+import { Effect, Schedule } from "effect";
 import type { FMODataErrorType } from "./errors";
 import { isTransientError } from "./errors";
-import { createLogger } from "./logger";
-import { HttpClient, ODataConfig, ODataLogger } from "./services";
-import type { ExecutionContext, Result, RetryPolicy } from "./types";
+import { HttpClient } from "./services";
+import type { Result, RetryPolicy } from "./types";
 
 /**
- * Converts a Promise<Result<T>> factory into an Effect with typed error channel.
+ * Converts a Promise<Result<T>> into an Effect with typed error channel.
  * This is the bridge between the existing Result pattern and Effect pipelines.
  */
-export function fromResult<T>(run: () => Promise<Result<T>>): Effect.Effect<T, FMODataErrorType> {
+export function fromResult<T>(promise: Promise<Result<T>>): Effect.Effect<T, FMODataErrorType> {
   return Effect.tryPromise({
-    try: run,
+    try: () => promise,
     catch: (e) => e as FMODataErrorType,
   }).pipe(Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))));
 }
@@ -45,55 +44,11 @@ export function requestFromService<T>(
 }
 
 /**
- * Runs an Effect pipeline using a context's Layer.
- * If the context doesn't provide a Layer (backward compat), creates a fallback
- * layer from the context's _makeRequest method.
- */
-export async function runWithContext<T>(
-  effect: Effect.Effect<T, FMODataErrorType, HttpClient | ODataConfig | ODataLogger>,
-  context: ExecutionContext,
-): Promise<Result<T>> {
-  const layer = context._getLayer?.();
-  if (layer) {
-    return await runAsResult(Effect.provide(effect, layer));
-  }
-
-  // Fallback for contexts that don't implement _getLayer
-  const fallbackLayer = Layer.mergeAll(
-    Layer.succeed(HttpClient, {
-      request: <U>(url: string, options?: RequestInit & FFetchOptions) =>
-        fromResult(() => context._makeRequest<U>(url, options)),
-    }),
-    Layer.succeed(ODataConfig, {
-      baseUrl: context._getBaseUrl?.() ?? "",
-      useEntityIds: context._getUseEntityIds?.() ?? false,
-      includeSpecialColumns: context._getIncludeSpecialColumns?.() ?? false,
-    }),
-    Layer.succeed(ODataLogger, {
-      logger: context._getLogger?.() ?? createLogger(),
-    }),
-  );
-  return await runAsResult(Effect.provide(effect, fallbackLayer));
-}
-
-/**
- * @deprecated Use requestFromService + runWithContext instead.
- * Wraps _makeRequest as an Effect with typed error channel.
- */
-export function makeRequestEffect<T>(
-  context: ExecutionContext,
-  url: string,
-  options?: Parameters<ExecutionContext["_makeRequest"]>[1],
-): Effect.Effect<T, FMODataErrorType> {
-  return fromResult(() => context._makeRequest<T>(url, options));
-}
-
-/**
  * Runs an Effect pipeline and converts the result back to the fmodata Result type.
  * This is the exit point from Effect back to the public API.
  */
 export async function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Promise<Result<T>> {
-  return await Effect.runPromise(
+  return Effect.runPromise(
     effect.pipe(
       Effect.map((data): Result<T> => ({ data, error: undefined })),
       Effect.catchAll((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
@@ -154,9 +109,7 @@ export function withRetryPolicy<T>(
   effect: Effect.Effect<T, FMODataErrorType>,
   retryPolicy?: RetryPolicy,
 ): Effect.Effect<T, FMODataErrorType> {
-  if (!retryPolicy) {
-    return effect;
-  }
+  if (!retryPolicy) return effect;
   return effect.pipe(Effect.retry(buildRetrySchedule(retryPolicy)));
 }
 
@@ -171,7 +124,7 @@ export function withSpan<T, E, R>(
 ): Effect.Effect<T, E, R> {
   return effect.pipe(
     Effect.withSpan(name, {
-      attributes,
+      attributes: attributes ? attributes : undefined,
     }),
   );
 }

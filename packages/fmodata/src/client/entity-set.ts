@@ -1,4 +1,4 @@
-import { createLogger, type InternalLogger } from "../logger";
+import type { InternalLogger } from "../logger";
 import type { FieldBuilder } from "../orm/field-builders";
 import type {
   ColumnMap,
@@ -9,7 +9,7 @@ import type {
   ValidExpandTarget,
 } from "../orm/table";
 import { FMTable as FMTableClass, getDefaultSelect, getTableColumns, getTableName, getTableSchema } from "../orm/table";
-import type { ExecutionContext } from "../types";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
 import { resolveTableId } from "./builders/table-utils";
 import type { Database } from "./database";
 import { DeleteBuilder } from "./delete-builder";
@@ -41,49 +41,40 @@ type ExtractColumnsFromOcc<T> =
 // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
 export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColumns extends boolean = false> {
   private readonly occurrence: Occ;
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
+  private readonly logger: InternalLogger;
   private readonly database: Database<DatabaseIncludeSpecialColumns>; // Database instance for accessing occurrences
   private readonly isNavigateFromEntitySet?: boolean;
   private readonly navigateRelation?: string;
   private readonly navigateSourceTableName?: string;
   private readonly navigateBasePath?: string; // Full base path for chained navigations
-  private readonly databaseUseEntityIds: boolean;
-  private readonly databaseIncludeSpecialColumns: DatabaseIncludeSpecialColumns;
-  private readonly logger: InternalLogger;
 
   constructor(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
+    layer: FMODataLayer;
     // biome-ignore lint/suspicious/noExplicitAny: Database type is optional and can be any Database instance
     database?: any;
-    useEntityIds?: boolean;
   }) {
     this.occurrence = config.occurrence;
-    this.databaseName = config.databaseName;
-    this.context = config.context;
+    this.layer = config.layer;
     this.database = config.database;
-    // Use explicit useEntityIds if provided, otherwise fall back to database setting
-    this.databaseUseEntityIds = config.useEntityIds ?? config.database?._getUseEntityIds ?? false;
-    // Get includeSpecialColumns from database if available, otherwise default to false
-    this.databaseIncludeSpecialColumns = (config.database?._getIncludeSpecialColumns ??
-      false) as DatabaseIncludeSpecialColumns;
-    this.logger = config.context?._getLogger?.() ?? createLogger();
+    // Extract config and logger from the layer for sync access
+    const extracted = extractConfigFromLayer(this.layer);
+    this.config = extracted.config;
+    this.logger = extracted.logger;
   }
 
   // Type-only method to help TypeScript infer the schema from table
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
   static create<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColumns extends boolean = false>(config: {
     occurrence: Occ;
-    databaseName: string;
-    context: ExecutionContext;
+    layer: FMODataLayer;
     database: Database<DatabaseIncludeSpecialColumns>;
   }): EntitySet<Occ, DatabaseIncludeSpecialColumns> {
     return new EntitySet<Occ, DatabaseIncludeSpecialColumns>({
       occurrence: config.occurrence,
-      databaseName: config.databaseName,
-      context: config.context,
+      layer: config.layer,
       database: config.database,
     });
   }
@@ -100,10 +91,7 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
       DatabaseIncludeSpecialColumns
     >({
       occurrence: this.occurrence as Occ,
-      databaseName: this.databaseName,
-      context: this.context,
-      databaseUseEntityIds: this.databaseUseEntityIds,
-      databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
+      layer: this.layer,
     });
 
     // Apply defaultSelect if occurrence exists and select hasn't been called
@@ -120,7 +108,7 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
         const allColumns = getTableColumns(this.occurrence) as ExtractColumnsFromOcc<Occ>;
 
         // Include special columns if enabled at database level
-        const systemColumns = this.databaseIncludeSpecialColumns ? { ROWID: true, ROWMODID: true } : undefined;
+        const systemColumns = this.config.includeSpecialColumns ? { ROWID: true, ROWMODID: true } : undefined;
 
         const selectedBuilder = builder.select(allColumns, systemColumns).top(1000);
         // Propagate navigation context if present
@@ -199,11 +187,8 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
       DatabaseIncludeSpecialColumns
     >({
       occurrence: this.occurrence,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       recordId: id,
-      databaseUseEntityIds: this.databaseUseEntityIds,
-      databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
     });
 
     // Apply defaultSelect if occurrence exists
@@ -221,7 +206,7 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
         const allColumns = getTableColumns(this.occurrence as any) as ExtractColumnsFromOcc<Occ>;
 
         // Include special columns if enabled at database level
-        const systemColumns = this.databaseIncludeSpecialColumns ? { ROWID: true, ROWMODID: true } : undefined;
+        const systemColumns = this.config.includeSpecialColumns ? { ROWID: true, ROWMODID: true } : undefined;
 
         const selectedBuilder = builder.select(allColumns, systemColumns);
         // Propagate navigation context if present
@@ -284,14 +269,11 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
 
     return new InsertBuilder<Occ, typeof returnPreference>({
       occurrence: this.occurrence,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       // biome-ignore lint/suspicious/noExplicitAny: Input type is validated/transformed at runtime
       data: data as any,
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
       returnPreference: returnPreference as any,
-      databaseUseEntityIds: this.databaseUseEntityIds,
-      databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
     });
   }
 
@@ -310,24 +292,18 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
 
     return new UpdateBuilder<Occ, typeof returnPreference>({
       occurrence: this.occurrence,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       // biome-ignore lint/suspicious/noExplicitAny: Input type is validated/transformed at runtime
       data: data as any,
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
       returnPreference: returnPreference as any,
-      databaseUseEntityIds: this.databaseUseEntityIds,
-      databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
     });
   }
 
   delete(): DeleteBuilder<Occ> {
     return new DeleteBuilder<Occ>({
       occurrence: this.occurrence,
-      databaseName: this.databaseName,
-      context: this.context,
-      databaseUseEntityIds: this.databaseUseEntityIds,
-      databaseIncludeSpecialColumns: this.databaseIncludeSpecialColumns,
+      layer: this.layer,
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for complex generic return type
     }) as any;
   }
@@ -359,19 +335,12 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
     // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any FMTable configuration
     const entitySet = new EntitySet<any, DatabaseIncludeSpecialColumns>({
       occurrence: targetTable,
-      databaseName: this.databaseName,
-      context: this.context,
+      layer: this.layer,
       database: this.database,
-      useEntityIds: this.databaseUseEntityIds,
     });
     // Resolve navigation names using entity IDs when appropriate
-    const resolvedRelation = resolveTableId(targetTable, relationName, this.context, this.databaseUseEntityIds);
-    const resolvedSourceName = resolveTableId(
-      this.occurrence,
-      getTableName(this.occurrence),
-      this.context,
-      this.databaseUseEntityIds,
-    );
+    const resolvedRelation = resolveTableId(targetTable, relationName, this.config.useEntityIds);
+    const resolvedSourceName = resolveTableId(this.occurrence, getTableName(this.occurrence), this.config.useEntityIds);
 
     // Store the navigation info in the EntitySet
     // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern

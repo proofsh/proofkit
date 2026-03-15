@@ -13,20 +13,12 @@ import type { FMODataErrorType } from "../errors";
 import { HTTPError, ODataError, ResponseParseError, SchemaLockedError } from "../errors";
 import { createLogger, type InternalLogger, type Logger } from "../logger";
 import { type FMODataLayer, HttpClient, ODataConfig, ODataLogger } from "../services";
-import type { Auth, ExecutionContext, Result, RetryPolicy } from "../types";
+import type { Auth, ExecutionContext, Result } from "../types";
 import { getAcceptHeader } from "../types";
 import { Database } from "./database";
 import { safeJsonParse } from "./sanitize-json";
 
 const TRAILING_SLASH_REGEX = /\/+$/;
-const IDEMPOTENT_RETRY_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
-type RequestOptions = RequestInit &
-  FFetchOptions & {
-    useEntityIds?: boolean;
-    includeSpecialColumns?: boolean;
-    includeODataAnnotations?: boolean;
-    retryPolicy?: RetryPolicy;
-  };
 
 export class FMServerConnection implements ExecutionContext {
   private readonly fetchClient: ReturnType<typeof createClient>;
@@ -114,11 +106,15 @@ export class FMServerConnection implements ExecutionContext {
    */
   _getLayer(): FMODataLayer {
     const httpLayer = Layer.succeed(HttpClient, {
-      request: <T>(url: string, options?: RequestOptions) => this._makeRequestEffect<T>(url, options),
+      request: <T>(
+        url: string,
+        options?: RequestInit & FFetchOptions & { useEntityIds?: boolean; includeSpecialColumns?: boolean },
+      ) => this._makeRequestEffect<T>(url, options),
     });
 
     const configLayer = Layer.succeed(ODataConfig, {
       baseUrl: this._getBaseUrl(),
+      databaseName: "",
       useEntityIds: this.useEntityIds,
       includeSpecialColumns: this.includeSpecialColumns,
     });
@@ -194,7 +190,14 @@ export class FMServerConnection implements ExecutionContext {
    * Builds the Effect pipeline for an HTTP request.
    * Each step in the pipeline is a discrete Effect, enabling composable error handling.
    */
-  private _makeRequestEffect<T>(url: string, options?: RequestOptions): Effect.Effect<T, FMODataErrorType> {
+  private _makeRequestEffect<T>(
+    url: string,
+    options?: RequestInit &
+      FFetchOptions & {
+        useEntityIds?: boolean;
+        includeSpecialColumns?: boolean;
+      },
+  ): Effect.Effect<T, FMODataErrorType> {
     const logger = this._getLogger();
     const baseUrl = `${this.serverUrl}${"apiKey" in this.auth ? "/otto" : ""}/fmi/odata/v4`;
     const fullUrl = baseUrl + url;
@@ -204,7 +207,8 @@ export class FMServerConnection implements ExecutionContext {
     const includeSpecialColumns = options?.includeSpecialColumns ?? this.includeSpecialColumns;
 
     // Get includeODataAnnotations from options (it's passed through from execute options)
-    const includeODataAnnotations = options?.includeODataAnnotations;
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for optional property access
+    const includeODataAnnotations = (options as any)?.includeODataAnnotations;
 
     // Build Prefer header as comma-separated list when multiple preferences are set
     const preferValues: string[] = [];
@@ -243,7 +247,6 @@ export class FMServerConnection implements ExecutionContext {
       ...restOptions,
       headers,
     };
-    const method = (finalOptions.method ?? "GET").toUpperCase();
 
     // Step 1: Execute the HTTP request
     const fetchEffect = Effect.tryPromise({
@@ -314,19 +317,28 @@ export class FMServerConnection implements ExecutionContext {
       }),
     );
 
-    const retryPolicy = options?.retryPolicy;
-    const shouldRetry = Boolean(retryPolicy) && IDEMPOTENT_RETRY_METHODS.has(method);
-    const pipelineWithRetry = shouldRetry ? withRetryPolicy(pipeline, retryPolicy) : pipeline;
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for optional property access
+    const retryPolicy = (options as any)?.retryPolicy;
 
     // Apply retry policy and tracing span
-    return withSpan(pipelineWithRetry, "fmodata.request", { "fmodata.url": url, "fmodata.method": method });
+    return withSpan(withRetryPolicy(pipeline, retryPolicy), "fmodata.request", {
+      "fmodata.url": url,
+      "fmodata.method": finalOptions.method ?? "GET",
+    });
   }
 
   /**
    * @internal
    */
-  async _makeRequest<T>(url: string, options?: RequestOptions): Promise<Result<T>> {
-    return await runAsResult(this._makeRequestEffect<T>(url, options));
+  async _makeRequest<T>(
+    url: string,
+    options?: RequestInit &
+      FFetchOptions & {
+        useEntityIds?: boolean;
+        includeSpecialColumns?: boolean;
+      },
+  ): Promise<Result<T>> {
+    return runAsResult(this._makeRequestEffect<T>(url, options));
   }
 
   database<IncludeSpecialColumns extends boolean = false>(

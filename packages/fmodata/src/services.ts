@@ -12,7 +12,7 @@
  */
 
 import type { FFetchOptions } from "@fetchkit/ffetch";
-import { Context, type Effect, type Layer } from "effect";
+import { Context, Effect, Layer } from "effect";
 import type { FMODataErrorType } from "./errors";
 import type { InternalLogger } from "./logger";
 
@@ -37,6 +37,7 @@ export const HttpClient = Context.GenericTag<HttpClient>("@proofkit/fmodata/Http
 
 export interface ODataConfig {
   readonly baseUrl: string;
+  readonly databaseName: string;
   readonly useEntityIds: boolean;
   readonly includeSpecialColumns: boolean;
 }
@@ -54,3 +55,44 @@ export const ODataLogger = Context.GenericTag<ODataLogger>("@proofkit/fmodata/OD
 // --- Combined layer type ---
 
 export type FMODataLayer = Layer.Layer<HttpClient | ODataConfig | ODataLogger>;
+
+// --- Layer utilities ---
+
+/**
+ * Extracts ODataConfig and ODataLogger values from a Layer synchronously.
+ * Used by builders to access config in non-Effect methods (getRequestConfig, toRequest, etc.)
+ */
+export function extractConfigFromLayer(layer: FMODataLayer): { config: ODataConfig; logger: InternalLogger } {
+  const effect = Effect.gen(function* () {
+    const config = yield* ODataConfig;
+    const { logger } = yield* ODataLogger;
+    return { config, logger };
+  });
+  return Effect.runSync(Effect.provide(effect, layer));
+}
+
+/**
+ * Creates a database-scoped Layer by overriding ODataConfig with database-specific values.
+ * The HttpClient and ODataLogger services are preserved from the base layer.
+ */
+export function createDatabaseLayer(
+  baseLayer: FMODataLayer,
+  overrides: {
+    databaseName: string;
+    useEntityIds: boolean;
+    includeSpecialColumns: boolean;
+  },
+): FMODataLayer {
+  // Extract base config to get baseUrl
+  const { config: baseConfig } = extractConfigFromLayer(baseLayer);
+
+  const dbConfigLayer = Layer.succeed(ODataConfig, {
+    baseUrl: baseConfig.baseUrl,
+    databaseName: overrides.databaseName,
+    useEntityIds: overrides.useEntityIds,
+    includeSpecialColumns: overrides.includeSpecialColumns,
+  });
+
+  // Merge: dbConfigLayer overrides ODataConfig, but HttpClient and ODataLogger come from baseLayer
+  return Layer.merge(baseLayer, dbConfigLayer);
+}

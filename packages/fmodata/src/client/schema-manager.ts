@@ -1,5 +1,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
-import type { ExecutionContext } from "../types";
+import { Effect } from "effect";
+import { requestFromService, runAsResult, withSpan } from "../effect";
+import { extractConfigFromLayer, type FMODataLayer, type ODataConfig } from "../services";
 
 interface GenericField {
   name: string;
@@ -54,12 +56,12 @@ interface TableDefinition {
 }
 
 export class SchemaManager {
-  private readonly databaseName: string;
-  private readonly context: ExecutionContext;
+  private readonly layer: FMODataLayer;
+  private readonly config: ODataConfig;
 
-  constructor(databaseName: string, context: ExecutionContext) {
-    this.databaseName = databaseName;
-    this.context = context;
+  constructor(layer: FMODataLayer) {
+    this.layer = layer;
+    this.config = extractConfigFromLayer(this.layer).config;
   }
 
   async createTable(
@@ -67,58 +69,65 @@ export class SchemaManager {
     fields: Field[],
     options?: RequestInit & FFetchOptions,
   ): Promise<TableDefinition> {
-    const result = await this.context._makeRequest<TableDefinition>(`/${this.databaseName}/FileMaker_Tables`, {
-      method: "POST",
-      body: JSON.stringify({
-        tableName,
-        fields: fields.map(SchemaManager.compileFieldDefinition),
-      }),
-      ...options,
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<TableDefinition>(`/${this.config.databaseName}/FileMaker_Tables`, {
+        method: "POST",
+        body: JSON.stringify({
+          tableName,
+          fields: fields.map(SchemaManager.compileFieldDefinition),
+        }),
+        ...options,
+      });
     });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.createTable"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 
   async addFields(tableName: string, fields: Field[], options?: RequestInit & FFetchOptions): Promise<TableDefinition> {
-    const result = await this.context._makeRequest<TableDefinition>(
-      `/${this.databaseName}/FileMaker_Tables/${tableName}`,
-      {
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<TableDefinition>(`/${this.config.databaseName}/FileMaker_Tables/${tableName}`, {
         method: "PATCH",
         body: JSON.stringify({
           fields: fields.map(SchemaManager.compileFieldDefinition),
         }),
         ...options,
-      },
-    );
+      });
+    });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.addFields"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 
   async deleteTable(tableName: string, options?: RequestInit & FFetchOptions): Promise<void> {
-    const result = await this.context._makeRequest(`/${this.databaseName}/FileMaker_Tables/${tableName}`, {
-      method: "DELETE",
-      ...options,
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService(`/${this.config.databaseName}/FileMaker_Tables/${tableName}`, {
+        method: "DELETE",
+        ...options,
+      });
     });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.deleteTable"), this.layer));
     if (result.error) {
       throw result.error;
     }
   }
 
   async deleteField(tableName: string, fieldName: string, options?: RequestInit & FFetchOptions): Promise<void> {
-    const result = await this.context._makeRequest(`/${this.databaseName}/FileMaker_Tables/${tableName}/${fieldName}`, {
-      method: "DELETE",
-      ...options,
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService(`/${this.config.databaseName}/FileMaker_Tables/${tableName}/${fieldName}`, {
+        method: "DELETE",
+        ...options,
+      });
     });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.deleteField"), this.layer));
     if (result.error) {
       throw result.error;
     }
@@ -129,31 +138,33 @@ export class SchemaManager {
     fieldName: string,
     options?: RequestInit & FFetchOptions,
   ): Promise<{ indexName: string }> {
-    const result = await this.context._makeRequest<{ indexName: string }>(
-      `/${this.databaseName}/FileMaker_Indexes/${tableName}`,
-      {
-        method: "POST",
-        body: JSON.stringify({ indexName: fieldName }),
-        ...options,
-      },
-    );
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService<{ indexName: string }>(
+        `/${this.config.databaseName}/FileMaker_Indexes/${tableName}`,
+        {
+          method: "POST",
+          body: JSON.stringify({ indexName: fieldName }),
+          ...options,
+        },
+      );
+    });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.createIndex"), this.layer));
     if (result.error) {
       throw result.error;
     }
-
     return result.data;
   }
 
   async deleteIndex(tableName: string, fieldName: string, options?: RequestInit & FFetchOptions): Promise<void> {
-    const result = await this.context._makeRequest(
-      `/${this.databaseName}/FileMaker_Indexes/${tableName}/${fieldName}`,
-      {
+    const pipeline = Effect.gen(this, function* () {
+      return yield* requestFromService(`/${this.config.databaseName}/FileMaker_Indexes/${tableName}/${fieldName}`, {
         method: "DELETE",
         ...options,
-      },
-    );
+      });
+    });
 
+    const result = await runAsResult(Effect.provide(withSpan(pipeline, "fmodata.schema.deleteIndex"), this.layer));
     if (result.error) {
       throw result.error;
     }

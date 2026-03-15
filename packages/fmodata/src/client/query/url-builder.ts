@@ -1,6 +1,5 @@
 import type { FMTable } from "../../orm/table";
 import { getTableName } from "../../orm/table";
-import type { ExecutionContext } from "../../types";
 import { resolveTableId } from "../builders/table-utils";
 
 /**
@@ -26,13 +25,13 @@ export class QueryUrlBuilder {
   private readonly databaseName: string;
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
   private readonly occurrence: FMTable<any, any>;
-  private readonly context: ExecutionContext;
+  private readonly useEntityIds: boolean;
 
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
-  constructor(databaseName: string, occurrence: FMTable<any, any>, context: ExecutionContext) {
+  constructor(databaseName: string, occurrence: FMTable<any, any>, useEntityIds: boolean) {
     this.databaseName = databaseName;
     this.occurrence = occurrence;
-    this.context = context;
+    this.useEntityIds = useEntityIds;
   }
 
   /**
@@ -49,7 +48,8 @@ export class QueryUrlBuilder {
       navigation?: NavigationConfig;
     },
   ): string {
-    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), this.context, options.useEntityIds);
+    const effectiveUseEntityIds = options.useEntityIds ?? this.useEntityIds;
+    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), effectiveUseEntityIds);
 
     const navigation = options.navigation;
     if (navigation?.recordId && navigation?.relation) {
@@ -91,9 +91,9 @@ export class QueryUrlBuilder {
    * Used when the full URL is not needed.
    */
   buildPath(queryString: string, options?: { useEntityIds?: boolean; navigation?: NavigationConfig }): string {
-    const useEntityIds = options?.useEntityIds;
+    const effectiveUseEntityIds = options?.useEntityIds ?? this.useEntityIds;
     const navigation = options?.navigation;
-    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), this.context, useEntityIds);
+    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), effectiveUseEntityIds);
 
     if (navigation?.recordId && navigation?.relation) {
       const { sourceTableName, baseRelation, recordId, relation } = navigation;
@@ -130,7 +130,8 @@ export class QueryUrlBuilder {
       navigateRelation?: string;
     },
   ): string {
-    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), this.context, options?.useEntityIds);
+    const effectiveUseEntityIds = options?.useEntityIds ?? this.useEntityIds;
+    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), effectiveUseEntityIds);
 
     // Build the base URL depending on whether this came from a navigated EntitySet
     let url: string;
