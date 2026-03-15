@@ -2,7 +2,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
 import buildQuery, { type QueryOptions } from "odata-query";
-import { makeRequestEffect, runAsResult } from "../../effect";
+import { makeRequestEffect, runAsResult, withSpan } from "../../effect";
 import { RecordCountMismatchError } from "../../errors";
 import { createLogger, type InternalLogger } from "../../logger";
 import { type Column, isColumn } from "../../orm/column";
@@ -604,11 +604,15 @@ export class QueryBuilder<
         navigation: this.navigation,
       });
 
-      const pipeline = makeRequestEffect(this.context, url, mergedOptions).pipe(
-        Effect.map((data) => {
-          const count = typeof data === "string" ? Number(data) : data;
-          return count as number;
-        }),
+      const pipeline = withSpan(
+        makeRequestEffect(this.context, url, mergedOptions).pipe(
+          Effect.map((data) => {
+            const count = typeof data === "string" ? Number(data) : data;
+            return count as number;
+          }),
+        ),
+        "fmodata.query.count",
+        { "fmodata.table": getTableName(this.occurrence) },
       );
 
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
@@ -621,28 +625,32 @@ export class QueryBuilder<
       navigation: this.navigation,
     });
 
-    const pipeline = makeRequestEffect(this.context, url, mergedOptions).pipe(
-      Effect.flatMap((data) =>
-        Effect.tryPromise({
-          try: () =>
-            processQueryResponse(data, {
-              occurrence: this.occurrence,
-              singleMode: this.singleMode,
-              // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
-              queryOptions: this.queryOptions as any,
-              expandConfigs: this.expandConfigs,
-              skipValidation: options?.skipValidation,
-              useEntityIds: mergedOptions.useEntityIds,
-              includeSpecialColumns: mergedOptions.includeSpecialColumns,
-              fieldMapping: this.fieldMapping,
-              logger: this.logger,
-            }),
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for error mapping
-          catch: (e) => e as any,
-        }),
+    const pipeline = withSpan(
+      makeRequestEffect(this.context, url, mergedOptions).pipe(
+        Effect.flatMap((data) =>
+          Effect.tryPromise({
+            try: () =>
+              processQueryResponse(data, {
+                occurrence: this.occurrence,
+                singleMode: this.singleMode,
+                // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
+                queryOptions: this.queryOptions as any,
+                expandConfigs: this.expandConfigs,
+                skipValidation: options?.skipValidation,
+                useEntityIds: mergedOptions.useEntityIds,
+                includeSpecialColumns: mergedOptions.includeSpecialColumns,
+                fieldMapping: this.fieldMapping,
+                logger: this.logger,
+              }),
+            // biome-ignore lint/suspicious/noExplicitAny: Type assertion for error mapping
+            catch: (e) => e as any,
+          }),
+        ),
+        // processQueryResponse returns a Result, so we need to unwrap it
+        Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))),
       ),
-      // processQueryResponse returns a Result, so we need to unwrap it
-      Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))),
+      this.singleMode ? "fmodata.query.single" : "fmodata.query.list",
+      { "fmodata.table": getTableName(this.occurrence) },
     );
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type

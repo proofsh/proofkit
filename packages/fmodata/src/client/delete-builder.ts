@@ -1,6 +1,6 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { makeRequestEffect, runAsResult } from "../effect";
+import { makeRequestEffect, runAsResult, withSpan } from "../effect";
 import type { FMTable } from "../orm/table";
 import { getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
 import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, ExecutionContext, Result } from "../types";
@@ -191,7 +191,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       return { deletedCount };
     });
 
-    return runAsResult(pipeline);
+    return runAsResult(withSpan(pipeline, "fmodata.delete", { "fmodata.table": getTableName(this.table) }));
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

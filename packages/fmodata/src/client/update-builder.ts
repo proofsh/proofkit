@@ -1,6 +1,6 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { makeRequestEffect, runAsResult, tryEffect } from "../effect";
+import { makeRequestEffect, runAsResult, tryEffect, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import type { FMTable, InferSchemaOutputFromFMTable } from "../orm/table";
 import { getBaseTableConfig, getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
@@ -251,7 +251,7 @@ export class ExecutableUpdateBuilder<
     });
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(pipeline) as any;
+    return runAsResult(withSpan(pipeline, "fmodata.update", { "fmodata.table": getTableName(this.table) })) as any;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

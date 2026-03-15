@@ -26,6 +26,8 @@ export async function validateAndTransformInput<T extends Record<string, any>>(
 
   // biome-ignore lint/suspicious/noExplicitAny: Dynamic field transformation
   const transformedData: Record<string, any> = { ...data };
+  const allIssues: StandardSchemaV1.Issue[] = [];
+  const failedFields: string[] = [];
 
   // Process each field that has an input validator
   for (const [fieldName, fieldSchema] of Object.entries(inputSchema)) {
@@ -45,31 +47,49 @@ export async function validateAndTransformInput<T extends Record<string, any>>(
           result = await result;
         }
 
-        // Check for validation errors
+        // Check for validation errors — accumulate instead of throwing immediately
         if (result.issues) {
-          throw new ValidationError(`Input validation failed for field '${fieldName}'`, result.issues, {
-            field: fieldName,
-            value: inputValue,
-            cause: result.issues,
-          });
+          for (const issue of result.issues) {
+            allIssues.push({
+              ...issue,
+              path: issue.path ? [fieldName, ...issue.path] : [fieldName],
+            });
+          }
+          failedFields.push(fieldName);
+          continue;
         }
 
         // Store the transformed value
         transformedData[fieldName] = result.value;
       } catch (error) {
-        // If it's already a ValidationError, re-throw it
+        // Accumulate wrapped errors
         if (error instanceof ValidationError) {
-          throw error;
+          for (const issue of error.issues) {
+            allIssues.push({
+              ...issue,
+              path: issue.path ? [fieldName, ...issue.path] : [fieldName],
+            });
+          }
+        } else {
+          allIssues.push({
+            message: error instanceof Error ? error.message : String(error),
+            path: [fieldName],
+          });
         }
-
-        // Otherwise, wrap the error
-        throw new ValidationError(`Input validation failed for field '${fieldName}'`, [], {
-          field: fieldName,
-          value: inputValue,
-          cause: error,
-        });
+        failedFields.push(fieldName);
       }
     }
+  }
+
+  // If any fields failed validation, throw a single error with all issues
+  if (allIssues.length > 0) {
+    throw new ValidationError(
+      `Input validation failed for field${failedFields.length > 1 ? "s" : ""} '${failedFields.join("', '")}'`,
+      allIssues,
+      {
+        field: failedFields[0],
+      },
+    );
   }
 
   // Fields without input validators are already in transformedData (passed through)
@@ -154,6 +174,8 @@ export async function validateRecord<T extends Record<string, any>>(
   if (selectedFields && selectedFields.length > 0) {
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic field validation
     const validatedRecord: Record<string, any> = {};
+    const allIssues: StandardSchemaV1.Issue[] = [];
+    const failedFields: string[] = [];
 
     for (const field of selectedFields) {
       const fieldName = String(field);
@@ -167,29 +189,26 @@ export async function validateRecord<T extends Record<string, any>>(
             result = await result;
           }
 
-          // if the `issues` field exists, the validation failed
+          // if the `issues` field exists, accumulate and continue
           if (result.issues) {
-            return {
-              valid: false,
-              error: new ValidationError(`Validation failed for field '${fieldName}'`, result.issues, {
-                field: fieldName,
-                value: input,
-                cause: result.issues,
-              }),
-            };
+            for (const issue of result.issues) {
+              allIssues.push({
+                ...issue,
+                path: issue.path ? [fieldName, ...issue.path] : [fieldName],
+              });
+            }
+            failedFields.push(fieldName);
+            continue;
           }
 
           validatedRecord[fieldName] = result.value;
         } catch (originalError) {
-          // If the validator throws directly, wrap it
-          return {
-            valid: false,
-            error: new ValidationError(`Validation failed for field '${fieldName}'`, [], {
-              field: fieldName,
-              value: input,
-              cause: originalError,
-            }),
-          };
+          // Accumulate thrown errors
+          allIssues.push({
+            message: originalError instanceof Error ? originalError.message : String(originalError),
+            path: [fieldName],
+          });
+          failedFields.push(fieldName);
         }
       } else {
         // For fields not in schema (like when explicitly selecting ROWID/ROWMODID)
@@ -206,6 +225,18 @@ export async function validateRecord<T extends Record<string, any>>(
           validatedRecord[fieldName] = rest[fieldName];
         }
       }
+    }
+
+    // If any field validations failed, return accumulated error
+    if (allIssues.length > 0) {
+      return {
+        valid: false,
+        error: new ValidationError(
+          `Validation failed for field${failedFields.length > 1 ? "s" : ""} '${failedFields.join("', '")}'`,
+          allIssues,
+          { field: failedFields[0], value: record, cause: allIssues },
+        ),
+      };
     }
 
     // Validate expanded relations
@@ -315,6 +346,8 @@ export async function validateRecord<T extends Record<string, any>>(
   // Validate all fields in schema, but exclude ROWID/ROWMODID by default (unless includeSpecialColumns is enabled)
   // biome-ignore lint/suspicious/noExplicitAny: Dynamic field validation
   const validatedRecord: Record<string, any> = { ...restWithoutSystemFields };
+  const allIssuesAll: StandardSchemaV1.Issue[] = [];
+  const failedFieldsAll: string[] = [];
 
   for (const [fieldName, fieldSchema] of Object.entries(schema)) {
     // Skip if no schema for this field
@@ -329,31 +362,39 @@ export async function validateRecord<T extends Record<string, any>>(
         result = await result;
       }
 
-      // if the `issues` field exists, the validation failed
+      // if the `issues` field exists, accumulate and continue
       if (result.issues) {
-        return {
-          valid: false,
-          error: new ValidationError(`Validation failed for field '${fieldName}'`, result.issues, {
-            field: fieldName,
-            value: input,
-            cause: result.issues,
-          }),
-        };
+        for (const issue of result.issues) {
+          allIssuesAll.push({
+            ...issue,
+            path: issue.path ? [fieldName, ...issue.path] : [fieldName],
+          });
+        }
+        failedFieldsAll.push(fieldName);
+        continue;
       }
 
       validatedRecord[fieldName] = result.value;
     } catch (originalError) {
-      // If the validator throws an error directly, catch and wrap it
-      // This preserves the original error instance for instanceof checks
-      return {
-        valid: false,
-        error: new ValidationError(`Validation failed for field '${fieldName}'`, [], {
-          field: fieldName,
-          value: input,
-          cause: originalError,
-        }),
-      };
+      // Accumulate thrown errors
+      allIssuesAll.push({
+        message: originalError instanceof Error ? originalError.message : String(originalError),
+        path: [fieldName],
+      });
+      failedFieldsAll.push(fieldName);
     }
+  }
+
+  // If any field validations failed, return accumulated error
+  if (allIssuesAll.length > 0) {
+    return {
+      valid: false,
+      error: new ValidationError(
+        `Validation failed for field${failedFieldsAll.length > 1 ? "s" : ""} '${failedFieldsAll.join("', '")}'`,
+        allIssuesAll,
+        { field: failedFieldsAll[0], value: record, cause: allIssuesAll },
+      ),
+    };
   }
 
   // Validate expanded relations even when not using selected fields

@@ -46,6 +46,7 @@ export {
   isResponseParseError,
   isResponseStructureError,
   isSchemaLockedError,
+  isTransientError,
   isValidationError,
   ODataError,
   RecordCountMismatchError,
@@ -124,4 +125,5 @@ export type {
   Metadata,
   ODataRecordMetadata,
   Result,
+  RetryPolicy,
 } from "./types";

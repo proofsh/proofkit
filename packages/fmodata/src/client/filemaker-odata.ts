@@ -8,7 +8,7 @@ import createClient, {
 } from "@fetchkit/ffetch";
 import { Effect } from "effect";
 import { get } from "es-toolkit/compat";
-import { runAsResult } from "../effect";
+import { runAsResult, withRetryPolicy, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { HTTPError, ODataError, ResponseParseError, SchemaLockedError } from "../errors";
 import { createLogger, type InternalLogger, type Logger } from "../logger";
@@ -228,7 +228,7 @@ export class FMServerConnection implements ExecutionContext {
     });
 
     // Step 2: Process the response
-    return fetchEffect.pipe(
+    const pipeline = fetchEffect.pipe(
       Effect.tap((resp) => Effect.sync(() => logger.debug(`${finalOptions.method ?? "GET"} ${resp.status} ${fullUrl}`))),
       Effect.flatMap((resp) => {
         // Handle HTTP errors
@@ -288,6 +288,16 @@ export class FMServerConnection implements ExecutionContext {
           catch: (err) => this._classifyError(err, fullUrl),
         }).pipe(Effect.map((text) => text as T));
       }),
+    );
+
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for optional property access
+    const retryPolicy = (options as any)?.retryPolicy;
+
+    // Apply retry policy and tracing span
+    return withSpan(
+      withRetryPolicy(pipeline, retryPolicy),
+      "fmodata.request",
+      { "fmodata.url": url, "fmodata.method": finalOptions.method ?? "GET" },
     );
   }
 

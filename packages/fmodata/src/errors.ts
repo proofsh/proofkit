@@ -220,6 +220,25 @@ export function isFMODataError(error: unknown): error is FMODataError {
   return error instanceof FMODataError;
 }
 
+/**
+ * Determines whether an error is transient and safe to retry.
+ * Transient errors include:
+ * - SchemaLockedError (FM code 303 — file locked temporarily)
+ * - NetworkError (connection issues)
+ * - TimeoutError (request timed out)
+ * - HTTP 5xx errors (server-side failures)
+ */
+export function isTransientError(error: unknown): boolean {
+  if (error instanceof SchemaLockedError) return true;
+  // Check ffetch error types by name since they aren't subclasses of FMODataError
+  if (error && typeof error === "object" && "name" in error) {
+    const name = (error as { name: string }).name;
+    if (name === "NetworkError" || name === "TimeoutError") return true;
+  }
+  if (error instanceof HTTPError && error.is5xx()) return true;
+  return false;
+}
+
 // ============================================
 // Union type for all possible errors
 // ============================================

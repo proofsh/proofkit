@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { makeRequestEffect, runAsResult } from "../effect";
+import { makeRequestEffect, runAsResult, withSpan } from "../effect";
 import { BatchTruncatedError } from "../errors";
 import type { FMODataErrorType } from "../errors";
 import type {
@@ -272,7 +272,7 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
     });
 
     // For batch, errors at the transport level fail all operations
-    const result = await runAsResult(pipeline);
+    const result = await runAsResult(withSpan(pipeline, "fmodata.batch"));
     if (result.error) {
       return this.failAllResults(result.error);
     }

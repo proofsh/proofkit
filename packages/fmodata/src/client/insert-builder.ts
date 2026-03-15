@@ -1,6 +1,6 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect } from "effect";
-import { fromValidation, makeRequestEffect, runAsResult, tryEffect } from "../effect";
+import { fromValidation, makeRequestEffect, runAsResult, tryEffect, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { InvalidLocationHeaderError } from "../errors";
 import type { FMTable } from "../orm/table";
@@ -237,7 +237,7 @@ export class InsertBuilder<
     });
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(pipeline) as any;
+    return runAsResult(withSpan(pipeline, "fmodata.insert", this.table ? { "fmodata.table": getTableName(this.table) } : undefined)) as any;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
