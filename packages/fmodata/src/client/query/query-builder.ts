@@ -1,6 +1,8 @@
 /** biome-ignore-all lint/style/useReadonlyClassProperties: properties are reassigned in cloneWithChanges() */
 import type { FFetchOptions } from "@fetchkit/ffetch";
+import { Effect } from "effect";
 import buildQuery, { type QueryOptions } from "odata-query";
+import { makeRequestEffect, runAsResult } from "../../effect";
 import { RecordCountMismatchError } from "../../errors";
 import { createLogger, type InternalLogger } from "../../logger";
 import { type Column, isColumn } from "../../orm/column";
@@ -601,16 +603,16 @@ export class QueryBuilder<
         useEntityIds: mergedOptions.useEntityIds,
         navigation: this.navigation,
       });
-      const result = await this.context._makeRequest(url, mergedOptions);
 
-      if (result.error) {
-        return { data: undefined, error: result.error };
-      }
+      const pipeline = makeRequestEffect(this.context, url, mergedOptions).pipe(
+        Effect.map((data) => {
+          const count = typeof data === "string" ? Number(data) : data;
+          return count as number;
+        }),
+      );
 
-      // OData returns count as a string, convert to number
-      const count = typeof result.data === "string" ? Number(result.data) : result.data;
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-      return { data: count as number, error: undefined } as any;
+      return runAsResult(pipeline) as any;
     }
 
     const url = this.urlBuilder.build(queryString, {
@@ -619,27 +621,32 @@ export class QueryBuilder<
       navigation: this.navigation,
     });
 
-    const result = await this.context._makeRequest(url, mergedOptions);
+    const pipeline = makeRequestEffect(this.context, url, mergedOptions).pipe(
+      Effect.flatMap((data) =>
+        Effect.tryPromise({
+          try: () =>
+            processQueryResponse(data, {
+              occurrence: this.occurrence,
+              singleMode: this.singleMode,
+              // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
+              queryOptions: this.queryOptions as any,
+              expandConfigs: this.expandConfigs,
+              skipValidation: options?.skipValidation,
+              useEntityIds: mergedOptions.useEntityIds,
+              includeSpecialColumns: mergedOptions.includeSpecialColumns,
+              fieldMapping: this.fieldMapping,
+              logger: this.logger,
+            }),
+          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for error mapping
+          catch: (e) => e as any,
+        }),
+      ),
+      // processQueryResponse returns a Result, so we need to unwrap it
+      Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))),
+    );
 
-    if (result.error) {
-      return { data: undefined, error: result.error };
-    }
-
-    // Check if select was applied (runtime check)
-    const _hasSelect = this.queryOptions.select !== undefined;
-
-    return processQueryResponse(result.data, {
-      occurrence: this.occurrence,
-      singleMode: this.singleMode,
-      // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
-      queryOptions: this.queryOptions as any,
-      expandConfigs: this.expandConfigs,
-      skipValidation: options?.skipValidation,
-      useEntityIds: mergedOptions.useEntityIds,
-      includeSpecialColumns: mergedOptions.includeSpecialColumns,
-      fieldMapping: this.fieldMapping,
-      logger: this.logger,
-    });
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
+    return runAsResult(pipeline) as any;
   }
 
   getQueryString(options?: { useEntityIds?: boolean }): string {

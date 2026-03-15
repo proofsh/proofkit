@@ -1,4 +1,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
+import { Effect } from "effect";
+import { makeRequestEffect, runAsResult, tryEffect } from "../effect";
+import type { FMODataErrorType } from "../errors";
 import type { FMTable, InferSchemaOutputFromFMTable } from "../orm/table";
 import { getBaseTableConfig, getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
 import { transformFieldNamesToIds } from "../transform";
@@ -168,120 +171,87 @@ export class ExecutableUpdateBuilder<
     return getTableName(this.table);
   }
 
+  /**
+   * Builds the URL for the update request based on mode (byId or byFilter).
+   */
+  private buildUrl(tableId: string): string {
+    if (this.mode === "byId") {
+      return `/${this.databaseName}/${tableId}('${this.recordId}')`;
+    }
+
+    if (!this.queryBuilder) {
+      throw new Error("Query builder is required for filter-based update");
+    }
+
+    const queryString = this.queryBuilder.getQueryString();
+    const tableName = getTableName(this.table);
+    let queryParams: string;
+    if (queryString.startsWith(`/${tableId}`)) {
+      queryParams = queryString.slice(`/${tableId}`.length);
+    } else if (queryString.startsWith(`/${tableName}`)) {
+      queryParams = queryString.slice(`/${tableName}`.length);
+    } else {
+      queryParams = queryString;
+    }
+
+    return `/${this.databaseName}/${tableId}${queryParams}`;
+  }
+
   async execute(
     options?: ExecuteMethodOptions<ExecuteOptions>,
   ): Promise<
     Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
   > {
-    // Merge database-level useEntityIds with per-request options
     const mergedOptions = this.mergeExecuteOptions(options);
-
-    // Get table identifier with override support
     const tableId = this.getTableId(mergedOptions.useEntityIds);
-
-    // Validate and transform input data using input validators (writeValidators)
-    let validatedData = this.data;
-    if (this.table) {
-      const baseTableConfig = getBaseTableConfig(this.table);
-      const inputSchema = baseTableConfig.inputSchema;
-
-      try {
-        validatedData = await validateAndTransformInput(this.data, inputSchema);
-      } catch (error) {
-        // If validation fails, return error immediately
-        return {
-          data: undefined,
-          error: error instanceof Error ? error : new Error(String(error)),
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-        } as any;
-      }
-    }
-
-    // Transform field names to FMFIDs if using entity IDs
-    // Only transform if useEntityIds resolves to true (respects per-request override)
     const shouldUseIds = mergedOptions.useEntityIds ?? false;
+    const url = this.buildUrl(tableId);
 
-    const transformedData =
-      this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
-
-    let url: string;
-
-    if (this.mode === "byId") {
-      // Update single record by ID: PATCH /{database}/{table}('id')
-      url = `/${this.databaseName}/${tableId}('${this.recordId}')`;
-    } else {
-      // Update by filter: PATCH /{database}/{table}?$filter=...
-      if (!this.queryBuilder) {
-        throw new Error("Query builder is required for filter-based update");
-      }
-
-      // Get the query string from the configured QueryBuilder
-      const queryString = this.queryBuilder.getQueryString();
-      // The query string will have the tableId already transformed by QueryBuilder
-      // Remove the leading "/" and table name from the query string as we'll build our own URL
-      const tableName = getTableName(this.table);
-      let queryParams: string;
-      if (queryString.startsWith(`/${tableId}`)) {
-        queryParams = queryString.slice(`/${tableId}`.length);
-      } else if (queryString.startsWith(`/${tableName}`)) {
-        queryParams = queryString.slice(`/${tableName}`.length);
-      } else {
-        queryParams = queryString;
-      }
-
-      url = `/${this.databaseName}/${tableId}${queryParams}`;
-    }
-
-    // Set Prefer header based on returnPreference
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (this.returnPreference === "representation") {
       headers.Prefer = "return=representation";
     }
 
-    // Make PATCH request with JSON body
-    const result = await this.context._makeRequest(url, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify(transformedData),
-      ...mergedOptions,
+    const pipeline = Effect.gen(this, function* () {
+      // Step 1: Validate input
+      let validatedData = this.data;
+      if (this.table) {
+        const baseTableConfig = getBaseTableConfig(this.table);
+        validatedData = yield* tryEffect(
+          () => validateAndTransformInput(this.data, baseTableConfig.inputSchema),
+          (e) => (e instanceof Error ? e : new Error(String(e))) as FMODataErrorType,
+        );
+      }
+
+      // Step 2: Transform field names
+      const transformedData =
+        this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
+
+      // Step 3: Make PATCH request
+      const response = yield* makeRequestEffect(this.context, url, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(transformedData),
+        ...mergedOptions,
+      });
+
+      // Step 4: Handle response based on return preference
+      if (this.returnPreference === "representation") {
+        return response;
+      }
+
+      let updatedCount = 0;
+      if (typeof response === "number") {
+        updatedCount = response;
+      } else if (response && typeof response === "object") {
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
+        updatedCount = (response as any).updatedCount || 0;
+      }
+      return { updatedCount };
     });
 
-    if (result.error) {
-      return { data: undefined, error: result.error };
-    }
-
-    const response = result.data;
-
-    // Handle based on return preference
-    if (this.returnPreference === "representation") {
-      // Return the full updated record
-      return {
-        data: response as ReturnPreference extends "minimal"
-          ? { updatedCount: number }
-          : InferSchemaOutputFromFMTable<Occ>,
-        error: undefined,
-      };
-    }
-    // Return updated count (minimal)
-    let updatedCount = 0;
-
-    if (typeof response === "number") {
-      updatedCount = response;
-    } else if (response && typeof response === "object") {
-      // Check if the response has a count property (fallback)
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-      updatedCount = (response as any).updatedCount || 0;
-    }
-
-    return {
-      data: { updatedCount } as ReturnPreference extends "minimal"
-        ? { updatedCount: number }
-        : InferSchemaOutputFromFMTable<Occ>,
-      error: undefined,
-    };
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
+    return runAsResult(pipeline) as any;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

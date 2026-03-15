@@ -1,4 +1,7 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
+import { Effect } from "effect";
+import { fromValidation, makeRequestEffect, runAsResult, tryEffect } from "../effect";
+import type { FMODataErrorType } from "../errors";
 import { InvalidLocationHeaderError } from "../errors";
 import type { FMTable } from "../orm/table";
 import { getBaseTableConfig, getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
@@ -131,6 +134,22 @@ export class InsertBuilder<
     return getTableName(this.table);
   }
 
+  /**
+   * Builds the schema for validation, excluding container fields.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
+  private getValidationSchema(): Record<string, any> | undefined {
+    if (!this.table) return undefined;
+    const baseTableConfig = getBaseTableConfig(this.table);
+    const containerFields = baseTableConfig.containerFields || [];
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
+    const schema: Record<string, any> = { ...baseTableConfig.schema };
+    for (const containerField of containerFields) {
+      delete schema[containerField as string];
+    }
+    return schema;
+  }
+
   async execute<EO extends ExecuteOptions>(
     options?: ExecuteMethodOptions<EO>,
   ): Promise<
@@ -143,126 +162,82 @@ export class InsertBuilder<
           >
     >
   > {
-    // Merge database-level useEntityIds with per-request options
     const mergedOptions = this.mergeExecuteOptions(options);
-
-    // Get table identifier with override support
     const tableId = this.getTableId(mergedOptions.useEntityIds);
     const url = `/${this.databaseName}/${tableId}`;
-
-    // Validate and transform input data using input validators (writeValidators)
-    let validatedData = this.data;
-    if (this.table) {
-      const baseTableConfig = getBaseTableConfig(this.table);
-      const inputSchema = baseTableConfig.inputSchema;
-
-      try {
-        validatedData = await validateAndTransformInput(this.data, inputSchema);
-      } catch (error) {
-        // If validation fails, return error immediately
-        return {
-          data: undefined,
-          error: error instanceof Error ? error : new Error(String(error)),
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-        } as any;
-      }
-    }
-
-    // Transform field names to FMFIDs if using entity IDs
-    // Only transform if useEntityIds resolves to true (respects per-request override)
     const shouldUseIds = mergedOptions.useEntityIds ?? false;
-
-    const transformedData =
-      this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
-
-    // Set Prefer header based on return preference
     const preferHeader = this.returnPreference === "minimal" ? "return=minimal" : "return=representation";
 
-    // Make POST request with JSON body
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-    const result = await this.context._makeRequest<any>(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Prefer: preferHeader,
-        // biome-ignore lint/suspicious/noExplicitAny: Type assertion for headers object
-        ...((mergedOptions as any)?.headers || {}),
-      },
-      body: JSON.stringify(transformedData),
-      ...mergedOptions,
-    });
-
-    if (result.error) {
-      return { data: undefined, error: result.error };
-    }
-
-    // Handle return=minimal case
-    if (this.returnPreference === "minimal") {
-      // The response should be empty (204 No Content)
-      // _makeRequest will return { _location: string } when there's a Location header
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-      const responseData = result.data as any;
-
-      if (!responseData?._location) {
-        throw new InvalidLocationHeaderError(
-          "Location header is required when using return=minimal but was not found in response",
+    const pipeline = Effect.gen(this, function* () {
+      // Step 1: Validate input
+      let validatedData = this.data;
+      if (this.table) {
+        const baseTableConfig = getBaseTableConfig(this.table);
+        validatedData = yield* tryEffect(
+          () => validateAndTransformInput(this.data, baseTableConfig.inputSchema),
+          (e) => (e instanceof Error ? e : new Error(String(e))) as FMODataErrorType,
         );
       }
 
-      const rowid = this.parseLocationHeader(responseData._location);
-      // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-      return { data: { ROWID: rowid } as any, error: undefined };
-    }
+      // Step 2: Transform field names to entity IDs if needed
+      const transformedData =
+        this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
 
-    let response = result.data;
+      // Step 3: Make HTTP request
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
+      const responseData = yield* makeRequestEffect<any>(this.context, url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Prefer: preferHeader,
+          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for headers object
+          ...((mergedOptions as any)?.headers || {}),
+        },
+        body: JSON.stringify(transformedData),
+        ...mergedOptions,
+      });
 
-    // Transform response field IDs back to names if using entity IDs
-    // Only transform if useEntityIds resolves to true (respects per-request override)
-    if (this.table && shouldUseIds) {
-      response = transformResponseFields(
-        response,
-        this.table,
-        undefined, // No expand configs for insert
-      );
-    }
-
-    // Get schema from table if available, excluding container fields
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
-    let schema: Record<string, any> | undefined;
-    if (this.table) {
-      const baseTableConfig = getBaseTableConfig(this.table);
-      const containerFields = baseTableConfig.containerFields || [];
-
-      // Filter out container fields from schema
-      schema = { ...baseTableConfig.schema };
-      for (const containerField of containerFields) {
-        delete schema[containerField as string];
+      // Step 4: Handle return=minimal case
+      if (this.returnPreference === "minimal") {
+        if (!responseData?._location) {
+          return yield* Effect.fail(
+            new InvalidLocationHeaderError(
+              "Location header is required when using return=minimal but was not found in response",
+            ) as FMODataErrorType,
+          );
+        }
+        const rowid = this.parseLocationHeader(responseData._location);
+        // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
+        return { ROWID: rowid } as any;
       }
-    }
 
-    // Validate the response (FileMaker returns the created record)
-    const validation = await validateSingleResponse<InferSchemaOutputFromFMTable<NonNullable<Occ>>>(
-      response,
-      schema,
-      undefined, // No selected fields for insert
-      undefined, // No expand configs
-      "exact", // Expect exactly one record
-    );
+      // Step 5: Transform response field IDs back to names
+      let response = responseData;
+      if (this.table && shouldUseIds) {
+        response = transformResponseFields(response, this.table, undefined);
+      }
 
-    if (!validation.valid) {
-      return { data: undefined, error: validation.error };
-    }
+      // Step 6: Validate response
+      const schema = this.getValidationSchema();
+      const validated = yield* fromValidation(() =>
+        validateSingleResponse<InferSchemaOutputFromFMTable<NonNullable<Occ>>>(
+          response,
+          schema,
+          undefined,
+          undefined,
+          "exact",
+        ),
+      );
 
-    // Handle null response (shouldn't happen for insert, but handle it)
-    if (validation.data === null) {
-      return {
-        data: undefined,
-        error: new Error("Insert operation returned null response"),
-      };
-    }
+      if (validated === null) {
+        return yield* Effect.fail(new Error("Insert operation returned null response") as FMODataErrorType);
+      }
+
+      return validated;
+    });
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return { data: validation.data as any, error: undefined };
+    return runAsResult(pipeline) as any;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

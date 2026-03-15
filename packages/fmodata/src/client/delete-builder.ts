@@ -1,4 +1,6 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
+import { Effect } from "effect";
+import { makeRequestEffect, runAsResult } from "../effect";
 import type { FMTable } from "../orm/table";
 import { getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../orm/table";
 import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, ExecutionContext, Result } from "../types";
@@ -139,66 +141,57 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     return getTableName(this.table);
   }
 
-  async execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
-    // Merge database-level useEntityIds with per-request options
-    const mergedOptions = this.mergeExecuteOptions(options);
-
-    // Get table identifier with override support
-    const tableId = this.getTableId(mergedOptions.useEntityIds);
-
-    let url: string;
-
+  /**
+   * Builds the URL for the delete request based on mode (byId or byFilter).
+   */
+  private buildUrl(tableId: string): string {
     if (this.mode === "byId") {
-      // Delete single record by ID: DELETE /{database}/{table}('id')
-      url = `/${this.databaseName}/${tableId}('${this.recordId}')`;
-    } else {
-      // Delete by filter: DELETE /{database}/{table}?$filter=...
-      if (!this.queryBuilder) {
-        throw new Error("Query builder is required for filter-based delete");
-      }
-
-      // Get the query string from the configured QueryBuilder
-      const queryString = this.queryBuilder.getQueryString();
-      // Remove the leading "/" and table name from the query string as we'll build our own URL
-      const tableName = getTableName(this.table);
-      let queryParams: string;
-      if (queryString.startsWith(`/${tableId}`)) {
-        queryParams = queryString.slice(`/${tableId}`.length);
-      } else if (queryString.startsWith(`/${tableName}`)) {
-        queryParams = queryString.slice(`/${tableName}`.length);
-      } else {
-        queryParams = queryString;
-      }
-
-      url = `/${this.databaseName}/${tableId}${queryParams}`;
+      return `/${this.databaseName}/${tableId}('${this.recordId}')`;
     }
 
-    // Make DELETE request
-    const result = await this.context._makeRequest(url, {
-      method: "DELETE",
-      ...mergedOptions,
+    if (!this.queryBuilder) {
+      throw new Error("Query builder is required for filter-based delete");
+    }
+
+    const queryString = this.queryBuilder.getQueryString();
+    const tableName = getTableName(this.table);
+    let queryParams: string;
+    if (queryString.startsWith(`/${tableId}`)) {
+      queryParams = queryString.slice(`/${tableId}`.length);
+    } else if (queryString.startsWith(`/${tableName}`)) {
+      queryParams = queryString.slice(`/${tableName}`.length);
+    } else {
+      queryParams = queryString;
+    }
+
+    return `/${this.databaseName}/${tableId}${queryParams}`;
+  }
+
+  async execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
+    const mergedOptions = this.mergeExecuteOptions(options);
+    const tableId = this.getTableId(mergedOptions.useEntityIds);
+    const url = this.buildUrl(tableId);
+
+    const pipeline = Effect.gen(this, function* () {
+      // Make DELETE request
+      const response = yield* makeRequestEffect(this.context, url, {
+        method: "DELETE",
+        ...mergedOptions,
+      });
+
+      // Extract deleted count from response
+      let deletedCount = 0;
+      if (typeof response === "number") {
+        deletedCount = response;
+      } else if (response && typeof response === "object") {
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
+        deletedCount = (response as any).deletedCount || 0;
+      }
+
+      return { deletedCount };
     });
 
-    if (result.error) {
-      return { data: undefined, error: result.error };
-    }
-
-    const response = result.data;
-
-    // OData returns 204 No Content with fmodata.affected_rows header
-    // The _makeRequest should handle extracting the header value
-    // For now, we'll check if response contains the count
-    let deletedCount = 0;
-
-    if (typeof response === "number") {
-      deletedCount = response;
-    } else if (response && typeof response === "object") {
-      // Check if the response has a count property (fallback)
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
-      deletedCount = (response as any).deletedCount || 0;
-    }
-
-    return { data: { deletedCount }, error: undefined };
+    return runAsResult(pipeline);
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

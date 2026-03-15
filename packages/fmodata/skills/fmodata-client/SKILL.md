@@ -5,7 +5,7 @@ description: >
   timestampField containerField calcField listField query builder execute() filter operators eq ne gt
   gte lt lte contains startsWith endsWith matchesPattern inArray notInArray isNull isNotNull and or
   not tolower toupper trim CRUD insert update delete byId where navigate expand relationships batch
-  Result error handling neverthrow pattern FMODataError HTTPError ODataError ValidationError
+  Result error handling Effect.ts pattern FMODataError HTTPError ODataError ValidationError
   BatchTruncatedError entity IDs FMTID FMFID defaultSelect readValidator writeValidator orderBy asc
   desc top skip single maybeSingle count getSingleField FileMaker OData API schema management
   webhooks getTableColumns select("all")

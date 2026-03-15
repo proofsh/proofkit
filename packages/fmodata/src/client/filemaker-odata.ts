@@ -6,7 +6,10 @@ import createClient, {
   RetryLimitError,
   TimeoutError,
 } from "@fetchkit/ffetch";
+import { Effect } from "effect";
 import { get } from "es-toolkit/compat";
+import { runAsResult } from "../effect";
+import type { FMODataErrorType } from "../errors";
 import { HTTPError, ODataError, ResponseParseError, SchemaLockedError } from "../errors";
 import { createLogger, type InternalLogger, type Logger } from "../logger";
 import type { Auth, ExecutionContext, Result } from "../types";
@@ -98,15 +101,76 @@ export class FMServerConnection implements ExecutionContext {
 
   /**
    * @internal
+   * Classifies a caught error into a typed FMODataErrorType.
    */
-  async _makeRequest<T>(
+  private _classifyError(err: unknown, fullUrl: string): FMODataErrorType {
+    if (
+      err instanceof TimeoutError ||
+      err instanceof AbortError ||
+      err instanceof NetworkError ||
+      err instanceof RetryLimitError ||
+      err instanceof CircuitOpenError
+    ) {
+      return err;
+    }
+    if (err instanceof ResponseParseError) {
+      return err;
+    }
+    return new NetworkError(fullUrl, err);
+  }
+
+  /**
+   * @internal
+   * Parses an HTTP error response into a typed FMODataErrorType.
+   */
+  private _parseHttpError(
+    resp: Response,
+    fullUrl: string,
+    errorBody: { error?: { code?: string | number; message?: string } } | undefined,
+  ): FMODataErrorType {
+    if (errorBody?.error) {
+      const errorCode = errorBody.error.code;
+      const errorMessage = errorBody.error.message || resp.statusText;
+      if (errorCode === "303" || errorCode === 303) {
+        return new SchemaLockedError(fullUrl, errorMessage, errorBody.error);
+      }
+      return new ODataError(fullUrl, errorMessage, String(errorCode), errorBody.error);
+    }
+    return new HTTPError(fullUrl, resp.status, resp.statusText, errorBody);
+  }
+
+  /**
+   * @internal
+   * Checks parsed JSON data for embedded OData errors.
+   */
+  private _checkEmbeddedODataError<T>(
+    data: T & { error?: { code?: string | number; message?: string } },
+    fullUrl: string,
+  ): FMODataErrorType | undefined {
+    if (get(data, "error", null)) {
+      const errorCode = get(data, "error.code", null);
+      const errorMessage = String(get(data, "error.message", "Unknown OData error"));
+      if (errorCode === "303" || errorCode === 303) {
+        return new SchemaLockedError(fullUrl, errorMessage, data.error);
+      }
+      return new ODataError(fullUrl, errorMessage, String(errorCode), data.error);
+    }
+    return undefined;
+  }
+
+  /**
+   * @internal
+   * Builds the Effect pipeline for an HTTP request.
+   * Each step in the pipeline is a discrete Effect, enabling composable error handling.
+   */
+  private _makeRequestEffect<T>(
     url: string,
     options?: RequestInit &
       FFetchOptions & {
         useEntityIds?: boolean;
         includeSpecialColumns?: boolean;
       },
-  ): Promise<Result<T>> {
+  ): Effect.Effect<T, FMODataErrorType> {
     const logger = this._getLogger();
     const baseUrl = `${this.serverUrl}${"apiKey" in this.auth ? "/otto" : ""}/fmi/odata/v4`;
     const fullUrl = baseUrl + url;
@@ -152,121 +216,93 @@ export class FMServerConnection implements ExecutionContext {
     // Otherwise use the existing client
     const clientToUse = fetchHandler ? createClient({ retries: 0, fetchHandler }) : this.fetchClient;
 
-    try {
-      const finalOptions = {
-        ...restOptions,
-        headers,
-      };
+    const finalOptions = {
+      ...restOptions,
+      headers,
+    };
 
-      const resp = await clientToUse(fullUrl, finalOptions);
-      logger.debug(`${finalOptions.method ?? "GET"} ${resp.status} ${fullUrl}`);
+    // Step 1: Execute the HTTP request
+    const fetchEffect = Effect.tryPromise({
+      try: () => clientToUse(fullUrl, finalOptions),
+      catch: (err) => this._classifyError(err, fullUrl),
+    });
 
-      // Handle HTTP errors
-      if (!resp.ok) {
-        // Try to parse error body if it's JSON
-        let errorBody: { error?: { code?: string | number; message?: string } } | undefined;
-        try {
-          if (resp.headers.get("content-type")?.includes("application/json")) {
-            errorBody = await safeJsonParse<typeof errorBody>(resp);
+    // Step 2: Process the response
+    return fetchEffect.pipe(
+      Effect.tap((resp) => Effect.sync(() => logger.debug(`${finalOptions.method ?? "GET"} ${resp.status} ${fullUrl}`))),
+      Effect.flatMap((resp) => {
+        // Handle HTTP errors
+        if (!resp.ok) {
+          return Effect.tryPromise({
+            try: async () => {
+              let errorBody: { error?: { code?: string | number; message?: string } } | undefined;
+              try {
+                if (resp.headers.get("content-type")?.includes("application/json")) {
+                  errorBody = await safeJsonParse<typeof errorBody>(resp);
+                }
+              } catch {
+                // Ignore JSON parse errors
+              }
+              return errorBody;
+            },
+            catch: () => new HTTPError(fullUrl, resp.status, resp.statusText) as FMODataErrorType,
+          }).pipe(
+            Effect.flatMap((errorBody) => Effect.fail(this._parseHttpError(resp, fullUrl, errorBody))),
+          );
+        }
+
+        // Check for affected rows header (for DELETE and bulk PATCH operations)
+        const affectedRows = resp.headers.get("fmodata.affected_rows");
+        if (affectedRows !== null) {
+          return Effect.succeed(Number.parseInt(affectedRows, 10) as T);
+        }
+
+        // Handle 204 No Content with no body
+        if (resp.status === 204) {
+          const locationHeader = resp.headers?.get?.("Location") || resp.headers?.get?.("location");
+          if (locationHeader) {
+            return Effect.succeed({ _location: locationHeader } as T);
           }
-        } catch {
-          // Ignore JSON parse errors
+          return Effect.succeed(0 as T);
         }
 
-        // Check if it's an OData error response
-        if (errorBody?.error) {
-          const errorCode = errorBody.error.code;
-          const errorMessage = errorBody.error.message || resp.statusText;
-
-          // Check for schema locked error (code 303)
-          if (errorCode === "303" || errorCode === 303) {
-            return {
-              data: undefined,
-              error: new SchemaLockedError(fullUrl, errorMessage, errorBody.error),
-            };
-          }
-
-          return {
-            data: undefined,
-            error: new ODataError(fullUrl, errorMessage, String(errorCode), errorBody.error),
-          };
+        // Parse JSON response
+        if (resp.headers.get("content-type")?.includes("application/json")) {
+          return Effect.tryPromise({
+            try: () => safeJsonParse<T & { error?: { code?: string | number; message?: string } }>(resp),
+            catch: (err) => this._classifyError(err, fullUrl),
+          }).pipe(
+            Effect.flatMap((data) => {
+              const embeddedError = this._checkEmbeddedODataError(data, fullUrl);
+              if (embeddedError) {
+                return Effect.fail(embeddedError);
+              }
+              return Effect.succeed(data as T);
+            }),
+          );
         }
 
-        return {
-          data: undefined,
-          error: new HTTPError(fullUrl, resp.status, resp.statusText, errorBody),
-        };
-      }
+        // Plain text response
+        return Effect.tryPromise({
+          try: () => resp.text(),
+          catch: (err) => this._classifyError(err, fullUrl),
+        }).pipe(Effect.map((text) => text as T));
+      }),
+    );
+  }
 
-      // Check for affected rows header (for DELETE and bulk PATCH operations)
-      // FileMaker may return this with 204 No Content or 200 OK
-      const affectedRows = resp.headers.get("fmodata.affected_rows");
-      if (affectedRows !== null) {
-        return { data: Number.parseInt(affectedRows, 10) as T, error: undefined };
-      }
-
-      // Handle 204 No Content with no body
-      if (resp.status === 204) {
-        // Check for Location header (used for insert with return=minimal)
-        // Use optional chaining for safety with mocks that might not have proper headers
-        const locationHeader = resp.headers?.get?.("Location") || resp.headers?.get?.("location");
-        if (locationHeader) {
-          // Return the location header so InsertBuilder can extract ROWID
-          return { data: { _location: locationHeader } as T, error: undefined };
-        }
-        return { data: 0 as T, error: undefined };
-      }
-
-      // Parse response
-      if (resp.headers.get("content-type")?.includes("application/json")) {
-        const data = await safeJsonParse<T & { error?: { code?: string | number; message?: string } }>(resp);
-
-        // Check for embedded OData errors
-        if (get(data, "error", null)) {
-          const errorCode = get(data, "error.code", null);
-          const errorMessage = get(data, "error.message", "Unknown OData error");
-
-          // Check for schema locked error (code 303)
-          if (errorCode === "303" || errorCode === 303) {
-            return {
-              data: undefined,
-              error: new SchemaLockedError(fullUrl, errorMessage, data.error),
-            };
-          }
-
-          return {
-            data: undefined,
-            error: new ODataError(fullUrl, errorMessage, String(errorCode), data.error),
-          };
-        }
-
-        return { data: data as T, error: undefined };
-      }
-
-      return { data: (await resp.text()) as T, error: undefined };
-    } catch (err) {
-      // Map ffetch errors - return them directly (no re-wrapping)
-      if (
-        err instanceof TimeoutError ||
-        err instanceof AbortError ||
-        err instanceof NetworkError ||
-        err instanceof RetryLimitError ||
-        err instanceof CircuitOpenError
-      ) {
-        return { data: undefined, error: err };
-      }
-
-      // Handle JSON parse errors (ResponseParseError from safeJsonParse)
-      if (err instanceof ResponseParseError) {
-        return { data: undefined, error: err };
-      }
-
-      // Unknown error - wrap it as NetworkError
-      return {
-        data: undefined,
-        error: new NetworkError(fullUrl, err),
-      };
-    }
+  /**
+   * @internal
+   */
+  async _makeRequest<T>(
+    url: string,
+    options?: RequestInit &
+      FFetchOptions & {
+        useEntityIds?: boolean;
+        includeSpecialColumns?: boolean;
+      },
+  ): Promise<Result<T>> {
+    return runAsResult(this._makeRequestEffect<T>(url, options));
   }
 
   database<IncludeSpecialColumns extends boolean = false>(
