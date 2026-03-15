@@ -133,7 +133,11 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
         // Cast to the declared return type - runtime behavior handles the actual selection
         const allColumns = getTableColumns(this.occurrence) as ExtractColumnsFromOcc<Occ>;
 
-        const selectedBuilder = this.applyNavigationContext(builder.select(allColumns)).top(1000);
+        const selectedBuilder = this.applyNavigationContext(
+          this.config.includeSpecialColumns
+            ? builder.select(allColumns, { ROWID: true, ROWMODID: true })
+            : builder.select(allColumns),
+        ).top(1000);
         return selectedBuilder as QueryBuilder<
           Occ,
           keyof InferSchemaOutputFromFMTable<Occ>,
@@ -200,7 +204,11 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
         // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
         const allColumns = getTableColumns(this.occurrence as any) as ExtractColumnsFromOcc<Occ>;
 
-        const selectedBuilder = this.applyNavigationContext(builder.select(allColumns));
+        const selectedBuilder = this.applyNavigationContext(
+          this.config.includeSpecialColumns
+            ? builder.select(allColumns, { ROWID: true, ROWMODID: true })
+            : builder.select(allColumns),
+        );
         // biome-ignore lint/suspicious/noExplicitAny: Type assertion for complex generic return type
         return selectedBuilder as any;
       }

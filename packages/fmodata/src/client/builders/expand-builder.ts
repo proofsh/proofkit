@@ -123,6 +123,15 @@ export class ExpandBuilder {
         ...(configuredBuilder as any).queryOptions,
       };
 
+      // QueryBuilder stores typed filter expressions separately from queryOptions
+      // and serializes later. For nested expands, serialize immediately so
+      // where(eq(...)) inside expand callbacks is preserved.
+      // biome-ignore lint/suspicious/noExplicitAny: Internal builder state access
+      const filterExpression = (configuredBuilder as any).readState?.filterExpression;
+      if (filterExpression && !expandOptions.filter && typeof filterExpression.toODataFilter === "function") {
+        expandOptions.filter = filterExpression.toODataFilter(this.useEntityIds);
+      }
+
       // If callback didn't provide select, apply defaultSelect from target table
       if (!expandOptions.select) {
         const defaultFields = getDefaultSelectFields(targetTable);
@@ -220,10 +229,14 @@ export class ExpandBuilder {
     }
 
     if (opts.filter) {
-      const filterQuery = buildQuery({ filter: opts.filter });
-      const match = filterQuery.match(FILTER_QUERY_REGEX);
-      if (match) {
-        parts.push(`$filter=${match[1]}`);
+      if (typeof opts.filter === "string") {
+        parts.push(`$filter=${opts.filter}`);
+      } else {
+        const filterQuery = buildQuery({ filter: opts.filter });
+        const match = filterQuery.match(FILTER_QUERY_REGEX);
+        if (match) {
+          parts.push(`$filter=${match[1]}`);
+        }
       }
     }
 
