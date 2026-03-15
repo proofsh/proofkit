@@ -248,10 +248,17 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
         }
 
         const nativeResponse = parsedToResponse(parsed);
-        const result = yield* Effect.tryPromise({
-          try: () => builder.processResponse(nativeResponse, options),
-          catch: (e) => e as FMODataErrorType,
-        });
+        const result = yield* Effect.catchAll(
+          Effect.tryPromise({
+            try: () => builder.processResponse(nativeResponse, options),
+            catch: (e) => e as FMODataErrorType,
+          }),
+          (error) =>
+            Effect.succeed({
+              data: undefined,
+              error,
+            }),
+        );
 
         if (result.error) {
           results.push({ data: undefined, error: result.error, status: parsed.status });

@@ -186,17 +186,17 @@ export class InsertBuilder<
         this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
 
       // Step 3: Make HTTP request
+      const { headers: requestHeaders, ...requestOptions } = mergedOptions;
+      const headers = new Headers(requestHeaders);
+      headers.set("Content-Type", "application/json");
+      headers.set("Prefer", preferHeader);
+
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
       const responseData = yield* makeRequestEffect<any>(this.context, url, {
+        ...requestOptions,
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Prefer: preferHeader,
-          // biome-ignore lint/suspicious/noExplicitAny: Type assertion for headers object
-          ...((mergedOptions as any)?.headers || {}),
-        },
+        headers,
         body: JSON.stringify(transformedData),
-        ...mergedOptions,
       });
 
       // Step 4: Handle return=minimal case

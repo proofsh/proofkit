@@ -144,9 +144,16 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
   /**
    * Builds the URL for the delete request based on mode (byId or byFilter).
    */
+  private formatRecordIdForOData(recordId: string | number): string {
+    if (typeof recordId === "number") {
+      return String(recordId);
+    }
+    return `'${recordId}'`;
+  }
+
   private buildUrl(tableId: string): string {
     if (this.mode === "byId") {
-      return `/${this.databaseName}/${tableId}('${this.recordId}')`;
+      return `/${this.databaseName}/${tableId}(${this.formatRecordIdForOData(this.recordId as string | number)})`;
     }
 
     if (!this.queryBuilder) {
@@ -175,8 +182,8 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     const pipeline = Effect.gen(this, function* () {
       // Make DELETE request
       const response = yield* makeRequestEffect(this.context, url, {
-        method: "DELETE",
         ...mergedOptions,
+        method: "DELETE",
       });
 
       // Extract deleted count from response

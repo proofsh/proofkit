@@ -174,9 +174,16 @@ export class ExecutableUpdateBuilder<
   /**
    * Builds the URL for the update request based on mode (byId or byFilter).
    */
+  private formatRecordIdForOData(recordId: string | number): string {
+    if (typeof recordId === "number") {
+      return String(recordId);
+    }
+    return `'${recordId}'`;
+  }
+
   private buildUrl(tableId: string): string {
     if (this.mode === "byId") {
-      return `/${this.databaseName}/${tableId}('${this.recordId}')`;
+      return `/${this.databaseName}/${tableId}(${this.formatRecordIdForOData(this.recordId as string | number)})`;
     }
 
     if (!this.queryBuilder) {
@@ -207,9 +214,11 @@ export class ExecutableUpdateBuilder<
     const shouldUseIds = mergedOptions.useEntityIds ?? false;
     const url = this.buildUrl(tableId);
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const { headers: requestHeaders, ...requestOptions } = mergedOptions;
+    const headers = new Headers(requestHeaders);
+    headers.set("Content-Type", "application/json");
     if (this.returnPreference === "representation") {
-      headers.Prefer = "return=representation";
+      headers.set("Prefer", "return=representation");
     }
 
     const pipeline = Effect.gen(this, function* () {
@@ -229,10 +238,10 @@ export class ExecutableUpdateBuilder<
 
       // Step 3: Make PATCH request
       const response = yield* makeRequestEffect(this.context, url, {
+        ...requestOptions,
         method: "PATCH",
         headers,
         body: JSON.stringify(transformedData),
-        ...mergedOptions,
       });
 
       // Step 4: Handle response based on return preference
