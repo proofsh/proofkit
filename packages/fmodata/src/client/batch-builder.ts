@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { makeRequestEffect, runAsResult, withSpan } from "../effect";
-import { BatchTruncatedError } from "../errors";
 import type { FMODataErrorType } from "../errors";
+import { BatchTruncatedError } from "../errors";
 import type {
   BatchItemResult,
   BatchResult,
@@ -241,7 +241,9 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
             status: parsed.status,
           });
           errorCount++;
-          if (firstErrorIndex === null) firstErrorIndex = i;
+          if (firstErrorIndex === null) {
+            firstErrorIndex = i;
+          }
           continue;
         }
 
@@ -254,7 +256,9 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
         if (result.error) {
           results.push({ data: undefined, error: result.error, status: parsed.status });
           errorCount++;
-          if (firstErrorIndex === null) firstErrorIndex = i;
+          if (firstErrorIndex === null) {
+            firstErrorIndex = i;
+          }
         } else {
           results.push({ data: result.data, error: undefined, status: parsed.status });
           successCount++;

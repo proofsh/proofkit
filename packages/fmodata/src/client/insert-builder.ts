@@ -139,7 +139,9 @@ export class InsertBuilder<
    */
   // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
   private getValidationSchema(): Record<string, any> | undefined {
-    if (!this.table) return undefined;
+    if (!this.table) {
+      return undefined;
+    }
     const baseTableConfig = getBaseTableConfig(this.table);
     const containerFields = baseTableConfig.containerFields || [];
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic schema shape from table configuration
@@ -236,8 +238,16 @@ export class InsertBuilder<
       return validated;
     });
 
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(withSpan(pipeline, "fmodata.insert", this.table ? { "fmodata.table": getTableName(this.table) } : undefined)) as any;
+    return (await runAsResult(
+      withSpan(pipeline, "fmodata.insert", this.table ? { "fmodata.table": getTableName(this.table) } : undefined),
+    )) as Result<
+      ReturnPreference extends "minimal"
+        ? { ROWID: number }
+        : ConditionallyWithODataAnnotations<
+            InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+            EO["includeODataAnnotations"] extends true ? true : false
+          >
+    >;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

@@ -200,11 +200,7 @@ describe("insert and update methods", () => {
 
       const db = mock.database("test_db");
 
-      const result = await db
-        .from(users)
-        .update({ username: "newname" })
-        .byId("user-123")
-        .execute();
+      const result = await db.from(users).update({ username: "newname" }).byId("user-123").execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toBeDefined();
@@ -450,11 +446,7 @@ describe("insert and update methods", () => {
 
       const db = mock.database("test_db");
 
-      const result = await db
-        .from(users)
-        .update({ username: "newname" })
-        .byId("user-123")
-        .execute();
+      const result = await db.from(users).update({ username: "newname" }).byId("user-123").execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeInstanceOf(Error);

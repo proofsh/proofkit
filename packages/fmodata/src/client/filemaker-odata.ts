@@ -12,13 +12,14 @@ import { runAsResult, withRetryPolicy, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { HTTPError, ODataError, ResponseParseError, SchemaLockedError } from "../errors";
 import { createLogger, type InternalLogger, type Logger } from "../logger";
-import { HttpClient, ODataConfig, ODataLogger, type FMODataLayer } from "../services";
+import { type FMODataLayer, HttpClient, ODataConfig, ODataLogger } from "../services";
 import type { Auth, ExecutionContext, Result } from "../types";
 import { getAcceptHeader } from "../types";
 import { Database } from "./database";
 import { safeJsonParse } from "./sanitize-json";
 
 const TRAILING_SLASH_REGEX = /\/+$/;
+const IDEMPOTENT_RETRY_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
 
 export class FMServerConnection implements ExecutionContext {
   private readonly fetchClient: ReturnType<typeof createClient>;
@@ -246,6 +247,7 @@ export class FMServerConnection implements ExecutionContext {
       ...restOptions,
       headers,
     };
+    const method = (finalOptions.method ?? "GET").toUpperCase();
 
     // Step 1: Execute the HTTP request
     const fetchEffect = Effect.tryPromise({
@@ -255,7 +257,9 @@ export class FMServerConnection implements ExecutionContext {
 
     // Step 2: Process the response
     const pipeline = fetchEffect.pipe(
-      Effect.tap((resp) => Effect.sync(() => logger.debug(`${finalOptions.method ?? "GET"} ${resp.status} ${fullUrl}`))),
+      Effect.tap((resp) =>
+        Effect.sync(() => logger.debug(`${finalOptions.method ?? "GET"} ${resp.status} ${fullUrl}`)),
+      ),
       Effect.flatMap((resp) => {
         // Handle HTTP errors
         if (!resp.ok) {
@@ -272,9 +276,7 @@ export class FMServerConnection implements ExecutionContext {
               return errorBody;
             },
             catch: () => new HTTPError(fullUrl, resp.status, resp.statusText) as FMODataErrorType,
-          }).pipe(
-            Effect.flatMap((errorBody) => Effect.fail(this._parseHttpError(resp, fullUrl, errorBody))),
-          );
+          }).pipe(Effect.flatMap((errorBody) => Effect.fail(this._parseHttpError(resp, fullUrl, errorBody))));
         }
 
         // Check for affected rows header (for DELETE and bulk PATCH operations)
@@ -318,13 +320,11 @@ export class FMServerConnection implements ExecutionContext {
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for optional property access
     const retryPolicy = (options as any)?.retryPolicy;
+    const shouldRetry = Boolean(retryPolicy) && IDEMPOTENT_RETRY_METHODS.has(method);
+    const pipelineWithRetry = shouldRetry ? withRetryPolicy(pipeline, retryPolicy) : pipeline;
 
     // Apply retry policy and tracing span
-    return withSpan(
-      withRetryPolicy(pipeline, retryPolicy),
-      "fmodata.request",
-      { "fmodata.url": url, "fmodata.method": finalOptions.method ?? "GET" },
-    );
+    return withSpan(pipelineWithRetry, "fmodata.request", { "fmodata.url": url, "fmodata.method": method });
   }
 
   /**
@@ -338,7 +338,7 @@ export class FMServerConnection implements ExecutionContext {
         includeSpecialColumns?: boolean;
       },
   ): Promise<Result<T>> {
-    return runAsResult(this._makeRequestEffect<T>(url, options));
+    return await runAsResult(this._makeRequestEffect<T>(url, options));
   }
 
   database<IncludeSpecialColumns extends boolean = false>(

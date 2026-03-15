@@ -616,7 +616,7 @@ export class QueryBuilder<
       );
 
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-      return runAsResult(pipeline) as any;
+      return (await runAsResult(pipeline)) as any;
     }
 
     const url = this.urlBuilder.build(queryString, {
@@ -654,7 +654,7 @@ export class QueryBuilder<
     );
 
     // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(pipeline) as any;
+    return (await runAsResult(pipeline)) as any;
   }
 
   getQueryString(options?: { useEntityIds?: boolean }): string {

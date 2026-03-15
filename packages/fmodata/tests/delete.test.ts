@@ -228,11 +228,7 @@ describe("delete method", () => {
       });
       const db = mock.database("test_db");
 
-      const result = await db
-        .from(usersTO)
-        .delete()
-        .byId("user-123")
-        .execute();
+      const result = await db.from(usersTO).delete().byId("user-123").execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeInstanceOf(Error);

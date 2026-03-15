@@ -56,8 +56,6 @@ export {
   ValidationError,
 } from "./errors";
 export type { Logger } from "./logger";
-// Effect services for composable dependency injection
-export { HttpClient, ODataConfig, ODataLogger, type FMODataLayer } from "./services";
 // NEW ORM API - Drizzle-inspired field builders and operators
 export {
   and,
@@ -116,6 +114,8 @@ export {
   toupper,
   trim,
 } from "./orm/index";
+// Effect services for composable dependency injection
+export { type FMODataLayer, HttpClient, ODataConfig, ODataLogger } from "./services";
 // Utility types for type annotations
 export type {
   BatchItemResult,

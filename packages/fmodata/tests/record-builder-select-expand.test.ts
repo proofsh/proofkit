@@ -494,7 +494,12 @@ describe("RecordBuilder Select/Expand", () => {
       };
 
       const execMock = new MockFMServerConnection();
-      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      execMock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockResponse.response,
+        status: mockResponse.status,
+        headers: mockResponse.headers,
+      });
       const execDb = execMock.database("test_db");
 
       const result = await execDb
@@ -539,7 +544,12 @@ describe("RecordBuilder Select/Expand", () => {
       };
 
       const execMock = new MockFMServerConnection();
-      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      execMock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockResponse.response,
+        status: mockResponse.status,
+        headers: mockResponse.headers,
+      });
       const execDb = execMock.database("test_db");
 
       const result = await execDb
@@ -572,7 +582,12 @@ describe("RecordBuilder Select/Expand", () => {
       };
 
       const execMock = new MockFMServerConnection();
-      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      execMock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockResponse.response,
+        status: mockResponse.status,
+        headers: mockResponse.headers,
+      });
       const execDb = execMock.database("test_db");
 
       const result = await execDb
@@ -603,7 +618,12 @@ describe("RecordBuilder Select/Expand", () => {
       };
 
       const execMock = new MockFMServerConnection();
-      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      execMock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockResponse.response,
+        status: mockResponse.status,
+        headers: mockResponse.headers,
+      });
       const execDb = execMock.database("test_db");
 
       const result = await execDb
@@ -708,13 +728,15 @@ describe("RecordBuilder Select/Expand", () => {
       };
 
       const execMock = new MockFMServerConnection();
-      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      execMock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockResponse.response,
+        status: mockResponse.status,
+        headers: mockResponse.headers,
+      });
       const execDb = execMock.database("test_db");
 
-      const result = await execDb
-        .from(contactsWithSchemaSelect)
-        .get("test-uuid")
-        .execute();
+      const result = await execDb.from(contactsWithSchemaSelect).get("test-uuid").execute();
 
       expect(result.data).toBeDefined();
       expect(result.error).toBeUndefined();

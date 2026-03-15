@@ -1,5 +1,5 @@
-import { describe, it } from "vitest";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, it } from "vitest";
 import { users } from "./utils/test-setup";
 
 const mock = new MockFMServerConnection();

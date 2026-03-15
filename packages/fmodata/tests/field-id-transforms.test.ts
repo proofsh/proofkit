@@ -50,7 +50,11 @@ describe("Field ID Transformation", () => {
         .execute();
 
       // Verify the request used FMTIDs for table and FMFIDs for fields
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       expect(spyCalls).toHaveLength(1);
       const request = spyCalls[0];
       if (!request) {
@@ -140,7 +144,11 @@ describe("Field ID Transformation", () => {
         .execute();
 
       // Verify filter uses FMFID for the field name
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
@@ -170,7 +178,11 @@ describe("Field ID Transformation", () => {
         .execute();
 
       // Verify orderBy uses FMFID
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
@@ -196,12 +208,13 @@ describe("Field ID Transformation", () => {
       });
       const db = mock.database("test.fmp12", { useEntityIds: true });
 
-      await db
-        .from(usersTOWithIds)
-        .get("550e8400-e29b-41d4-a716-446655440001")
-        .execute();
+      await db.from(usersTOWithIds).get("550e8400-e29b-41d4-a716-446655440001").execute();
 
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
@@ -233,10 +246,7 @@ describe("Field ID Transformation", () => {
       });
       const db = mock.database("test.fmp12", { useEntityIds: true });
 
-      const result = await db
-        .from(usersTOWithIds)
-        .get("550e8400-e29b-41d4-a716-446655440001")
-        .execute();
+      const result = await db.from(usersTOWithIds).get("550e8400-e29b-41d4-a716-446655440001").execute();
 
       expect(result.data).toMatchObject({
         id: "550e8400-e29b-41d4-a716-446655440001",
@@ -280,7 +290,11 @@ describe("Field ID Transformation", () => {
         })
         .execute();
 
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       expect(spyCalls).toHaveLength(1);
       const request = spyCalls[0];
       if (!request) {
@@ -356,7 +370,11 @@ describe("Field ID Transformation", () => {
         .byId("550e8400-e29b-41d4-a716-446655440001")
         .execute();
 
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       expect(spyCalls).toHaveLength(1);
       const request = spyCalls[0];
       if (!request) {
@@ -391,7 +409,11 @@ describe("Field ID Transformation", () => {
         .expand(usersTOWithIds, (b: any) => b.select({ id: usersTOWithIds.id, name: usersTOWithIds.name }))
         .execute();
 
-      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.forUrl("test.fmp12");
       const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
@@ -488,14 +510,14 @@ describe("Field ID Transformation", () => {
       });
       const db = mock.database("test.fmp12", { useEntityIds: true });
 
-      await db
-        .from(usersTOWithIds)
-        .list()
-        .select({ id: usersTOWithIds.id, name: usersTOWithIds.name })
-        .execute();
+      await db.from(usersTOWithIds).list().select({ id: usersTOWithIds.id, name: usersTOWithIds.name }).execute();
 
       // Verify the Prefer header is present
-      const spyCalls = mock.spy!.calls;
+      const spy = mock.spy;
+      if (!spy) {
+        throw new Error("Expected spy to be enabled");
+      }
+      const spyCalls = spy.calls;
       expect(spyCalls).toHaveLength(1);
       const request = spyCalls[0];
       if (!request) {

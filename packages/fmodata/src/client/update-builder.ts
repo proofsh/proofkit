@@ -250,8 +250,9 @@ export class ExecutableUpdateBuilder<
       return { updatedCount };
     });
 
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(withSpan(pipeline, "fmodata.update", { "fmodata.table": getTableName(this.table) })) as any;
+    return (await runAsResult(
+      withSpan(pipeline, "fmodata.update", { "fmodata.table": getTableName(this.table) }),
+    )) as Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

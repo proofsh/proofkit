@@ -8,8 +8,8 @@
  */
 
 import { FMTable, fmTableOccurrence, textField } from "@proofkit/fmodata";
-import { describe, expect, it } from "vitest";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, it } from "vitest";
 
 describe("BaseTable with entity IDs", () => {
   it("should create a table with fmfIds using fmTableOccurrence", () => {

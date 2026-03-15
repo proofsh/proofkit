@@ -57,10 +57,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .execute({ includeODataAnnotations: true });
+      const result = await db.from(contacts).list().execute({ includeODataAnnotations: true });
 
       expect(result).toBeDefined();
       expect(result.error).toBeUndefined();
@@ -141,12 +138,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .orderBy("name")
-        .top(5)
-        .execute();
+      const result = await db.from(contacts).list().orderBy("name").top(5).execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
@@ -164,11 +156,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .single()
-        .execute();
+      const result = await db.from(contacts).list().single().execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeUndefined();
@@ -183,11 +171,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .maybeSingle()
-        .execute();
+      const result = await db.from(contacts).list().maybeSingle().execute();
 
       expect(result.data).toBeNull();
       expect(result.error).toBeUndefined();
@@ -204,11 +188,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .maybeSingle()
-        .execute();
+      const result = await db.from(contacts).list().maybeSingle().execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeDefined();
@@ -224,12 +204,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .top(2)
-        .skip(2)
-        .execute();
+      const result = await db.from(contacts).list().top(2).skip(2).execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
@@ -249,10 +224,7 @@ describe("Mock Fetch Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .get("B5BFBC89-03E0-47FC-ABB6-D51401730227")
-        .execute();
+      const result = await db.from(contacts).get("B5BFBC89-03E0-47FC-ABB6-D51401730227").execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();

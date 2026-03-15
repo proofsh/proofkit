@@ -112,10 +112,7 @@ describe("Per-request useEntityIds override", () => {
     expect(call0?.url).toContain("FMTID:100");
 
     // Insert with entity IDs disabled — URL should use table name
-    await db
-      .from(localContactsTO)
-      .insert({ name: "Test" })
-      .execute({ useEntityIds: false });
+    await db.from(localContactsTO).insert({ name: "Test" }).execute({ useEntityIds: false });
 
     const call1 = mock.spy?.calls[1];
     expect(call1?.url).toContain("/contacts");
@@ -144,21 +141,13 @@ describe("Per-request useEntityIds override", () => {
     const db = mock.database("TestDB", { useEntityIds: true });
 
     // Update with entity IDs disabled
-    await db
-      .from(localContactsTO)
-      .update({ name: "Updated" })
-      .byId("123")
-      .execute({ useEntityIds: false });
+    await db.from(localContactsTO).update({ name: "Updated" }).byId("123").execute({ useEntityIds: false });
 
     const call0 = mock.spy?.calls[0];
     expect(call0?.headers?.prefer).toBeUndefined();
 
     // Update with entity IDs enabled
-    await db
-      .from(localContactsTO)
-      .update({ name: "Updated" })
-      .byId("123")
-      .execute({ useEntityIds: true });
+    await db.from(localContactsTO).update({ name: "Updated" }).byId("123").execute({ useEntityIds: true });
 
     const call1 = mock.spy?.calls[1];
     expect(call1?.headers?.prefer).toBe("fmodata.entity-ids");
@@ -186,21 +175,13 @@ describe("Per-request useEntityIds override", () => {
     const db = mock.database("TestDB", { useEntityIds: true });
 
     // Delete with entity IDs enabled
-    await db
-      .from(localContactsTO)
-      .delete()
-      .byId("123")
-      .execute({ useEntityIds: true });
+    await db.from(localContactsTO).delete().byId("123").execute({ useEntityIds: true });
 
     const call0 = mock.spy?.calls[0];
     expect(call0?.headers?.prefer).toBe("fmodata.entity-ids");
 
     // Delete with entity IDs disabled
-    await db
-      .from(localContactsTO)
-      .delete()
-      .byId("123")
-      .execute({ useEntityIds: false });
+    await db.from(localContactsTO).delete().byId("123").execute({ useEntityIds: false });
 
     const call1 = mock.spy?.calls[1];
     expect(call1?.headers?.prefer).toBeUndefined();

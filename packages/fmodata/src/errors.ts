@@ -229,13 +229,19 @@ export function isFMODataError(error: unknown): error is FMODataError {
  * - HTTP 5xx errors (server-side failures)
  */
 export function isTransientError(error: unknown): boolean {
-  if (error instanceof SchemaLockedError) return true;
+  if (error instanceof SchemaLockedError) {
+    return true;
+  }
   // Check ffetch error types by name since they aren't subclasses of FMODataError
   if (error && typeof error === "object" && "name" in error) {
     const name = (error as { name: string }).name;
-    if (name === "NetworkError" || name === "TimeoutError") return true;
+    if (name === "NetworkError" || name === "TimeoutError") {
+      return true;
+    }
   }
-  if (error instanceof HTTPError && error.is5xx()) return true;
+  if (error instanceof HTTPError && error.is5xx()) {
+    return true;
+  }
   return false;
 }
 

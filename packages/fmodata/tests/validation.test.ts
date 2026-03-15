@@ -26,8 +26,7 @@ describe("Validation Tests", () => {
       mock.addRoute({
         urlPattern: "/fmdapi_test.fmp12/contacts",
         response: {
-          "@context":
-            "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+          "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
           value: [
             {
               hobby: "Invalid Hobby",
@@ -38,11 +37,7 @@ describe("Validation Tests", () => {
       });
       const db = mock.database("fmdapi_test.fmp12");
 
-      const result = await db
-        .from(contacts)
-        .list()
-        .select({ hobby: contacts.hobby })
-        .execute();
+      const result = await db.from(contacts).list().select({ hobby: contacts.hobby }).execute();
 
       assert(result.data, "Result data should be defined");
       const firstRecord = result.data?.[0];
@@ -57,8 +52,7 @@ describe("Validation Tests", () => {
       mock.addRoute({
         urlPattern: "/fmdapi_test.fmp12/contacts",
         response: {
-          "@context":
-            "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+          "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
           value: [
             {
               PrimaryKey: "B5BFBC89-03E0-47FC-ABB6-D51401730227",
@@ -84,9 +78,7 @@ describe("Validation Tests", () => {
       const result = await db
         .from(contacts)
         .list()
-        .expand(users, (b: any) =>
-          b.select({ name: users.name, fake_field: users.fake_field }),
-        )
+        .expand(users, (b: any) => b.select({ name: users.name, fake_field: users.fake_field }))
         .execute();
 
       assert(result.data, "Result data should be defined");
@@ -118,9 +110,7 @@ describe("Validation Tests", () => {
 
       // Verify the expanded user fields are validated according to schema
       expect(expandedUser.name).toBe("Test User");
-      expect(expandedUser.fake_field).toBe(
-        "I only exist in the schema, not the database",
-      );
+      expect(expandedUser.fake_field).toBe("I only exist in the schema, not the database");
     });
   });
   it("should automatically select only fields in the schema", () => {
@@ -145,8 +135,7 @@ describe("Validation Tests", () => {
     mock.addRoute({
       urlPattern: "/fmdapi_test.fmp12/contacts",
       response: {
-        "@context":
-          "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+        "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
         value: [
           {
             PrimaryKey: "B5BFBC89-03E0-47FC-ABB6-D51401730227",
@@ -175,9 +164,7 @@ describe("Validation Tests", () => {
       throw new Error("Expected firstRecord to be defined");
     }
     // types should not change, even if skipValidation is true
-    expectTypeOf(firstRecord.hobby).toEqualTypeOf<
-      z.infer<typeof hobbyEnum> | null
-    >();
+    expectTypeOf(firstRecord.hobby).toEqualTypeOf<z.infer<typeof hobbyEnum> | null>();
 
     expect(firstRecord?.hobby).toBe("not a valid hobby");
   });
@@ -187,8 +174,7 @@ describe("Validation Tests", () => {
     mock.addRoute({
       urlPattern: "/fmdapi_test.fmp12/contacts",
       response: {
-        "@context":
-          "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+        "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
         value: [
           {
             "@id":

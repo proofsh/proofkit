@@ -191,7 +191,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       return { deletedCount };
     });
 
-    return runAsResult(withSpan(pipeline, "fmodata.delete", { "fmodata.table": getTableName(this.table) }));
+    return await runAsResult(withSpan(pipeline, "fmodata.delete", { "fmodata.table": getTableName(this.table) }));
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

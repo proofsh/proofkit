@@ -7,8 +7,9 @@
  * This module is used internally by builders to reduce error-threading boilerplate.
  * The public API surface (Result<T>) remains unchanged.
  */
-import { Effect, Layer, Schedule } from "effect";
+
 import type { FFetchOptions } from "@fetchkit/ffetch";
+import { Effect, Layer, Schedule } from "effect";
 import type { FMODataErrorType } from "./errors";
 import { isTransientError } from "./errors";
 import { createLogger } from "./logger";
@@ -20,12 +21,10 @@ import type { ExecutionContext, Result, RetryPolicy } from "./types";
  * This is the bridge between the existing Result pattern and Effect pipelines.
  */
 export function fromResult<T>(promise: Promise<Result<T>>): Effect.Effect<T, FMODataErrorType> {
-	return Effect.tryPromise({
-		try: () => promise,
-		catch: (e) => e as FMODataErrorType,
-	}).pipe(
-		Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))),
-	);
+  return Effect.tryPromise({
+    try: () => promise,
+    catch: (e) => e as FMODataErrorType,
+  }).pipe(Effect.flatMap((result) => (result.error ? Effect.fail(result.error) : Effect.succeed(result.data))));
 }
 
 /**
@@ -33,16 +32,16 @@ export function fromResult<T>(promise: Promise<Result<T>>): Effect.Effect<T, FMO
  * This is the primary way builders should make HTTP requests.
  */
 export function requestFromService<T>(
-	url: string,
-	options?: RequestInit &
-		FFetchOptions & {
-			useEntityIds?: boolean;
-			includeSpecialColumns?: boolean;
-			includeODataAnnotations?: boolean;
-			retryPolicy?: RetryPolicy;
-		},
+  url: string,
+  options?: RequestInit &
+    FFetchOptions & {
+      useEntityIds?: boolean;
+      includeSpecialColumns?: boolean;
+      includeODataAnnotations?: boolean;
+      retryPolicy?: RetryPolicy;
+    },
 ): Effect.Effect<T, FMODataErrorType, HttpClient> {
-	return Effect.flatMap(HttpClient, (client) => client.request<T>(url, options));
+  return Effect.flatMap(HttpClient, (client) => client.request<T>(url, options));
 }
 
 /**
@@ -51,30 +50,30 @@ export function requestFromService<T>(
  * layer from the context's _makeRequest method.
  */
 export async function runWithContext<T>(
-	effect: Effect.Effect<T, FMODataErrorType, HttpClient | ODataConfig | ODataLogger>,
-	context: ExecutionContext,
+  effect: Effect.Effect<T, FMODataErrorType, HttpClient | ODataConfig | ODataLogger>,
+  context: ExecutionContext,
 ): Promise<Result<T>> {
-	const layer = context._getLayer?.();
-	if (layer) {
-		return runAsResult(Effect.provide(effect, layer));
-	}
+  const layer = context._getLayer?.();
+  if (layer) {
+    return await runAsResult(Effect.provide(effect, layer));
+  }
 
-	// Fallback for contexts that don't implement _getLayer
-	const fallbackLayer = Layer.mergeAll(
-		Layer.succeed(HttpClient, {
-			request: <U>(url: string, options?: RequestInit & FFetchOptions) =>
-				fromResult(context._makeRequest<U>(url, options)),
-		}),
-		Layer.succeed(ODataConfig, {
-			baseUrl: context._getBaseUrl?.() ?? "",
-			useEntityIds: context._getUseEntityIds?.() ?? false,
-			includeSpecialColumns: context._getIncludeSpecialColumns?.() ?? false,
-		}),
-		Layer.succeed(ODataLogger, {
-			logger: context._getLogger?.() ?? createLogger(),
-		}),
-	);
-	return runAsResult(Effect.provide(effect, fallbackLayer));
+  // Fallback for contexts that don't implement _getLayer
+  const fallbackLayer = Layer.mergeAll(
+    Layer.succeed(HttpClient, {
+      request: <U>(url: string, options?: RequestInit & FFetchOptions) =>
+        fromResult(context._makeRequest<U>(url, options)),
+    }),
+    Layer.succeed(ODataConfig, {
+      baseUrl: context._getBaseUrl?.() ?? "",
+      useEntityIds: context._getUseEntityIds?.() ?? false,
+      includeSpecialColumns: context._getIncludeSpecialColumns?.() ?? false,
+    }),
+    Layer.succeed(ODataLogger, {
+      logger: context._getLogger?.() ?? createLogger(),
+    }),
+  );
+  return await runAsResult(Effect.provide(effect, fallbackLayer));
 }
 
 /**
@@ -82,11 +81,11 @@ export async function runWithContext<T>(
  * Wraps _makeRequest as an Effect with typed error channel.
  */
 export function makeRequestEffect<T>(
-	context: ExecutionContext,
-	url: string,
-	options?: Parameters<ExecutionContext["_makeRequest"]>[1],
+  context: ExecutionContext,
+  url: string,
+  options?: Parameters<ExecutionContext["_makeRequest"]>[1],
 ): Effect.Effect<T, FMODataErrorType> {
-	return fromResult(context._makeRequest<T>(url, options));
+  return fromResult(context._makeRequest<T>(url, options));
 }
 
 /**
@@ -94,23 +93,26 @@ export function makeRequestEffect<T>(
  * This is the exit point from Effect back to the public API.
  */
 export async function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Promise<Result<T>> {
-	return Effect.runPromise(
-		effect.pipe(
-			Effect.map((data): Result<T> => ({ data, error: undefined })),
-			Effect.catchAll((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
-		),
-	);
+  return await Effect.runPromise(
+    effect.pipe(
+      Effect.map((data): Result<T> => ({ data, error: undefined })),
+      Effect.catchAll((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
+    ),
+  );
 }
 
 /**
  * Wraps a sync/async function that may throw into an Effect that captures
  * the error as a typed FMODataErrorType.
  */
-export function tryEffect<T>(fn: () => T | Promise<T>, mapError: (e: unknown) => FMODataErrorType): Effect.Effect<T, FMODataErrorType> {
-	return Effect.tryPromise({
-		try: () => Promise.resolve(fn()),
-		catch: mapError,
-	});
+export function tryEffect<T>(
+  fn: () => T | Promise<T>,
+  mapError: (e: unknown) => FMODataErrorType,
+): Effect.Effect<T, FMODataErrorType> {
+  return Effect.tryPromise({
+    try: () => Promise.resolve(fn()),
+    catch: mapError,
+  });
 }
 
 /**
@@ -118,32 +120,30 @@ export function tryEffect<T>(fn: () => T | Promise<T>, mapError: (e: unknown) =>
  * ({ valid: true, data } | { valid: false, error }) into an Effect.
  */
 export function fromValidation<T>(
-	fn: () => Promise<{ valid: true; data: T } | { valid: false; error: FMODataErrorType }>,
+  fn: () => Promise<{ valid: true; data: T } | { valid: false; error: FMODataErrorType }>,
 ): Effect.Effect<T, FMODataErrorType> {
-	return Effect.tryPromise({
-		try: fn,
-		catch: (e) => e as FMODataErrorType,
-	}).pipe(Effect.flatMap((result) => (result.valid ? Effect.succeed(result.data) : Effect.fail(result.error))));
+  return Effect.tryPromise({
+    try: fn,
+    catch: (e) => e as FMODataErrorType,
+  }).pipe(Effect.flatMap((result) => (result.valid ? Effect.succeed(result.data) : Effect.fail(result.error))));
 }
 
 /**
  * Builds an Effect Schedule from a RetryPolicy configuration.
  * Uses exponential backoff with optional jitter, only retrying transient errors.
  */
-export function buildRetrySchedule(
-	policy: RetryPolicy,
-) {
-	const maxRetries = policy.maxRetries ?? 3;
-	const baseDelay = `${policy.baseDelay ?? 500} millis` as const;
-	const useJitter = policy.jitter !== false;
+export function buildRetrySchedule(policy: RetryPolicy) {
+  const maxRetries = policy.maxRetries ?? 3;
+  const baseDelay = `${policy.baseDelay ?? 500} millis` as const;
+  const useJitter = policy.jitter !== false;
 
-	const base = Schedule.exponential(baseDelay);
-	const withJitter = useJitter ? Schedule.jittered(base) : base;
+  const base = Schedule.exponential(baseDelay);
+  const withJitter = useJitter ? Schedule.jittered(base) : base;
 
-	return withJitter.pipe(
-		Schedule.intersect(Schedule.recurs(maxRetries)),
-		Schedule.whileInput((error: FMODataErrorType) => isTransientError(error)),
-	);
+  return withJitter.pipe(
+    Schedule.intersect(Schedule.recurs(maxRetries)),
+    Schedule.whileInput((error: FMODataErrorType) => isTransientError(error)),
+  );
 }
 
 /**
@@ -151,11 +151,13 @@ export function buildRetrySchedule(
  * Only retries transient errors (SchemaLockedError, NetworkError, TimeoutError, HTTP 5xx).
  */
 export function withRetryPolicy<T>(
-	effect: Effect.Effect<T, FMODataErrorType>,
-	retryPolicy?: RetryPolicy,
+  effect: Effect.Effect<T, FMODataErrorType>,
+  retryPolicy?: RetryPolicy,
 ): Effect.Effect<T, FMODataErrorType> {
-	if (!retryPolicy) return effect;
-	return effect.pipe(Effect.retry(buildRetrySchedule(retryPolicy)));
+  if (!retryPolicy) {
+    return effect;
+  }
+  return effect.pipe(Effect.retry(buildRetrySchedule(retryPolicy)));
 }
 
 /**
@@ -163,13 +165,13 @@ export function withRetryPolicy<T>(
  * Zero overhead when no OpenTelemetry tracer is configured.
  */
 export function withSpan<T, E, R>(
-	effect: Effect.Effect<T, E, R>,
-	name: string,
-	attributes?: Record<string, string>,
+  effect: Effect.Effect<T, E, R>,
+  name: string,
+  attributes?: Record<string, string>,
 ): Effect.Effect<T, E, R> {
-	return effect.pipe(
-		Effect.withSpan(name, {
-			attributes: attributes ? attributes : undefined,
-		}),
-	);
+  return effect.pipe(
+    Effect.withSpan(name, {
+      attributes: attributes ? attributes : undefined,
+    }),
+  );
 }

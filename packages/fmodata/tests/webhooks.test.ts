@@ -14,9 +14,9 @@ import {
   type WebhookInfo,
   type WebhookListResponse,
 } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { assert, describe, expect, it } from "vitest";
 import { mockResponses } from "./fixtures/responses";
-import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { createMockFetch } from "./utils/mock-fetch";
 
 describe("WebhookManager", () => {

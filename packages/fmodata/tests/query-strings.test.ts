@@ -22,8 +22,8 @@
 const SELECT_QUERY_REGEX = /\$select=([^&]+)/;
 
 import { and, asc, desc, eq, fmTableOccurrence, gt, isNull, numberField, or, textField } from "@proofkit/fmodata";
-import { describe, expect, it } from "vitest";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, it } from "vitest";
 
 const users = fmTableOccurrence(
   "users",

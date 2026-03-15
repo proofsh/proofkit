@@ -28,9 +28,9 @@ import {
   numberField,
   textField,
 } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
-import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { contacts, users } from "./utils/test-setup";
 
 describe("fmodata", () => {

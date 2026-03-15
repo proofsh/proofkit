@@ -38,9 +38,9 @@ import {
   toupper,
   trim,
 } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, it } from "vitest";
 import { z } from "zod/v4";
-import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { contacts, users, usersTOWithIds } from "./utils/test-setup";
 
 describe("Filter Tests", () => {

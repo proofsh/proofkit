@@ -9,8 +9,8 @@
  */
 
 import { fmTableOccurrence, isODataError, isResponseStructureError, textField } from "@proofkit/fmodata";
-import { describe, expect, it } from "vitest";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, it } from "vitest";
 
 /**
  * Creates a mock fetch handler that returns a multipart batch response

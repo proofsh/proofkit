@@ -10,24 +10,25 @@
  * Services are combined into Layers provided by FMServerConnection (production)
  * or MockFMServerConnection (testing).
  */
-import { Context, type Effect, type Layer } from "effect";
+
 import type { FFetchOptions } from "@fetchkit/ffetch";
+import { Context, type Effect, type Layer } from "effect";
 import type { FMODataErrorType } from "./errors";
 import type { InternalLogger } from "./logger";
 
 // --- HttpClient Service ---
 
 export interface HttpClient {
-	readonly request: <T>(
-		url: string,
-		options?: RequestInit &
-			FFetchOptions & {
-				useEntityIds?: boolean;
-				includeSpecialColumns?: boolean;
-				includeODataAnnotations?: boolean;
-				retryPolicy?: import("./types").RetryPolicy;
-			},
-	) => Effect.Effect<T, FMODataErrorType>;
+  readonly request: <T>(
+    url: string,
+    options?: RequestInit &
+      FFetchOptions & {
+        useEntityIds?: boolean;
+        includeSpecialColumns?: boolean;
+        includeODataAnnotations?: boolean;
+        retryPolicy?: import("./types").RetryPolicy;
+      },
+  ) => Effect.Effect<T, FMODataErrorType>;
 }
 
 export const HttpClient = Context.GenericTag<HttpClient>("@proofkit/fmodata/HttpClient");
@@ -35,9 +36,9 @@ export const HttpClient = Context.GenericTag<HttpClient>("@proofkit/fmodata/Http
 // --- ODataConfig Service ---
 
 export interface ODataConfig {
-	readonly baseUrl: string;
-	readonly useEntityIds: boolean;
-	readonly includeSpecialColumns: boolean;
+  readonly baseUrl: string;
+  readonly useEntityIds: boolean;
+  readonly includeSpecialColumns: boolean;
 }
 
 export const ODataConfig = Context.GenericTag<ODataConfig>("@proofkit/fmodata/ODataConfig");
@@ -45,7 +46,7 @@ export const ODataConfig = Context.GenericTag<ODataConfig>("@proofkit/fmodata/OD
 // --- ODataLogger Service ---
 
 export interface ODataLogger {
-	readonly logger: InternalLogger;
+  readonly logger: InternalLogger;
 }
 
 export const ODataLogger = Context.GenericTag<ODataLogger>("@proofkit/fmodata/ODataLogger");

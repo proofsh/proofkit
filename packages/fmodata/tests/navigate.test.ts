@@ -6,8 +6,8 @@
  */
 
 import { dateField, fmTableOccurrence, textField } from "@proofkit/fmodata";
-import { describe, expect, expectTypeOf, it } from "vitest";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   arbitraryTable,
   contacts,

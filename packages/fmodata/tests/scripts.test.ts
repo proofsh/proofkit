@@ -4,10 +4,10 @@
  * Tests for running FileMaker scripts via the OData API.
  */
 
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
 import { jsonCodec } from "./utils/helpers";
-import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 
 describe("scripts", () => {
   const client = new MockFMServerConnection();
