@@ -6,12 +6,13 @@ import createClient, {
   RetryLimitError,
   TimeoutError,
 } from "@fetchkit/ffetch";
-import { Effect } from "effect";
+import { Effect, Layer } from "effect";
 import { get } from "es-toolkit/compat";
 import { runAsResult, withRetryPolicy, withSpan } from "../effect";
 import type { FMODataErrorType } from "../errors";
 import { HTTPError, ODataError, ResponseParseError, SchemaLockedError } from "../errors";
 import { createLogger, type InternalLogger, type Logger } from "../logger";
+import { HttpClient, ODataConfig, ODataLogger, type FMODataLayer } from "../services";
 import type { Auth, ExecutionContext, Result } from "../types";
 import { getAcceptHeader } from "../types";
 import { Database } from "./database";
@@ -97,6 +98,31 @@ export class FMServerConnection implements ExecutionContext {
    */
   _getLogger(): InternalLogger {
     return this.logger;
+  }
+
+  /**
+   * @internal
+   * Returns the Effect Layer for this connection, composing HttpClient, ODataConfig, and ODataLogger services.
+   */
+  _getLayer(): FMODataLayer {
+    const httpLayer = Layer.succeed(HttpClient, {
+      request: <T>(
+        url: string,
+        options?: RequestInit & FFetchOptions & { useEntityIds?: boolean; includeSpecialColumns?: boolean },
+      ) => this._makeRequestEffect<T>(url, options),
+    });
+
+    const configLayer = Layer.succeed(ODataConfig, {
+      baseUrl: this._getBaseUrl(),
+      useEntityIds: this.useEntityIds,
+      includeSpecialColumns: this.includeSpecialColumns,
+    });
+
+    const loggerLayer = Layer.succeed(ODataLogger, {
+      logger: this.logger,
+    });
+
+    return Layer.mergeAll(httpLayer, configLayer, loggerLayer);
   }
 
   /**

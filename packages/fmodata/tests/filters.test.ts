@@ -40,10 +40,11 @@ import {
 } from "@proofkit/fmodata";
 import { describe, expect, it } from "vitest";
 import { z } from "zod/v4";
-import { contacts, createMockClient, users, usersTOWithIds } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { contacts, users, usersTOWithIds } from "./utils/test-setup";
 
 describe("Filter Tests", () => {
-  const client = createMockClient();
+  const client = new MockFMServerConnection();
   const db = client.database("fmdapi_test.fmp12");
 
   it("should enforce correct operator types for each field type", () => {
@@ -271,7 +272,7 @@ describe("Filter Tests", () => {
     expect(queryString).toContain("$filter");
     expect(queryString).toContain("FMFID");
 
-    const dbWithIds = createMockClient().database("fmdapi_test.fmp12", {
+    const dbWithIds = new MockFMServerConnection().database("fmdapi_test.fmp12", {
       useEntityIds: true,
     });
 
@@ -573,7 +574,7 @@ describe("Filter Tests", () => {
       createdAt: timestampField(),
     });
     // Fresh db to avoid state pollution from prior tests mutating useEntityIds
-    const freshDb = createMockClient().database("test.fmp12");
+    const freshDb = new MockFMServerConnection().database("test.fmp12");
 
     const gtQuery = freshDb.from(dateTable).list().where(gt(dateTable.invoiceDate, "2024-01-01"));
     expect(gtQuery.getQueryString()).toContain("invoiceDate gt 2024-01-01");
@@ -601,7 +602,7 @@ describe("Filter Tests", () => {
       dueDate: dateField(),
       createdAt: timestampField(),
     });
-    const freshDb = createMockClient().database("test.fmp12");
+    const freshDb = new MockFMServerConnection().database("test.fmp12");
 
     const dateStart = new Date("2024-01-01T00:00:00.000Z");
     const dateEnd = new Date("2024-12-31T00:00:00.000Z");

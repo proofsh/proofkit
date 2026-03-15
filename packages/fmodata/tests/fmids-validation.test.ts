@@ -9,7 +9,7 @@
 
 import { FMTable, fmTableOccurrence, textField } from "@proofkit/fmodata";
 import { describe, expect, it } from "vitest";
-import { createMockClient } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 
 describe("BaseTable with entity IDs", () => {
   it("should create a table with fmfIds using fmTableOccurrence", () => {
@@ -148,12 +148,12 @@ describe("Type enforcement (compile-time)", () => {
     // Note: The new ORM pattern doesn't have the same mixing restriction
     // Both tables can be used together regardless of entity IDs
     expect(() => {
-      createMockClient().database("test");
+      new MockFMServerConnection().database("test");
     }).not.toThrow();
 
     // Should not throw when mixed if useEntityIds is set to false
     expect(() => {
-      createMockClient().database("test", {
+      new MockFMServerConnection().database("test", {
         useEntityIds: false,
       });
     }).not.toThrow();

@@ -4,31 +4,20 @@
  * Tests that field names are transparently transformed to/from FileMaker field IDs (FMFIDs)
  * and table occurrence IDs (FMTIDs) when using BaseTableWithIds and TableOccurrenceWithIds.
  *
- * Uses mock responses to verify:
+ * Uses MockFMServerConnection with spy to verify:
  * 1. Requests are sent with FMFIDs and FMTIDs
  * 2. Responses with FMFID keys are transformed back to field names
  * 3. User experience remains unchanged (uses field names throughout)
  */
 
 import { eq } from "@proofkit/fmodata";
-import { beforeEach, describe, expect, it } from "vitest";
-import { simpleMock } from "./utils/mock-fetch";
-import { contactsTOWithIds, createMockClient, usersTOWithIds } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, it } from "vitest";
+import { contactsTOWithIds, usersTOWithIds } from "./utils/test-setup";
 
 describe("Field ID Transformation", () => {
-  let capturedRequests: Array<{ url: string; options: any }> = [];
-
-  beforeEach(() => {
-    capturedRequests = [];
-  });
-
   describe("Query with Select", () => {
     it("should send request with FMFIDs and FMTID", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = {
         "@context": "https://api.example.com/$metadata#users",
         value: [
@@ -42,6 +31,14 @@ describe("Field ID Transformation", () => {
         ],
       };
 
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
+
       await db
         .from(usersTOWithIds)
         .list()
@@ -50,17 +47,12 @@ describe("Field ID Transformation", () => {
           name: usersTOWithIds.name,
           active: usersTOWithIds.active,
         })
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
       // Verify the request used FMTIDs for table and FMFIDs for fields
-      expect(capturedRequests).toHaveLength(1);
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      expect(spyCalls).toHaveLength(1);
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
@@ -72,9 +64,6 @@ describe("Field ID Transformation", () => {
     });
 
     it("should transform FMFID response keys back to field names", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12");
-
       const mockResponse = {
         "@context": "https://api.example.com/$metadata#users",
         value: [
@@ -95,6 +84,14 @@ describe("Field ID Transformation", () => {
         ],
       };
 
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12");
+
       const result = await db
         .from(usersTOWithIds)
         .list()
@@ -103,13 +100,7 @@ describe("Field ID Transformation", () => {
           name: usersTOWithIds.name,
           active: usersTOWithIds.active,
         })
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
       // User should receive data with field names, not FMFIDs
       expect(result.data).toHaveLength(2);
@@ -131,28 +122,26 @@ describe("Field ID Transformation", () => {
 
   describe("Filter Operations", () => {
     it("should transform field names to FMFIDs in filter", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = { value: [] };
+
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
 
       await db
         .from(usersTOWithIds)
         .list()
         .select({ id: usersTOWithIds.id, name: usersTOWithIds.name })
         .where(eq(usersTOWithIds.active, true))
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
       // Verify filter uses FMFID for the field name
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
@@ -163,28 +152,26 @@ describe("Field ID Transformation", () => {
 
   describe("OrderBy Operations", () => {
     it("should transform field names to FMFIDs in orderBy", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = { value: [] };
+
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
 
       await db
         .from(usersTOWithIds)
         .list()
         .select({ id: usersTOWithIds.id, name: usersTOWithIds.name })
         .orderBy(["name", "desc"])
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
       // Verify orderBy uses FMFID
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
@@ -194,11 +181,6 @@ describe("Field ID Transformation", () => {
 
   describe("Get by ID", () => {
     it("should use FMTID in URL", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = {
         "@id": "https://api.example.com/users('550e8400-e29b-41d4-a716-446655440001')",
         "@editLink": "users('550e8400-e29b-41d4-a716-446655440001')",
@@ -206,18 +188,21 @@ describe("Field ID Transformation", () => {
         "FMFID:6": "Alice",
       };
 
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
+
       await db
         .from(usersTOWithIds)
         .get("550e8400-e29b-41d4-a716-446655440001")
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
@@ -226,11 +211,6 @@ describe("Field ID Transformation", () => {
     });
 
     it("should transform response field IDs back to names", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = {
         "@id": "https://api.example.com/users('550e8400-e29b-41d4-a716-446655440001')",
         "@editLink": "users('550e8400-e29b-41d4-a716-446655440001')",
@@ -245,16 +225,18 @@ describe("Field ID Transformation", () => {
         "FMFID:9": "customer-1",
       };
 
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
+
       const result = await db
         .from(usersTOWithIds)
         .get("550e8400-e29b-41d4-a716-446655440001")
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
       expect(result.data).toMatchObject({
         id: "550e8400-e29b-41d4-a716-446655440001",
@@ -267,11 +249,6 @@ describe("Field ID Transformation", () => {
 
   describe("Insert Operations", () => {
     it("should transform field names to FMFIDs in request body", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = {
         "@id": "https://api.example.com/users('new-user')",
         "@editLink": "users('new-user')",
@@ -286,7 +263,14 @@ describe("Field ID Transformation", () => {
         "FMFID:9": null,
       };
 
-      let capturedBody: any;
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 201,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
+
       const _result = await db
         .from(usersTOWithIds)
         .insert({
@@ -294,30 +278,18 @@ describe("Field ID Transformation", () => {
           active: true,
           fake_field: "test",
         })
-        .execute({
-          fetchHandler: async (input, init) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            // Capture body - it might be in the Request object itself
-            let bodyText: string | null = null;
-            if (input instanceof Request && input.body) {
-              bodyText = await input.text();
-            } else if (init?.body) {
-              bodyText = init.body as string;
-            }
-            capturedBody = bodyText ? JSON.parse(bodyText) : {};
-            capturedRequests.push({ url, options: init || {} });
-            return simpleMock({ body: mockResponse, status: 201 })(url, init);
-          },
-        });
+        .execute();
 
-      expect(capturedRequests).toHaveLength(1);
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      expect(spyCalls).toHaveLength(1);
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
       expect(request.url).toContain("FMTID:1065093"); // Table ID
 
       // Check that the body has FMFIDs (not field names)
+      const capturedBody = request.body ? JSON.parse(request.body) : {};
       expect(capturedBody).toMatchObject({
         "FMFID:6": "Charlie", // name
         "FMFID:7": 1, // active (number field, 1 = true)
@@ -326,11 +298,6 @@ describe("Field ID Transformation", () => {
     });
 
     it("should transform response field IDs back to names", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = {
         "@id": "https://api.example.com/users('550e8400-e29b-41d4-a716-446655440003')",
         "@editLink": "users('550e8400-e29b-41d4-a716-446655440003')",
@@ -345,6 +312,14 @@ describe("Field ID Transformation", () => {
         "FMFID:9": null,
       };
 
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 201,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
+
       const result = await db
         .from(usersTOWithIds)
         .insert({
@@ -352,13 +327,7 @@ describe("Field ID Transformation", () => {
           active: true,
           fake_field: "test",
         })
-        .execute({
-          fetchHandler: (input, init) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init || {} });
-            return simpleMock({ body: mockResponse, status: 201 })(input, init);
-          },
-        });
+        .execute();
 
       expect(result.data).toMatchObject({
         id: "550e8400-e29b-41d4-a716-446655440003",
@@ -370,12 +339,14 @@ describe("Field ID Transformation", () => {
 
   describe("Update Operations", () => {
     it("should transform field names to FMFIDs in update body", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: 1,
+        status: 200,
       });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
 
-      let capturedBody: any;
       await db
         .from(usersTOWithIds)
         .update({
@@ -383,30 +354,18 @@ describe("Field ID Transformation", () => {
           active: false,
         })
         .byId("550e8400-e29b-41d4-a716-446655440001")
-        .execute({
-          fetchHandler: async (input, init) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            // Capture body - it might be in the Request object itself
-            let bodyText: string | null = null;
-            if (input instanceof Request && input.body) {
-              bodyText = await input.text();
-            } else if (init?.body) {
-              bodyText = init.body as string;
-            }
-            capturedBody = bodyText ? JSON.parse(bodyText) : {};
-            capturedRequests.push({ url, options: init || {} });
-            return simpleMock({ body: 1, status: 200 })(url, init);
-          },
-        });
+        .execute();
 
-      expect(capturedRequests).toHaveLength(1);
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      expect(spyCalls).toHaveLength(1);
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
       expect(request.url).toContain("FMTID:1065093"); // Table ID
 
       // Check that the body has FMFIDs (not field names)
+      const capturedBody = request.body ? JSON.parse(request.body) : {};
       expect(capturedBody).toMatchObject({
         "FMFID:6": "Alice Updated", // name
         "FMFID:7": 0, // active (number field, 0 = false)
@@ -416,26 +375,24 @@ describe("Field ID Transformation", () => {
 
   describe("Expand Operations", () => {
     it("should use FMFIDs for expanded relation fields", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = { value: [] };
+
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
 
       await db
         .from(contactsTOWithIds)
         .list()
         .expand(usersTOWithIds, (b: any) => b.select({ id: usersTOWithIds.id, name: usersTOWithIds.name }))
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
-      const request = capturedRequests[0];
+      const spyCalls = mock.spy!.forUrl("test.fmp12");
+      const request = spyCalls[0];
       if (!request) {
         throw new Error("Expected request to be defined");
       }
@@ -446,11 +403,6 @@ describe("Field ID Transformation", () => {
     });
 
     it("should transform expanded relation response fields back to names", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = {
         "@context": "https://api.example.com/$metadata#contacts",
         value: [
@@ -484,17 +436,19 @@ describe("Field ID Transformation", () => {
         ],
       };
 
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
+
       const result = await db
         .from(contactsTOWithIds)
         .list()
         .expand(usersTOWithIds, (b: any) => b.select({ id: usersTOWithIds.id, name: usersTOWithIds.name }))
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            capturedRequests.push({ url, options: init });
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+        .execute();
 
       // For this test, we'll skip full validation since expanded relations
       // add dynamic fields not in the schema. Just verify the transformation happened.
@@ -524,30 +478,32 @@ describe("Field ID Transformation", () => {
 
   describe("Prefer Header", () => {
     it("should include 'Prefer: fmodata.entity-ids' header when using entity IDs", async () => {
-      const connection = createMockClient();
-      const db = connection.database("test.fmp12", {
-        useEntityIds: true,
-      });
-
       const mockResponse = { value: [] };
+
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "test.fmp12",
+        response: mockResponse,
+        status: 200,
+      });
+      const db = mock.database("test.fmp12", { useEntityIds: true });
 
       await db
         .from(usersTOWithIds)
         .list()
         .select({ id: usersTOWithIds.id, name: usersTOWithIds.name })
-        .execute({
-          fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-            const url = input instanceof Request ? input.url : input.toString();
-            const headers = (init as RequestInit)?.headers as Record<string, string>;
-            capturedRequests.push({ url, options: { ...init, headers } });
+        .execute();
 
-            // Verify the Prefer header is present
-            expect(headers).toBeDefined();
-            expect(headers.Prefer).toBe("fmodata.entity-ids");
-
-            return simpleMock({ body: mockResponse, status: 200 })(input, init);
-          },
-        });
+      // Verify the Prefer header is present
+      const spyCalls = mock.spy!.calls;
+      expect(spyCalls).toHaveLength(1);
+      const request = spyCalls[0];
+      if (!request) {
+        throw new Error("Expected request to be defined");
+      }
+      expect(request.headers).toBeDefined();
+      // Headers from Request objects are normalized to lowercase by the Headers API
+      expect(request.headers?.prefer).toBe("fmodata.entity-ids");
     });
   });
 });

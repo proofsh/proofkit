@@ -4,27 +4,30 @@
  * Tests for the insert() and update() methods with returnFullRecord option.
  */
 
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { mockResponses } from "./fixtures/responses";
-import { createMockFetch } from "./utils/mock-fetch";
-import { contacts, createMockClient } from "./utils/test-setup";
+import { contacts } from "./utils/test-setup";
 
 const UUID_REGEX = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
 
 describe("insert and update operations with returnFullRecord", () => {
-  const client = createMockClient();
-
   it("should insert a record and return the created record with metadata", async () => {
-    const db = client.database("fmdapi_test.fmp12", {});
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/fmdapi_test.fmp12/contacts",
+      response: mockResponses.insert?.response ?? {},
+      status: mockResponses.insert?.status ?? 200,
+      headers: mockResponses.insert?.headers,
+    });
+    const db = mock.database("fmdapi_test.fmp12");
 
     const result = await db
       .from(contacts)
       .insert({
         name: "Capture test",
       })
-      .execute({
-        fetchHandler: createMockFetch(mockResponses.insert ?? {}),
-      });
+      .execute();
 
     // Verify no errors
     expect(result.error).toBeUndefined();
@@ -52,7 +55,14 @@ describe("insert and update operations with returnFullRecord", () => {
   });
 
   it("should allow returnFullRecord=false to get just ROWID", async () => {
-    const db = client.database("fmdapi_test.fmp12");
+    const insertMinimalMock = new MockFMServerConnection();
+    insertMinimalMock.addRoute({
+      urlPattern: "/fmdapi_test.fmp12/contacts",
+      response: mockResponses["insert-return-minimal"]?.response ?? {},
+      status: mockResponses["insert-return-minimal"]?.status ?? 200,
+      headers: mockResponses["insert-return-minimal"]?.headers,
+    });
+    const db = insertMinimalMock.database("fmdapi_test.fmp12");
 
     const result = await db
       .from(contacts)
@@ -63,15 +73,22 @@ describe("insert and update operations with returnFullRecord", () => {
         // Set returnFullRecord to false to get just the ROWID
         { returnFullRecord: false },
       )
-      .execute({
-        fetchHandler: createMockFetch(mockResponses["insert-return-minimal"] ?? {}),
-      });
+      .execute();
 
     // Type check: when returnFullRecord is false, result should only have ROWID
     expectTypeOf(result.data).toEqualTypeOf<{ ROWID: number } | undefined>();
 
     // Type check: when returnFullRecord is true or omitted, result should have full record
-    const fullResult = await db
+    const insertFullMock = new MockFMServerConnection();
+    insertFullMock.addRoute({
+      urlPattern: "/fmdapi_test.fmp12/contacts",
+      response: mockResponses.insert?.response ?? {},
+      status: mockResponses.insert?.status ?? 200,
+      headers: mockResponses.insert?.headers,
+    });
+    const db2 = insertFullMock.database("fmdapi_test.fmp12");
+
+    const fullResult = await db2
       .from(contacts)
       .insert(
         {
@@ -79,9 +96,7 @@ describe("insert and update operations with returnFullRecord", () => {
         },
         { returnFullRecord: true },
       )
-      .execute({
-        fetchHandler: createMockFetch(mockResponses.insert ?? {}),
-      });
+      .execute();
 
     expectTypeOf(fullResult.data).not.toEqualTypeOf<{ ROWID: number } | undefined>();
 
@@ -95,16 +110,21 @@ describe("insert and update operations with returnFullRecord", () => {
   });
 
   it("should allow returnFullRecord=true for update to get full record", async () => {
-    const db = client.database("fmdapi_test.fmp12");
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/fmdapi_test.fmp12/contacts",
+      response: mockResponses.insert?.response ?? {},
+      status: mockResponses.insert?.status ?? 200,
+      headers: mockResponses.insert?.headers,
+    });
+    const db = mock.database("fmdapi_test.fmp12");
 
     // Test with returnFullRecord=true
     const result = await db
       .from(contacts)
       .update({ name: "Updated name" }, { returnFullRecord: true })
       .byId("331F5862-2ABF-4FB6-AA24-A00F7359BDDA")
-      .execute({
-        fetchHandler: createMockFetch(mockResponses.insert ?? {}), // Reuse insert mock, same structure
-      });
+      .execute();
 
     // Type check: when returnFullRecord is true, result should have full record
     expectTypeOf(result.data).not.toEqualTypeOf<{ updatedCount: number } | undefined>();
@@ -114,9 +134,7 @@ describe("insert and update operations with returnFullRecord", () => {
       .from(contacts)
       .update({ name: "Updated name" })
       .byId("331F5862-2ABF-4FB6-AA24-A00F7359BDDA")
-      .execute({
-        fetchHandler: createMockFetch(mockResponses.insert ?? {}),
-      });
+      .execute();
 
     // Type check: default should return count
     expectTypeOf(countResult.data).toEqualTypeOf<{ updatedCount: number } | undefined>();

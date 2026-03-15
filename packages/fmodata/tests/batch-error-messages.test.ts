@@ -10,7 +10,7 @@
 
 import { fmTableOccurrence, isODataError, isResponseStructureError, textField } from "@proofkit/fmodata";
 import { describe, expect, it } from "vitest";
-import { createMockClient } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 
 /**
  * Creates a mock fetch handler that returns a multipart batch response
@@ -34,7 +34,7 @@ function createBatchMockFetch(batchResponseBody: string): typeof fetch {
 }
 
 describe("Batch Error Messages - Improved Error Parsing", () => {
-  const client = createMockClient();
+  const mock = new MockFMServerConnection();
 
   // Define simple schemas for batch testing
   const addressesTO = fmTableOccurrence("addresses", {
@@ -42,7 +42,7 @@ describe("Batch Error Messages - Improved Error Parsing", () => {
     street: textField(),
   });
 
-  const db = client.database("test_db");
+  const db = mock.database("test_db");
 
   it("should return ODataError with helpful message instead of vague ResponseStructureError", async () => {
     // This simulates the exact scenario from the user's error:

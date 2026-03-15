@@ -8,11 +8,10 @@
  */
 
 import { eq, FMServerConnection, fmTableOccurrence, numberField, textField } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { assert, describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
 import { mockResponses } from "./fixtures/responses";
-import { simpleMock } from "./utils/mock-fetch";
-import { createMockClient } from "./utils/test-setup";
 
 describe("Expand API Specification", () => {
   // Spec test table definitions (simplified for type testing)
@@ -109,12 +108,7 @@ describe("Expand API Specification", () => {
     },
   );
 
-  const client = createMockClient();
-
-  // type UserFieldNames = keyof InferTableSchema<typeof usersTO>;
-  // type CustomerFieldNames = keyof InferTableSchema<typeof customerTO>;
-
-  const db = client.database("test_db");
+  const db = new MockFMServerConnection().database("test_db");
 
   describe("Simple expand (no callback)", () => {
     it("should generate query string for simple expand", () => {
@@ -325,7 +319,15 @@ describe("Expand API Specification", () => {
     it("should validate nested expands on single record", async () => {
       // This test uses real server schema (contactsReal, usersReal) to match captured responses
       const mockData = mockResponses["deep nested expand"];
-      const result = await db
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockData.response,
+        status: mockData.status,
+        headers: mockData.headers,
+      });
+      const mockDb = mock.database("test_db");
+      const result = await mockDb
         .from(contactsReal)
         .get("B5BFBC89-03E0-47FC-ABB6-D51401730227")
         .expand(usersReal, (usersBuilder) => {
@@ -335,13 +337,7 @@ describe("Expand API Specification", () => {
               return customerBuilder.select({ name: userCustomer.name });
             });
         })
-        .execute({
-          fetchHandler: simpleMock({
-            status: mockData.status,
-            body: mockData.response,
-            headers: mockData.headers,
-          }),
-        });
+        .execute();
 
       assert(result.data, "Result data should be defined");
       expect(result.data.name).toBe("Eric");
@@ -382,7 +378,15 @@ describe("Expand API Specification", () => {
     it("should validate nested expands on list query", async () => {
       // This test uses real server schema (contactsReal, usersReal) to match captured responses
       const mockData = mockResponses["list with nested expand"];
-      const result = await db
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/contacts",
+        response: mockData.response,
+        status: mockData.status,
+        headers: mockData.headers,
+      });
+      const mockDb = mock.database("test_db");
+      const result = await mockDb
         .from(contactsReal)
         .list()
         .expand(usersReal, (usersBuilder) => {
@@ -391,13 +395,7 @@ describe("Expand API Specification", () => {
             return customerBuilder.select({ name: userCustomer.name });
           });
         })
-        .execute({
-          fetchHandler: simpleMock({
-            status: mockData.status,
-            body: mockData.response,
-            headers: mockData.headers,
-          }),
-        });
+        .execute();
 
       expect(result.data).toBeDefined();
       expect(Array.isArray(result.data)).toBe(true);

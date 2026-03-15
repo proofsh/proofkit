@@ -42,6 +42,12 @@ export interface ExecutionContext {
   _getIncludeSpecialColumns?(): boolean;
   _getBaseUrl?(): string;
   _getLogger?(): InternalLogger;
+  /**
+   * @internal
+   * Returns the Effect Layer for this context, enabling service-based Effect pipelines.
+   * Implemented by FMServerConnection and MockFMServerConnection.
+   */
+  _getLayer?(): import("./services").FMODataLayer;
 }
 
 export type InferSchemaType<Schema extends Record<string, StandardSchemaV1>> = {

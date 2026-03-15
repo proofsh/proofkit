@@ -10,17 +10,17 @@
  */
 
 import { eq, fmTableOccurrence, numberField, textField, timestampField } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
-import { createMockFetch } from "./utils/mock-fetch";
-import { arbitraryTable, contacts, createMockClient, invoices, users } from "./utils/test-setup";
+import { arbitraryTable, contacts, invoices, users } from "./utils/test-setup";
 
 const EXPAND_WITH_ID_REGEX = /\$expand=users\([^)]*id[^)]*\)/;
 const SELECT_ID_REGEX = /\$select=["']?id["']?\)/;
 
 describe("RecordBuilder Select/Expand", () => {
-  const client = createMockClient();
-  const db = client.database("test_db");
+  const mock = new MockFMServerConnection();
+  const db = mock.database("test_db");
 
   // Create occurrences with different defaultSelect values for testing
   const contactsWithSchemaSelect = fmTableOccurrence(
@@ -493,13 +493,15 @@ describe("RecordBuilder Select/Expand", () => {
         },
       };
 
-      const result = await db
+      const execMock = new MockFMServerConnection();
+      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      const execDb = execMock.database("test_db");
+
+      const result = await execDb
         .from(contacts)
         .get("test-uuid")
         .select({ name: contacts.name, hobby: contacts.hobby })
-        .execute({
-          fetchHandler: createMockFetch(mockResponse),
-        });
+        .execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toBeDefined();
@@ -536,13 +538,15 @@ describe("RecordBuilder Select/Expand", () => {
         },
       };
 
-      const result = await db
+      const execMock = new MockFMServerConnection();
+      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      const execDb = execMock.database("test_db");
+
+      const result = await execDb
         .from(contacts)
         .get("test-uuid")
         .expand(users, (b: any) => b.select({ name: users.name, active: users.active }))
-        .execute({
-          fetchHandler: createMockFetch(mockResponse),
-        });
+        .execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toBeDefined();
@@ -567,13 +571,15 @@ describe("RecordBuilder Select/Expand", () => {
         },
       };
 
-      const result = await db
+      const execMock = new MockFMServerConnection();
+      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      const execDb = execMock.database("test_db");
+
+      const result = await execDb
         .from(contacts)
         .get("test-uuid")
         .select({ name: contacts.name, hobby: contacts.hobby })
-        .execute({
-          fetchHandler: createMockFetch(mockResponse),
-        });
+        .execute();
 
       expect(result.data).toBeDefined();
       // OData annotations should be stripped
@@ -596,12 +602,15 @@ describe("RecordBuilder Select/Expand", () => {
         },
       };
 
-      const result = await db
+      const execMock = new MockFMServerConnection();
+      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      const execDb = execMock.database("test_db");
+
+      const result = await execDb
         .from(contacts)
         .get("test-uuid")
         .select({ name: contacts.name, hobby: contacts.hobby })
         .execute({
-          fetchHandler: createMockFetch(mockResponse),
           includeODataAnnotations: true,
         });
 
@@ -698,12 +707,14 @@ describe("RecordBuilder Select/Expand", () => {
         },
       };
 
-      const result = await db
+      const execMock = new MockFMServerConnection();
+      execMock.addRoute({ urlPattern: "/test_db/contacts", response: mockResponse.response, status: mockResponse.status, headers: mockResponse.headers });
+      const execDb = execMock.database("test_db");
+
+      const result = await execDb
         .from(contactsWithSchemaSelect)
         .get("test-uuid")
-        .execute({
-          fetchHandler: createMockFetch(mockResponse),
-        });
+        .execute();
 
       expect(result.data).toBeDefined();
       expect(result.error).toBeUndefined();

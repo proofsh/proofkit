@@ -17,14 +17,11 @@ import {
 } from "@proofkit/fmodata";
 import { InsertBuilder } from "@proofkit/fmodata/client/insert-builder";
 import { ExecutableUpdateBuilder, UpdateBuilder } from "@proofkit/fmodata/client/update-builder";
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
-import { simpleMock } from "./utils/mock-fetch";
-import { createMockClient } from "./utils/test-setup";
 
 describe("insert and update methods", () => {
-  const client = createMockClient();
-
   const _contactsTO = fmTableOccurrence(
     "contacts",
     {
@@ -71,14 +68,16 @@ describe("insert and update methods", () => {
 
   describe("insert method", () => {
     it("should return InsertBuilder when called", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db.from(users).insert({ username: "test", active: true });
       expect(result).toBeInstanceOf(InsertBuilder);
     });
 
     it("should accept all fields as optional when no required specified", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // @ts-expect-error - some fields are required, no empty object is allowed
       db.from(users).insert({});
@@ -95,7 +94,8 @@ describe("insert and update methods", () => {
     });
 
     it("should require specified fields when required is set", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // These should work - required fields are username and email
       db.from(usersWithRequired).insert({
@@ -114,7 +114,8 @@ describe("insert and update methods", () => {
     });
 
     it("should have execute() that returns Result without ODataRecordMetadata by default", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const builder = db.from(users).insert({ username: "test", active: true });
 
@@ -127,14 +128,16 @@ describe("insert and update methods", () => {
 
   describe("update method with builder pattern", () => {
     it("should return UpdateBuilder when update() is called", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db.from(users).update({ username: "newname" });
       expect(result).toBeInstanceOf(UpdateBuilder);
     });
 
     it("should not have execute() on initial UpdateBuilder", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db.from(users).update({ username: "newname" });
 
@@ -143,14 +146,16 @@ describe("insert and update methods", () => {
     });
 
     it("should return ExecutableUpdateBuilder after byId()", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db.from(users).update({ username: "newname" }).byId("user-123");
       expect(result).toBeInstanceOf(ExecutableUpdateBuilder);
     });
 
     it("should return ExecutableUpdateBuilder after where()", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db
         .from(users)
@@ -162,7 +167,8 @@ describe("insert and update methods", () => {
 
   describe("update by ID", () => {
     it("should generate correct URL for update by ID", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db.from(users).update({ username: "newname" }).byId("user-123");
       const config = updateBuilder.getRequestConfig();
@@ -173,7 +179,8 @@ describe("insert and update methods", () => {
     });
 
     it("should return updatedCount type for update by ID", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db.from(users).update({ username: "newname" }).byId("user-123");
 
@@ -182,19 +189,22 @@ describe("insert and update methods", () => {
     });
 
     it("should execute update by ID and return count", async () => {
-      const mockFetch = simpleMock({
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        method: "PATCH",
         status: 200,
         headers: { "fmodata.affected_rows": "1" },
-        body: null,
+        response: null,
       });
 
-      const db = client.database("test_db");
+      const db = mock.database("test_db");
 
       const result = await db
         .from(users)
         .update({ username: "newname" })
         .byId("user-123")
-        .execute({ fetchHandler: mockFetch });
+        .execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toBeDefined();
@@ -204,7 +214,8 @@ describe("insert and update methods", () => {
 
   describe("update by filter", () => {
     it("should generate correct URL for update by filter", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db
         .from(users)
@@ -220,7 +231,8 @@ describe("insert and update methods", () => {
     });
 
     it("should support complex filters with QueryBuilder", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db
         .from(users)
@@ -234,7 +246,8 @@ describe("insert and update methods", () => {
     });
 
     it("should support QueryBuilder chaining in where callback", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db
         .from(users)
@@ -249,7 +262,8 @@ describe("insert and update methods", () => {
     });
 
     it("should return updatedCount result type for filter-based update", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const updateBuilder = db
         .from(users)
@@ -264,19 +278,22 @@ describe("insert and update methods", () => {
     });
 
     it("should execute update by filter and return count", async () => {
-      const mockFetch = simpleMock({
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        method: "PATCH",
         status: 204,
         headers: { "fmodata.affected_rows": "3" },
-        body: null,
+        response: null,
       });
 
-      const db = client.database("test_db");
+      const db = mock.database("test_db");
 
       const result = await db
         .from(users)
         .update({ active: false })
         .where((q) => q.where(eq(users.active, true)))
-        .execute({ fetchHandler: mockFetch });
+        .execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({ updatedCount: 3 });
@@ -285,7 +302,8 @@ describe("insert and update methods", () => {
 
   describe("update with optional fields", () => {
     it("should allow all fields to be optional for updates", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // All fields should be optional for updates (updateRequired removed)
       db.from(usersWithRequired).update({
@@ -308,7 +326,8 @@ describe("insert and update methods", () => {
         status: textField(),
       });
 
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // All fields are optional for update, even those required for insert
       db.from(usersForUpdate).update({
@@ -333,7 +352,8 @@ describe("insert and update methods", () => {
         email: textField(),
       });
 
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // id, createdAt, and modifiedAt should not be available for insert
       db.from(usersWithReadOnly).insert({
@@ -375,7 +395,8 @@ describe("insert and update methods", () => {
         email: textField(),
       });
 
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // id, createdAt, and modifiedAt should not be available for update
       db.from(usersWithReadOnlyTO).update({
@@ -402,7 +423,8 @@ describe("insert and update methods", () => {
         email: textField(), // nullable by default
       });
 
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // Should work - id and createdAt are excluded automatically
       db.from(usersWithReadOnlyTO).insert({
@@ -419,15 +441,20 @@ describe("insert and update methods", () => {
 
   describe("error handling", () => {
     it("should return error on failed update by ID", async () => {
-      const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        throwError: new Error("Network error"),
+        response: null,
+      });
 
-      const db = client.database("test_db");
+      const db = mock.database("test_db");
 
       const result = await db
         .from(users)
         .update({ username: "newname" })
         .byId("user-123")
-        .execute({ fetchHandler: mockFetch as any });
+        .execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeInstanceOf(Error);
@@ -435,15 +462,20 @@ describe("insert and update methods", () => {
     });
 
     it("should return error on failed update by filter", async () => {
-      const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        throwError: new Error("Network error"),
+        response: null,
+      });
 
-      const db = client.database("test_db");
+      const db = mock.database("test_db");
 
       const result = await db
         .from(users)
         .update({ active: false })
         .where((q) => q.where(eq(users.active, true)))
-        .execute({ fetchHandler: mockFetch as any });
+        .execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeInstanceOf(Error);

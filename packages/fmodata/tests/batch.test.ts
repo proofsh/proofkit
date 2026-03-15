@@ -7,7 +7,7 @@
 
 import { eq, fmTableOccurrence, isBatchTruncatedError, isNotNull, isODataError, textField } from "@proofkit/fmodata";
 import { describe, expect, it } from "vitest";
-import { createMockClient } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 
 /**
  * Creates a mock fetch handler that returns a multipart batch response
@@ -31,7 +31,7 @@ function createBatchMockFetch(batchResponseBody: string): typeof fetch {
 }
 
 describe("Batch Operations - Mock Tests", () => {
-  const client = createMockClient();
+  const mock = new MockFMServerConnection();
 
   // Define simple schemas for batch testing
   const contactsTO = fmTableOccurrence("contacts", {
@@ -45,7 +45,7 @@ describe("Batch Operations - Mock Tests", () => {
     name: textField(),
   });
 
-  const db = client.database("test_db");
+  const db = mock.database("test_db");
 
   describe("Mixed success/failure responses", () => {
     it("should handle batch response where first succeeds, second fails (404), and third is truncated", async () => {

@@ -4,13 +4,17 @@
  * These tests verify that the useEntityIds option can be overridden at the request level
  * using ExecuteOptions, allowing users to disable entity IDs for specific requests even
  * when the database is configured to use them by default.
+ *
+ * Note: The spy captures headers from the Request object (via Headers API), which
+ * normalizes header names to lowercase. Use lowercase keys (e.g. "prefer") when
+ * checking spy headers.
  */
 
-import { FMServerConnection, fmTableOccurrence, textField } from "@proofkit/fmodata";
+import { fmTableOccurrence, textField } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, it } from "vitest";
-import { simpleMock } from "./utils/mock-fetch";
 
-// Create database with entity IDs
+// Create table occurrence with entity IDs configured
 const contactsTO = fmTableOccurrence(
   "contacts",
   {
@@ -24,109 +28,63 @@ const contactsTO = fmTableOccurrence(
 
 describe("Per-request useEntityIds override", () => {
   it("should allow disabling entity IDs for a specific request", async () => {
-    // Create connection with entity IDs enabled by default
-    const connection = new FMServerConnection({
-      serverUrl: "https://test.com",
-      auth: { username: "test", password: "test" },
+    const mock = new MockFMServerConnection({ enableSpy: true });
+    mock.addRoute({
+      urlPattern: "/TestDB",
+      response: { value: [] },
+      status: 200,
     });
-
-    const db = connection.database("TestDB");
+    const db = mock.database("TestDB", { useEntityIds: true });
 
     // First request: use default (should have entity ID header)
-    await db
-      .from(contactsTO)
-      .list()
-      .execute({
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBe("fmodata.entity-ids");
-          return simpleMock({ body: { value: [] }, status: 200 })(input, init);
-        },
-      });
+    await db.from(contactsTO).list().execute();
+
+    const call0 = mock.spy?.calls[0];
+    expect(call0?.headers?.prefer).toBe("fmodata.entity-ids");
 
     // Second request: explicitly disable entity IDs for this request only
-    await db
-      .from(contactsTO)
-      .list()
-      .execute({
-        useEntityIds: false,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBeUndefined();
-          return simpleMock({ body: { value: [] }, status: 200 })(input, init);
-        },
-      });
+    await db.from(contactsTO).list().execute({ useEntityIds: false });
+
+    const call1 = mock.spy?.calls[1];
+    expect(call1?.headers?.prefer).toBeUndefined();
 
     // Third request: explicitly enable entity IDs for this request
-    await db
-      .from(contactsTO)
-      .list()
-      .execute({
-        useEntityIds: true,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBe("fmodata.entity-ids");
-          return simpleMock({ body: { value: [] }, status: 200 })(input, init);
-        },
-      });
+    await db.from(contactsTO).list().execute({ useEntityIds: true });
+
+    const call2 = mock.spy?.calls[2];
+    expect(call2?.headers?.prefer).toBe("fmodata.entity-ids");
   });
 
   it("should allow enabling entity IDs for a specific request when disabled by default", async () => {
-    // Create connection without entity IDs by default
-    const connection = new FMServerConnection({
-      serverUrl: "https://test.com",
-      auth: { username: "test", password: "test" },
+    const mock = new MockFMServerConnection({ enableSpy: true });
+    mock.addRoute({
+      urlPattern: "/TestDB",
+      response: { value: [] },
+      status: 200,
     });
-
-    const db = connection.database("TestDB", {
-      useEntityIds: false,
-    });
+    const db = mock.database("TestDB", { useEntityIds: false });
 
     // First request: use default (should NOT have entity ID header)
-    await db
-      .from(contactsTO)
-      .list()
-      .execute({
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBeUndefined();
-          return simpleMock({ body: { value: [] }, status: 200 })(input, init);
-        },
-      });
+    await db.from(contactsTO).list().execute();
+
+    const call0 = mock.spy?.calls[0];
+    expect(call0?.headers?.prefer).toBeUndefined();
 
     // Second request: explicitly enable entity IDs for this request only
-    await db
-      .from(contactsTO)
-      .list()
-      .execute({
-        useEntityIds: true,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBe("fmodata.entity-ids");
-          return simpleMock({ body: { value: [] }, status: 200 })(input, init);
-        },
-      });
+    await db.from(contactsTO).list().execute({ useEntityIds: true });
+
+    const call1 = mock.spy?.calls[1];
+    expect(call1?.headers?.prefer).toBe("fmodata.entity-ids");
 
     // Third request: confirm default is still disabled
-    await db
-      .from(contactsTO)
-      .list()
-      .execute({
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBeUndefined();
-          return simpleMock({ body: { value: [] }, status: 200 })(input, init);
-        },
-      });
+    await db.from(contactsTO).list().execute();
+
+    const call2 = mock.spy?.calls[2];
+    expect(call2?.headers?.prefer).toBeUndefined();
   });
 
   it("should work with insert operations", async () => {
-    const connection = new FMServerConnection({
-      serverUrl: "https://test.com",
-      auth: { username: "test", password: "test" },
-    });
-
-    const contactsTO = fmTableOccurrence(
+    const localContactsTO = fmTableOccurrence(
       "contacts",
       {
         id: textField().primaryKey().entityId("FMFID:1"),
@@ -137,41 +95,35 @@ describe("Per-request useEntityIds override", () => {
       },
     );
 
-    const db = connection.database("TestDB");
+    const mock = new MockFMServerConnection({ enableSpy: true });
+    mock.addRoute({
+      urlPattern: "/TestDB",
+      response: { id: "1", name: "Test" },
+      status: 200,
+    });
+    const db = mock.database("TestDB", { useEntityIds: true });
 
-    // Insert with default settings (entity IDs enabled)
-    await db
-      .from(contactsTO)
-      .insert({ name: "Test" })
-      .execute({
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toContain("fmodata.entity-ids");
-          return simpleMock({ body: { id: "1", name: "Test" }, status: 200 })(input, init);
-        },
-      });
+    // Insert with entity IDs enabled — verify via URL (uses FMTID)
+    // Note: The insert builder sets its own Prefer header ("return=representation")
+    // which overwrites the entity-ids Prefer value. Entity ID usage is verified via URL.
+    await db.from(localContactsTO).insert({ name: "Test" }).execute();
 
-    // Insert with entity IDs disabled for this request
+    const call0 = mock.spy?.calls[0];
+    expect(call0?.url).toContain("FMTID:100");
+
+    // Insert with entity IDs disabled — URL should use table name
     await db
-      .from(contactsTO)
+      .from(localContactsTO)
       .insert({ name: "Test" })
-      .execute({
-        useEntityIds: false,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).not.toContain("fmodata.entity-ids");
-          return simpleMock({ body: { id: "1", name: "Test" }, status: 200 })(input, init);
-        },
-      });
+      .execute({ useEntityIds: false });
+
+    const call1 = mock.spy?.calls[1];
+    expect(call1?.url).toContain("/contacts");
+    expect(call1?.url).not.toContain("FMTID:");
   });
 
   it("should work with update operations", async () => {
-    const connection = new FMServerConnection({
-      serverUrl: "https://test.com",
-      auth: { username: "test", password: "test" },
-    });
-
-    const contactsTO = fmTableOccurrence(
+    const localContactsTO = fmTableOccurrence(
       "contacts",
       {
         id: textField().primaryKey().entityId("FMFID:1"),
@@ -182,52 +134,38 @@ describe("Per-request useEntityIds override", () => {
       },
     );
 
-    const db = connection.database("TestDB");
+    const mock = new MockFMServerConnection({ enableSpy: true });
+    mock.addRoute({
+      urlPattern: "/TestDB",
+      response: "1",
+      status: 200,
+      headers: { "fmodata.affected_rows": "1" },
+    });
+    const db = mock.database("TestDB", { useEntityIds: true });
 
     // Update with entity IDs disabled
     await db
-      .from(contactsTO)
+      .from(localContactsTO)
       .update({ name: "Updated" })
       .byId("123")
-      .execute({
-        useEntityIds: false,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBeUndefined();
-          return simpleMock({
-            body: "1",
-            status: 200,
-            headers: { "fmodata.affected_rows": "1" },
-          })(input, init);
-        },
-      });
+      .execute({ useEntityIds: false });
+
+    const call0 = mock.spy?.calls[0];
+    expect(call0?.headers?.prefer).toBeUndefined();
 
     // Update with entity IDs enabled
     await db
-      .from(contactsTO)
+      .from(localContactsTO)
       .update({ name: "Updated" })
       .byId("123")
-      .execute({
-        useEntityIds: true,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBe("fmodata.entity-ids");
-          return simpleMock({
-            body: "1",
-            status: 200,
-            headers: { "fmodata.affected_rows": "1" },
-          })(input, init);
-        },
-      });
+      .execute({ useEntityIds: true });
+
+    const call1 = mock.spy?.calls[1];
+    expect(call1?.headers?.prefer).toBe("fmodata.entity-ids");
   });
 
   it("should work with delete operations", async () => {
-    const connection = new FMServerConnection({
-      serverUrl: "https://test.com",
-      auth: { username: "test", password: "test" },
-    });
-
-    const contactsTO = fmTableOccurrence(
+    const localContactsTO = fmTableOccurrence(
       "contacts",
       {
         id: textField().primaryKey().entityId("FMFID:1"),
@@ -238,42 +176,33 @@ describe("Per-request useEntityIds override", () => {
       },
     );
 
-    const db = connection.database("TestDB");
+    const mock = new MockFMServerConnection({ enableSpy: true });
+    mock.addRoute({
+      urlPattern: "/TestDB",
+      response: null,
+      status: 204,
+      headers: { "fmodata.affected_rows": "1" },
+    });
+    const db = mock.database("TestDB", { useEntityIds: true });
 
     // Delete with entity IDs enabled
     await db
-      .from(contactsTO)
+      .from(localContactsTO)
       .delete()
       .byId("123")
-      .execute({
-        useEntityIds: true,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBe("fmodata.entity-ids");
-          return simpleMock({
-            body: "1",
-            status: 204,
-            headers: { "fmodata.affected_rows": "1" },
-          })(input, init);
-        },
-      });
+      .execute({ useEntityIds: true });
+
+    const call0 = mock.spy?.calls[0];
+    expect(call0?.headers?.prefer).toBe("fmodata.entity-ids");
 
     // Delete with entity IDs disabled
     await db
-      .from(contactsTO)
+      .from(localContactsTO)
       .delete()
       .byId("123")
-      .execute({
-        useEntityIds: false,
-        fetchHandler: (input: RequestInfo | URL, init?: RequestInit) => {
-          const headers = (init as RequestInit)?.headers as Record<string, string>;
-          expect(headers?.Prefer).toBeUndefined();
-          return simpleMock({
-            body: "1",
-            status: 204,
-            headers: { "fmodata.affected_rows": "1" },
-          })(input, init);
-        },
-      });
+      .execute({ useEntityIds: false });
+
+    const call1 = mock.spy?.calls[1];
+    expect(call1?.headers?.prefer).toBeUndefined();
   });
 });

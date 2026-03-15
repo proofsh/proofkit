@@ -16,11 +16,11 @@ import {
 } from "@proofkit/fmodata";
 import { assert, describe, expect, it } from "vitest";
 import { mockResponses } from "./fixtures/responses";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { createMockFetch } from "./utils/mock-fetch";
-import { createMockClient } from "./utils/test-setup";
 
 describe("WebhookManager", () => {
-  const connection = createMockClient();
+  const connection = new MockFMServerConnection();
   const db = connection.database("fmdapi_test.fmp12");
 
   // Create a simple table occurrence for testing

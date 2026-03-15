@@ -27,14 +27,11 @@ import {
   textField,
   ValidationError,
 } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { assert, describe, expect, it } from "vitest";
 import { z } from "zod/v4";
-import { createMockFetch, simpleMock } from "./utils/mock-fetch";
-import { createMockClient } from "./utils/test-setup";
 
 describe("Error Handling", () => {
-  const client = createMockClient();
-
   const users = fmTableOccurrence("users", {
     id: textField().primaryKey(),
     username: textField(),
@@ -45,13 +42,14 @@ describe("Error Handling", () => {
 
   describe("HTTP Errors", () => {
     it("should return HTTPError for 404 Not Found", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 404 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 404,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.data).toBeUndefined();
@@ -65,13 +63,14 @@ describe("Error Handling", () => {
     });
 
     it("should return HTTPError for 401 Unauthorized", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 401 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 401,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(HTTPError);
@@ -82,13 +81,14 @@ describe("Error Handling", () => {
     });
 
     it("should return HTTPError for 500 Server Error", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 500 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 500,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(HTTPError);
@@ -101,16 +101,14 @@ describe("Error Handling", () => {
 
     it("should include response body in HTTPError", async () => {
       const errorBody = { message: "Custom error message" };
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({
-            status: 400,
-            body: errorBody,
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: errorBody,
+        status: 400,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeInstanceOf(HTTPError);
       const httpError = result.error as HTTPError;
@@ -128,19 +126,14 @@ describe("Error Handling", () => {
         },
       };
 
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 400,
-            response: odataError,
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: odataError,
+        status: 400,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(ODataError);
@@ -158,19 +151,14 @@ describe("Error Handling", () => {
         },
       };
 
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 400,
-            response: schemaLockedError,
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: schemaLockedError,
+        status: 400,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(SchemaLockedError);
@@ -190,19 +178,14 @@ describe("Error Handling", () => {
         },
       };
 
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 400,
-            response: schemaLockedError,
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: schemaLockedError,
+        status: 400,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(SchemaLockedError);
@@ -211,8 +194,6 @@ describe("Error Handling", () => {
 
   describe("Validation Errors", () => {
     it("should return ValidationError when schema validation fails", async () => {
-      const db = client.database("testdb");
-
       // Return data that doesn't match schema (email is invalid, age is out of range)
       const invalidData = [
         {
@@ -224,12 +205,13 @@ describe("Error Handling", () => {
         },
       ];
 
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch(invalidData),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: invalidData,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(ValidationError);
@@ -242,8 +224,6 @@ describe("Error Handling", () => {
     });
 
     it("should preserve Standard Schema issues in cause property", async () => {
-      const db = client.database("testdb");
-
       const invalidData = [
         {
           id: "1",
@@ -254,12 +234,13 @@ describe("Error Handling", () => {
         },
       ];
 
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch(invalidData),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: invalidData,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeInstanceOf(ValidationError);
       const validationError = result.error as ValidationError;
@@ -282,8 +263,6 @@ describe("Error Handling", () => {
     });
 
     it("should include field name in ValidationError", async () => {
-      const db = client.database("testdb");
-
       const invalidData = [
         {
           id: "1",
@@ -294,12 +273,13 @@ describe("Error Handling", () => {
         },
       ];
 
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch(invalidData),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: invalidData,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeInstanceOf(ValidationError);
       const validationError = result.error as ValidationError;
@@ -311,21 +291,16 @@ describe("Error Handling", () => {
 
   describe("Response Structure Errors", () => {
     it("should return ResponseStructureError for invalid response structure", async () => {
-      const db = client.database("testdb");
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: JSON.stringify("not an object"),
+        status: 200,
+      });
+      const db = mock.database("testdb");
 
       // Return invalid structure (not an object)
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 200,
-            response: "not an object", // Invalid - should be object with value array
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(ResponseStructureError);
@@ -335,20 +310,14 @@ describe("Error Handling", () => {
     });
 
     it("should return ResponseStructureError when value is not an array", async () => {
-      const db = client.database("testdb");
-
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 200,
-            response: { value: "not an array" }, // Invalid - value should be array
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: { value: "not an array" },
+        status: 200,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(ResponseStructureError);
@@ -357,8 +326,6 @@ describe("Error Handling", () => {
 
   describe("Record Count Mismatch Errors", () => {
     it("should return RecordCountMismatchError for single() when multiple records found", async () => {
-      const db = client.database("testdb");
-
       const multipleRecords = [
         {
           id: "1",
@@ -376,13 +343,13 @@ describe("Error Handling", () => {
         },
       ];
 
-      const result = await db
-        .from(users)
-        .list()
-        .single()
-        .execute({
-          fetchHandler: createMockFetch(multipleRecords),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: multipleRecords,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().single().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(RecordCountMismatchError);
@@ -393,15 +360,10 @@ describe("Error Handling", () => {
     });
 
     it("should return RecordCountMismatchError for single() when no records found", async () => {
-      const db = client.database("testdb");
-
-      const result = await db
-        .from(users)
-        .list()
-        .single()
-        .execute({
-          fetchHandler: createMockFetch([]),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({ urlPattern: "/testdb/users", response: [] });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().single().execute();
 
       expect(result.error).toBeDefined();
       expect(result.error).toBeInstanceOf(RecordCountMismatchError);
@@ -414,13 +376,14 @@ describe("Error Handling", () => {
 
   describe("Type Guards", () => {
     it("should correctly identify HTTPError using type guard", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 404 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 404,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(isHTTPError(result.error)).toBe(true);
@@ -432,21 +395,21 @@ describe("Error Handling", () => {
     });
 
     it("should correctly identify ValidationError using type guard", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch([
-            {
-              id: "1",
-              username: "test",
-              email: "invalid-email",
-              active: true,
-              age: 25,
-            },
-          ]),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: [
+          {
+            id: "1",
+            username: "test",
+            email: "invalid-email",
+            active: true,
+            age: 25,
+          },
+        ],
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(isValidationError(result.error)).toBe(true);
@@ -458,19 +421,14 @@ describe("Error Handling", () => {
     });
 
     it("should correctly identify ODataError using type guard", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 400,
-            response: { error: { code: "ERROR", message: "Test" } },
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: { error: { code: "ERROR", message: "Test" } },
+        status: 400,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(isODataError(result.error)).toBe(true);
@@ -482,21 +440,16 @@ describe("Error Handling", () => {
     });
 
     it("should correctly identify SchemaLockedError using type guard", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 400,
-            response: {
-              error: { code: "303", message: "Database schema is locked" },
-            },
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: {
+          error: { code: "303", message: "Database schema is locked" },
+        },
+        status: 400,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(isSchemaLockedError(result.error)).toBe(true);
@@ -509,48 +462,42 @@ describe("Error Handling", () => {
     });
 
     it("should correctly identify ResponseStructureError using type guard", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch({
-            url: "https://api.example.com",
-            method: "GET",
-            status: 200,
-            response: "invalid",
-            headers: { "content-type": "application/json" },
-          }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: JSON.stringify("invalid"),
+        status: 200,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       expect(isResponseStructureError(result.error)).toBe(true);
     });
 
     it("should correctly identify RecordCountMismatchError using type guard", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .single()
-        .execute({
-          fetchHandler: createMockFetch([
-            {
-              id: "1",
-              username: "user1",
-              email: "user1@test.com",
-              active: true,
-              age: 25,
-            },
-            {
-              id: "2",
-              username: "user2",
-              email: "user2@test.com",
-              active: true,
-              age: 30,
-            },
-          ]),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: [
+          {
+            id: "1",
+            username: "user1",
+            email: "user1@test.com",
+            active: true,
+            age: 25,
+          },
+          {
+            id: "2",
+            username: "user2",
+            email: "user2@test.com",
+            active: true,
+            age: 30,
+          },
+        ],
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().single().execute();
 
       expect(result.error).toBeDefined();
       expect(isRecordCountMismatchError(result.error)).toBe(true);
@@ -559,13 +506,14 @@ describe("Error Handling", () => {
 
   describe("Error Properties", () => {
     it("should include timestamp in all errors", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 404 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 404,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       if (result.error && "timestamp" in result.error) {
@@ -574,13 +522,14 @@ describe("Error Handling", () => {
     });
 
     it("should include kind property for discriminated unions", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 404 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 404,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       expect(result.error).toBeDefined();
       if (result.error && "kind" in result.error) {
@@ -591,13 +540,14 @@ describe("Error Handling", () => {
 
   describe("Error Handling Patterns", () => {
     it("should allow instanceof checks (like ffetch pattern)", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 404 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 404,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       if (result.error) {
         if (result.error instanceof HTTPError) {
@@ -609,13 +559,14 @@ describe("Error Handling", () => {
     });
 
     it("should allow switch statement on kind property", async () => {
-      const db = client.database("testdb");
-      const result = await db
-        .from(users)
-        .list()
-        .execute({
-          fetchHandler: simpleMock({ status: 404 }),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/testdb/users",
+        response: null,
+        status: 404,
+      });
+      const db = mock.database("testdb");
+      const result = await db.from(users).list().execute();
 
       if (result.error && "kind" in result.error) {
         switch (result.error.kind) {

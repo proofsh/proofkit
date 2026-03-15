@@ -20,7 +20,6 @@
 
 import {
   eq,
-  FMServerConnection,
   FMTable,
   fmTableOccurrence,
   getTableColumns,
@@ -31,12 +30,12 @@ import {
 } from "@proofkit/fmodata";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
-import { createMockFetch } from "./utils/mock-fetch";
-import { contacts, createMockClient, users } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { contacts, users } from "./utils/test-setup";
 
 describe("fmodata", () => {
   describe("API ergonomics", () => {
-    const client = createMockClient();
+    const client = new MockFMServerConnection();
     const db = client.database("TestDB");
 
     it("should support list() with query chaining", () => {
@@ -245,7 +244,7 @@ describe("fmodata", () => {
   });
 
   describe("BaseTable and TableOccurrence", () => {
-    const client = createMockClient();
+    const client = new MockFMServerConnection();
 
     it("should create BaseTable and TableOccurrence", () => {
       const tableOcc = fmTableOccurrence("Users", {
@@ -285,8 +284,8 @@ describe("fmodata", () => {
         name: textField(),
       });
 
-      const client1 = createMockClient();
-      const client2 = createMockClient();
+      const client1 = new MockFMServerConnection();
+      const client2 = new MockFMServerConnection();
 
       const db1 = client1.database("DB1");
       const db2 = client2.database("DB2");
@@ -343,22 +342,21 @@ describe("fmodata", () => {
 
   describe("Type safety and result parsing", () => {
     it("should properly type the result of a query", async () => {
-      const client = new FMServerConnection({
-        serverUrl: "https://api.example.com",
-        auth: { apiKey: "test-api-key" },
-        fetchClientOptions: {
-          fetchHandler: createMockFetch([
-            {
-              "@id": "1",
-              "@editLink": "https://api.example.com/Users/1",
-              id: 1,
-              name: "John Doe",
-              active: 0, // should coerce to boolean false
-              activeHuman: "active",
-            },
-          ]),
-        },
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/TestDB/Users",
+        response: [
+          {
+            "@id": "1",
+            "@editLink": "https://api.example.com/Users/1",
+            id: 1,
+            name: "John Doe",
+            active: 0, // should coerce to boolean false
+            activeHuman: "active",
+          },
+        ],
       });
+      const client = mock;
 
       const usersTO = fmTableOccurrence("Users", {
         id: numberField().primaryKey(),
@@ -421,7 +419,7 @@ describe("fmodata", () => {
      */
 
     it("should support single field orderBy with default ascending", () => {
-      const client = createMockClient();
+      const client = new MockFMServerConnection();
       const db = client.database("fmdapi_test.fmp12");
 
       // ✅ Single field name - defaults to ascending
@@ -437,7 +435,7 @@ describe("fmodata", () => {
     });
 
     it("should support tuple syntax for single field with explicit direction", () => {
-      const client = createMockClient();
+      const client = new MockFMServerConnection();
       const db = client.database("fmdapi_test.fmp12");
 
       // ✅ Tuple syntax: [fieldName, direction]
@@ -456,7 +454,7 @@ describe("fmodata", () => {
     });
 
     it("should support tuple syntax with entity IDs and transform field names to FMFIDs", () => {
-      const client = createMockClient();
+      const client = new MockFMServerConnection();
       const db = client.database("test.fmp12");
 
       // ✅ Tuple syntax: [fieldName, direction]
@@ -476,7 +474,7 @@ describe("fmodata", () => {
     });
 
     it("should support array of tuples for multiple fields", () => {
-      const client = createMockClient();
+      const client = new MockFMServerConnection();
       const db = client.database("fmdapi_test.fmp12");
 
       // ✅ Array of tuples for multiple fields with explicit directions
@@ -493,7 +491,7 @@ describe("fmodata", () => {
     });
 
     it("should chain orderBy with other query methods", () => {
-      const client = createMockClient();
+      const client = new MockFMServerConnection();
       const db = client.database("fmdapi_test.fmp12");
 
       const query = db
@@ -523,7 +521,7 @@ describe("fmodata", () => {
      * - Multiple fields: Array<[keyof T, 'asc' | 'desc']> - array of tuples
      */
     it("should reject invalid usage at compile time", () => {
-      const client = createMockClient();
+      const client = new MockFMServerConnection();
       const db = client.database("fmdapi_test.fmp12");
 
       const _typeChecks = () => {

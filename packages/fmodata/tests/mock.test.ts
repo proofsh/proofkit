@@ -15,23 +15,24 @@
 
 import { assert } from "node:console";
 import { eq } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { mockResponses } from "./fixtures/responses";
-import { createMockFetch, simpleMock } from "./utils/mock-fetch";
-import { contacts, createMockClient } from "./utils/test-setup";
+import { contacts } from "./utils/test-setup";
 
 describe("Mock Fetch Tests", () => {
-  const client = createMockClient();
-  const db = client.database("fmdapi_test.fmp12");
-
   describe("List queries", () => {
     it("should execute a basic list query using mocked response", async () => {
-      const result = await db
-        .from(contacts)
-        .list()
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-pagination"] ?? {}),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-pagination"]?.response,
+        status: mockResponses["list-with-pagination"]?.status ?? 200,
+        headers: mockResponses["list-with-pagination"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
+      const result = await db.from(contacts).list().execute();
 
       expect(result).toBeDefined();
       expect(result.error).toBeUndefined();
@@ -47,13 +48,19 @@ describe("Mock Fetch Tests", () => {
     });
 
     it("should return odata annotations if requested", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-pagination"]?.response,
+        status: mockResponses["list-with-pagination"]?.status ?? 200,
+        headers: mockResponses["list-with-pagination"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-pagination"] ?? {}),
-          includeODataAnnotations: true,
-        });
+        .execute({ includeODataAnnotations: true });
 
       expect(result).toBeDefined();
       expect(result.error).toBeUndefined();
@@ -69,13 +76,20 @@ describe("Mock Fetch Tests", () => {
     });
 
     it("should execute a list query with $select using mocked response", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-pagination"]?.response,
+        status: mockResponses["list-with-pagination"]?.status ?? 200,
+        headers: mockResponses["list-with-pagination"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
         .select({ name: contacts.name, PrimaryKey: contacts.PrimaryKey })
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-pagination"] ?? {}),
-        });
+        .execute();
 
       expect(result).toBeDefined();
       if (result.error) {
@@ -94,13 +108,16 @@ describe("Mock Fetch Tests", () => {
     });
 
     it("should execute a list query with $top using mocked response", async () => {
-      const result = await db
-        .from(contacts)
-        .list()
-        .top(5)
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-orderby"] ?? {}),
-        });
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-orderby"]?.response,
+        status: mockResponses["list-with-orderby"]?.status ?? 200,
+        headers: mockResponses["list-with-orderby"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
+      const result = await db.from(contacts).list().top(5).execute();
 
       expect(result).toBeDefined();
       expect(result.error).toBeUndefined();
@@ -115,14 +132,21 @@ describe("Mock Fetch Tests", () => {
     });
 
     it("should execute a list query with $orderby using mocked response", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-orderby"]?.response,
+        status: mockResponses["list-with-orderby"]?.status ?? 200,
+        headers: mockResponses["list-with-orderby"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
         .orderBy("name")
         .top(5)
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-orderby"] ?? {}),
-        });
+        .execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
@@ -131,26 +155,39 @@ describe("Mock Fetch Tests", () => {
     });
 
     it("should error if more than 1 record is returned in single mode", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-orderby"]?.response,
+        status: mockResponses["list-with-orderby"]?.status ?? 200,
+        headers: mockResponses["list-with-orderby"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
         .single()
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-orderby"] ?? {}),
-        });
+        .execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeUndefined();
       expect(result.error).toBeDefined();
     });
     it("should not error if no records are returned in maybeSingle mode", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: { value: [] },
+        status: 200,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
         .maybeSingle()
-        .execute({
-          fetchHandler: simpleMock({ status: 200, body: { value: [] } }),
-        });
+        .execute();
 
       expect(result.data).toBeNull();
       expect(result.error).toBeUndefined();
@@ -159,28 +196,40 @@ describe("Mock Fetch Tests", () => {
       expectTypeOf(result.data).toBeNullable();
     });
     it("should error if more than 1 record is returned in maybeSingle mode", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: { value: [{}, {}] },
+        status: 200,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
         .maybeSingle()
-        .execute({
-          // TODO: add better mock data
-          fetchHandler: simpleMock({ status: 200, body: { value: [{}, {}] } }),
-        });
+        .execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeDefined();
     });
 
     it("should execute a list query with pagination using mocked response", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["list-with-pagination"]?.response,
+        status: mockResponses["list-with-pagination"]?.status ?? 200,
+        headers: mockResponses["list-with-pagination"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .list()
         .top(2)
         .skip(2)
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["list-with-pagination"] ?? {}),
-        });
+        .execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
@@ -191,12 +240,19 @@ describe("Mock Fetch Tests", () => {
 
   describe("Single record queries", () => {
     it("should execute a single record query using mocked response", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["single-record"]?.response,
+        status: mockResponses["single-record"]?.status ?? 200,
+        headers: mockResponses["single-record"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .get("B5BFBC89-03E0-47FC-ABB6-D51401730227")
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["single-record"] ?? {}),
-        });
+        .execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
@@ -210,13 +266,20 @@ describe("Mock Fetch Tests", () => {
       // Note: Type errors for wrong columns are now caught at compile time
       // We can't easily test this with @ts-expect-error since we'd need a wrong table's column
 
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: mockResponses["single-field"]?.response,
+        status: mockResponses["single-field"]?.status ?? 200,
+        headers: mockResponses["single-field"]?.headers,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
       const result = await db
         .from(contacts)
         .get("B5BFBC89-03E0-47FC-ABB6-D51401730227")
         .getSingleField(contacts.name)
-        .execute({
-          fetchHandler: createMockFetch(mockResponses["single-field"] ?? {}),
-        });
+        .execute();
 
       expect(result).toBeDefined();
       expect(result.data).toBeDefined();
@@ -233,6 +296,9 @@ describe("Mock Fetch Tests", () => {
 
   describe("Query builder methods", () => {
     it("should generate correct query strings even with mocks", () => {
+      const mock = new MockFMServerConnection();
+      const db = mock.database("fmdapi_test.fmp12");
+
       const queryString = db
         .from(contacts)
         .list()

@@ -7,9 +7,12 @@
  * This module is used internally by builders to reduce error-threading boilerplate.
  * The public API surface (Result<T>) remains unchanged.
  */
-import { Effect, Schedule } from "effect";
+import { Effect, Layer, Schedule } from "effect";
+import type { FFetchOptions } from "@fetchkit/ffetch";
 import type { FMODataErrorType } from "./errors";
 import { isTransientError } from "./errors";
+import { createLogger } from "./logger";
+import { HttpClient, ODataConfig, ODataLogger } from "./services";
 import type { ExecutionContext, Result, RetryPolicy } from "./types";
 
 /**
@@ -26,6 +29,56 @@ export function fromResult<T>(promise: Promise<Result<T>>): Effect.Effect<T, FMO
 }
 
 /**
+ * Creates an Effect that yields the HttpClient service and makes a request.
+ * This is the primary way builders should make HTTP requests.
+ */
+export function requestFromService<T>(
+	url: string,
+	options?: RequestInit &
+		FFetchOptions & {
+			useEntityIds?: boolean;
+			includeSpecialColumns?: boolean;
+			includeODataAnnotations?: boolean;
+			retryPolicy?: RetryPolicy;
+		},
+): Effect.Effect<T, FMODataErrorType, HttpClient> {
+	return Effect.flatMap(HttpClient, (client) => client.request<T>(url, options));
+}
+
+/**
+ * Runs an Effect pipeline using a context's Layer.
+ * If the context doesn't provide a Layer (backward compat), creates a fallback
+ * layer from the context's _makeRequest method.
+ */
+export async function runWithContext<T>(
+	effect: Effect.Effect<T, FMODataErrorType, HttpClient | ODataConfig | ODataLogger>,
+	context: ExecutionContext,
+): Promise<Result<T>> {
+	const layer = context._getLayer?.();
+	if (layer) {
+		return runAsResult(Effect.provide(effect, layer));
+	}
+
+	// Fallback for contexts that don't implement _getLayer
+	const fallbackLayer = Layer.mergeAll(
+		Layer.succeed(HttpClient, {
+			request: <U>(url: string, options?: RequestInit & FFetchOptions) =>
+				fromResult(context._makeRequest<U>(url, options)),
+		}),
+		Layer.succeed(ODataConfig, {
+			baseUrl: context._getBaseUrl?.() ?? "",
+			useEntityIds: context._getUseEntityIds?.() ?? false,
+			includeSpecialColumns: context._getIncludeSpecialColumns?.() ?? false,
+		}),
+		Layer.succeed(ODataLogger, {
+			logger: context._getLogger?.() ?? createLogger(),
+		}),
+	);
+	return runAsResult(Effect.provide(effect, fallbackLayer));
+}
+
+/**
+ * @deprecated Use requestFromService + runWithContext instead.
  * Wraps _makeRequest as an Effect with typed error channel.
  */
 export function makeRequestEffect<T>(
@@ -109,11 +162,11 @@ export function withRetryPolicy<T>(
  * Wraps an Effect with a tracing span for observability.
  * Zero overhead when no OpenTelemetry tracer is configured.
  */
-export function withSpan<T>(
-	effect: Effect.Effect<T, FMODataErrorType>,
+export function withSpan<T, E, R>(
+	effect: Effect.Effect<T, E, R>,
 	name: string,
 	attributes?: Record<string, string>,
-): Effect.Effect<T, FMODataErrorType> {
+): Effect.Effect<T, E, R> {
 	return effect.pipe(
 		Effect.withSpan(name, {
 			attributes: attributes ? attributes : undefined,

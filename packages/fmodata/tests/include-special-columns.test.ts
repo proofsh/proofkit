@@ -7,9 +7,8 @@
  */
 
 import { fmTableOccurrence, textField } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { assert, describe, expect, expectTypeOf, it } from "vitest";
-import { simpleMock } from "./utils/mock-fetch";
-import { createMockClient } from "./utils/test-setup";
 
 // Create a simple table occurrence for testing
 const contactsTO = fmTableOccurrence("contacts", {
@@ -17,11 +16,17 @@ const contactsTO = fmTableOccurrence("contacts", {
   name: textField(),
 });
 
-const connection = createMockClient();
-
 describe("includeSpecialColumns feature", () => {
   it("should include special columns header when enabled at database level", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: true,
     });
 
@@ -38,12 +43,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
-          },
-          status: 200,
-        }),
       });
     expect(preferHeader).toBe("fmodata.include-specialcolumns");
     if (!reqUrl) {
@@ -75,7 +74,15 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should not add $select parameter when defaultSelect is not 'schema'", async () => {
-    const db = connection.database("TestDB", { includeSpecialColumns: true });
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB", { includeSpecialColumns: true });
 
     const contactsAll = fmTableOccurrence(
       "contacts",
@@ -99,12 +106,6 @@ describe("includeSpecialColumns feature", () => {
             reqUrl = req.url;
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
-          },
-          status: 200,
-        }),
       });
     if (!reqUrl) {
       throw new Error("Expected reqUrl to be defined");
@@ -134,7 +135,13 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should not include special columns header when disabled at database level", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: { value: [{ id: "1", name: "John" }] },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: false,
     });
 
@@ -149,10 +156,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: { value: [{ id: "1", name: "John" }] },
-          status: 200,
-        }),
       });
     expect(preferHeader).toBeNull();
 
@@ -178,7 +181,13 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should be disabled by default at database level", async () => {
-    const db = connection.database("TestDB");
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: { value: [{ id: "1", name: "John" }] },
+      status: 200,
+    });
+    const db = mock.database("TestDB");
 
     let preferHeader: string | null = null;
     const { data } = await db
@@ -191,10 +200,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: { value: [{ id: "1", name: "John" }] },
-          status: 200,
-        }),
       });
     expect(preferHeader).toBeNull();
 
@@ -220,7 +225,13 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should allow overriding includeSpecialColumns at request level", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: { value: [{ id: "1", name: "John" }] },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: false,
     });
 
@@ -236,10 +247,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader1 = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: { value: [{ id: "1", name: "John" }] },
-          status: 200,
-        }),
       });
 
     if (!data1 || data1.length === 0) {
@@ -263,8 +270,20 @@ describe("includeSpecialColumns feature", () => {
     expect(firstRecord1).not.toHaveProperty("ROWMODID");
 
     // Second request: explicitly enable for this request only
+    const mock2 = new MockFMServerConnection();
+    mock2.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
+      },
+      status: 200,
+    });
+    const db2 = mock2.database("TestDB", {
+      includeSpecialColumns: false,
+    });
+
     let preferHeader2: string | null = null;
-    const { data: data2 } = await db
+    const { data: data2 } = await db2
       .from(contactsTO)
       .list()
       .execute({
@@ -275,12 +294,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader2 = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
-          },
-          status: 200,
-        }),
       });
 
     if (!data2 || data2.length === 0) {
@@ -302,8 +315,18 @@ describe("includeSpecialColumns feature", () => {
     expect(firstRecord2).toHaveProperty("ROWMODID");
 
     // Third request: explicitly disable for this request
+    const mock3 = new MockFMServerConnection();
+    mock3.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: { value: [] },
+      status: 200,
+    });
+    const db3 = mock3.database("TestDB", {
+      includeSpecialColumns: false,
+    });
+
     let preferHeader3: string | null = null;
-    await db
+    await db3
       .from(contactsTO)
       .list()
       .execute({
@@ -314,7 +337,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader3 = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({ body: { value: [] }, status: 200 }),
       });
 
     expect(preferHeader1).toBeNull();
@@ -334,7 +356,15 @@ describe("includeSpecialColumns feature", () => {
       },
     );
 
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/",
+      response: {
+        value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       useEntityIds: true,
       includeSpecialColumns: true,
     });
@@ -350,12 +380,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            value: [{ id: "1", name: "John", ROWID: 123, ROWMODID: 456 }],
-          },
-          status: 200,
-        }),
       });
     // Should be comma-separated
     expect(preferHeader).not.toBeNull();
@@ -391,7 +415,18 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should work with get() method for single records", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        id: "123",
+        name: "John",
+        ROWID: 123,
+        ROWMODID: 456,
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: true,
     });
 
@@ -406,15 +441,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            id: "123",
-            name: "John",
-            ROWID: 123,
-            ROWMODID: 456,
-          },
-          status: 200,
-        }),
       });
     expect(preferHeader).toBe("fmodata.include-specialcolumns");
 
@@ -432,7 +458,15 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should not include special columns when $select is applied", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        value: [{ name: "John" }], // No ROWID or ROWMODID
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: true,
     });
 
@@ -451,12 +485,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            value: [{ name: "John" }], // No ROWID or ROWMODID
-          },
-          status: 200,
-        }),
       });
     expect(preferHeader).toBe("fmodata.include-specialcolumns");
 
@@ -482,7 +510,8 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should not append ROWID/ROWMODID to explicit $select unless requested via systemColumns", () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    const db = mock.database("TestDB", {
       includeSpecialColumns: true,
     });
 
@@ -506,7 +535,18 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should work with single() method", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        id: "123",
+        name: "John",
+        ROWID: 123,
+        ROWMODID: 456,
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: true,
     });
 
@@ -522,15 +562,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({
-          body: {
-            id: "123",
-            name: "John",
-            ROWID: 123,
-            ROWMODID: 456,
-          },
-          status: 200,
-        }),
       });
     expect(preferHeader).toBe("fmodata.include-specialcolumns");
 
@@ -548,7 +579,13 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should not include special columns if getSingleField() is used", async () => {
-    const db = connection.database("TestDB", {
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: { value: "John" },
+      status: 200,
+    });
+    const db = mock.database("TestDB", {
       includeSpecialColumns: true,
     });
 
@@ -564,7 +601,6 @@ describe("includeSpecialColumns feature", () => {
             preferHeader = headers.get("Prefer");
           },
         },
-        fetchHandler: simpleMock({ body: { value: "John" }, status: 200 }),
       });
     expect(preferHeader).toBe("fmodata.include-specialcolumns");
 
@@ -577,7 +613,15 @@ describe("includeSpecialColumns feature", () => {
   });
 
   it("should still allow you to select ROWID or ROWMODID in select()", async () => {
-    const db = connection.database("TestDB");
+    const mock = new MockFMServerConnection();
+    mock.addRoute({
+      urlPattern: "/TestDB/contacts",
+      response: {
+        value: [{ id: "1", ROWID: 123, ROWMODID: 456 }],
+      },
+      status: 200,
+    });
+    const db = mock.database("TestDB");
 
     const { data } = await db
       .from(contactsTO)
@@ -588,14 +632,7 @@ describe("includeSpecialColumns feature", () => {
         },
         { ROWID: true, ROWMODID: true },
       )
-      .execute({
-        fetchHandler: simpleMock({
-          body: {
-            value: [{ id: "1", ROWID: 123, ROWMODID: 456 }],
-          },
-          status: 200,
-        }),
-      });
+      .execute();
     if (!data || data.length === 0) {
       throw new Error("Expected data to be defined and non-empty");
     }

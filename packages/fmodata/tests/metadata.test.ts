@@ -10,18 +10,8 @@
  * the extension.
  */
 
-import { FMServerConnection } from "@proofkit/fmodata";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, it } from "vitest";
-
-function makeMetadataFetch(responseBody: unknown, status = 200): typeof fetch {
-  return (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
-    Promise.resolve(
-      new Response(JSON.stringify(responseBody), {
-        status,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-}
 
 const SAMPLE_METADATA = {
   "@SchemaVersion": "1.0",
@@ -35,13 +25,10 @@ describe("Database.getMetadata() key lookup", () => {
       GMT_Web: SAMPLE_METADATA,
     };
 
-    const client = new FMServerConnection({
-      serverUrl: "https://api.example.com",
-      auth: { apiKey: "test" },
-      fetchClientOptions: { fetchHandler: makeMetadataFetch(responseBody) },
-    });
+    const mock = new MockFMServerConnection();
+    mock.addRoute({ urlPattern: "/$metadata", response: responseBody });
 
-    const db = client.database("GMT_Web.fmp12");
+    const db = mock.database("GMT_Web.fmp12");
     const metadata = await db.getMetadata();
 
     expect(metadata).toEqual(SAMPLE_METADATA);
@@ -53,13 +40,10 @@ describe("Database.getMetadata() key lookup", () => {
       "GMT_Web.fmp12": SAMPLE_METADATA,
     };
 
-    const client = new FMServerConnection({
-      serverUrl: "https://api.example.com",
-      auth: { apiKey: "test" },
-      fetchClientOptions: { fetchHandler: makeMetadataFetch(responseBody) },
-    });
+    const mock = new MockFMServerConnection();
+    mock.addRoute({ urlPattern: "/$metadata", response: responseBody });
 
-    const db = client.database("GMT_Web.fmp12");
+    const db = mock.database("GMT_Web.fmp12");
     const metadata = await db.getMetadata();
 
     expect(metadata).toEqual(SAMPLE_METADATA);
@@ -74,13 +58,10 @@ describe("Database.getMetadata() key lookup", () => {
       GMT_Web: metadataWithoutExt,
     };
 
-    const client = new FMServerConnection({
-      serverUrl: "https://api.example.com",
-      auth: { apiKey: "test" },
-      fetchClientOptions: { fetchHandler: makeMetadataFetch(responseBody) },
-    });
+    const mock = new MockFMServerConnection();
+    mock.addRoute({ urlPattern: "/$metadata", response: responseBody });
 
-    const db = client.database("GMT_Web.fmp12");
+    const db = mock.database("GMT_Web.fmp12");
     const metadata = await db.getMetadata();
 
     expect(metadata).toEqual(metadataWithExt);
@@ -92,13 +73,10 @@ describe("Database.getMetadata() key lookup", () => {
       some_other_db: SAMPLE_METADATA,
     };
 
-    const client = new FMServerConnection({
-      serverUrl: "https://api.example.com",
-      auth: { apiKey: "test" },
-      fetchClientOptions: { fetchHandler: makeMetadataFetch(responseBody) },
-    });
+    const mock = new MockFMServerConnection();
+    mock.addRoute({ urlPattern: "/$metadata", response: responseBody });
 
-    const db = client.database("GMT_Web.fmp12");
+    const db = mock.database("GMT_Web.fmp12");
     await expect(db.getMetadata()).rejects.toThrow('Metadata for database "GMT_Web.fmp12" not found in response');
   });
 
@@ -108,13 +86,10 @@ describe("Database.getMetadata() key lookup", () => {
       GMT_Web: SAMPLE_METADATA,
     };
 
-    const client = new FMServerConnection({
-      serverUrl: "https://api.example.com",
-      auth: { apiKey: "test" },
-      fetchClientOptions: { fetchHandler: makeMetadataFetch(responseBody) },
-    });
+    const mock = new MockFMServerConnection();
+    mock.addRoute({ urlPattern: "/$metadata", response: responseBody });
 
-    const db = client.database("GMT_Web.fmp12");
+    const db = mock.database("GMT_Web.fmp12");
     const metadata = await db.getMetadata({ format: "json" });
 
     expect(metadata).toEqual(SAMPLE_METADATA);

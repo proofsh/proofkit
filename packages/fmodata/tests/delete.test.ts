@@ -7,14 +7,11 @@
 
 import { and, eq, fmTableOccurrence, type InferTableSchema, lt, numberField, textField } from "@proofkit/fmodata";
 import { DeleteBuilder, ExecutableDeleteBuilder } from "@proofkit/fmodata/client/delete-builder";
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
-import { simpleMock } from "./utils/mock-fetch";
-import { createMockClient } from "./utils/test-setup";
 
 describe("delete method", () => {
-  const client = createMockClient();
-
   const usersTO = fmTableOccurrence("users", {
     id: textField().primaryKey(),
     username: textField().notNull(),
@@ -27,14 +24,16 @@ describe("delete method", () => {
 
   describe("builder pattern", () => {
     it("should return DeleteBuilder when delete() is called", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db.from(usersTO).delete();
       expect(result).toBeInstanceOf(DeleteBuilder);
     });
 
     it("should not have execute() on initial DeleteBuilder", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const deleteBuilder = db.from(usersTO).delete();
 
@@ -43,14 +42,16 @@ describe("delete method", () => {
     });
 
     it("should return ExecutableDeleteBuilder after byId()", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db.from(usersTO).delete().byId("user-123");
       expect(result).toBeInstanceOf(ExecutableDeleteBuilder);
     });
 
     it("should return ExecutableDeleteBuilder after where()", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const result = db
         .from(usersTO)
@@ -60,7 +61,8 @@ describe("delete method", () => {
     });
 
     it("should have execute() on ExecutableDeleteBuilder", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const executableBuilder = db.from(usersTO).delete().byId("user-123");
 
@@ -71,7 +73,8 @@ describe("delete method", () => {
 
   describe("delete by ID", () => {
     it("should generate correct URL for delete by ID", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const deleteBuilder = db.from(usersTO).delete().byId("user-123");
       const config = deleteBuilder.getRequestConfig();
@@ -81,22 +84,24 @@ describe("delete method", () => {
     });
 
     it("should return deletedCount result type", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       db.from(usersTO).delete().byId("user-123");
     });
 
     it("should execute delete by ID and return count", async () => {
-      // Mock the fetch to return a count
-      const mockFetch = simpleMock({
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        method: "DELETE",
         status: 204,
         headers: { "fmodata.affected_rows": "1" },
-        body: null,
+        response: null,
       });
+      const db = mock.database("test_db");
 
-      const db = client.database("test_db");
-
-      const result = await db.from(usersTO).delete().byId("user-123").execute({ fetchHandler: mockFetch });
+      const result = await db.from(usersTO).delete().byId("user-123").execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({ deletedCount: 1 });
@@ -105,7 +110,8 @@ describe("delete method", () => {
 
   describe("delete by filter", () => {
     it("should generate correct URL for delete by filter", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const deleteBuilder = db
         .from(usersTO)
@@ -121,7 +127,8 @@ describe("delete method", () => {
     });
 
     it("should support complex filters with QueryBuilder", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const deleteBuilder = db
         .from(usersTO)
@@ -135,7 +142,8 @@ describe("delete method", () => {
     });
 
     it("should support QueryBuilder chaining in where callback", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       const deleteBuilder = db
         .from(usersTO)
@@ -150,8 +158,8 @@ describe("delete method", () => {
     });
 
     it("should return deletedCount result type for filter-based delete", () => {
-      const db = client.database("test_db");
-      db.from(usersTO);
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       db.from(usersTO)
         .delete()
@@ -159,20 +167,21 @@ describe("delete method", () => {
     });
 
     it("should execute delete by filter and return count", async () => {
-      // Mock the fetch to return a count
-      const mockFetch = simpleMock({
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        method: "DELETE",
         status: 204,
         headers: { "fmodata.affected_rows": "5" },
-        body: null,
+        response: null,
       });
-
-      const db = client.database("test_db");
+      const db = mock.database("test_db");
 
       const result = await db
         .from(usersTO)
         .delete()
         .where((q) => q.where(eq(usersTO.active, 0)))
-        .execute({ fetchHandler: mockFetch });
+        .execute();
 
       expect(result.error).toBeUndefined();
       expect(result.data).toEqual({ deletedCount: 5 });
@@ -181,7 +190,8 @@ describe("delete method", () => {
 
   describe("type safety", () => {
     it("should enforce type-safe filter properties", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       // This should work - valid property
       db.from(usersTO)
@@ -190,7 +200,8 @@ describe("delete method", () => {
     });
 
     it("should provide type-safe QueryBuilder in where callback", () => {
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
 
       db.from(usersTO)
         .delete()
@@ -208,15 +219,20 @@ describe("delete method", () => {
 
   describe("error handling", () => {
     it("should return error on failed delete", async () => {
-      const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
-
-      const db = client.database("test_db");
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/test_db/users",
+        method: "DELETE",
+        throwError: new Error("Network error"),
+        response: null,
+      });
+      const db = mock.database("test_db");
 
       const result = await db
         .from(usersTO)
         .delete()
         .byId("user-123")
-        .execute({ fetchHandler: mockFetch as any });
+        .execute();
 
       expect(result.data).toBeUndefined();
       expect(result.error).toBeInstanceOf(Error);

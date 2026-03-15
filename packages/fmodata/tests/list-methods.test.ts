@@ -1,8 +1,10 @@
 import { describe, it } from "vitest";
-import { createMockClient, users } from "./utils/test-setup";
+import { MockFMServerConnection } from "@proofkit/fmodata/testing";
+import { users } from "./utils/test-setup";
 
-const client = createMockClient();
-const db = client.database("test_db");
+const mock = new MockFMServerConnection();
+mock.addRoute({ urlPattern: "test.fmp12", response: { value: [] } });
+const db = mock.database("test_db");
 
 describe("list methods", () => {
   it("should not run query unless you await the method", async () => {
