@@ -76,7 +76,14 @@ function createRouterFetch(
   spy?: { calls: Array<{ url: string; method: string; body?: string; headers?: Record<string, string> }> },
 ): typeof fetch {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    let url: string;
+    if (typeof input === "string") {
+      url = input;
+    } else if (input instanceof URL) {
+      url = input.toString();
+    } else {
+      url = input.url;
+    }
     const method = init?.method ?? (input instanceof Request ? input.method : "GET");
 
     // Record the call if spy is active
@@ -88,7 +95,9 @@ function createRouterFetch(
         // ffetch wraps everything in a Request object, so body/headers may only be on `input`
         try {
           body = await input.clone().text();
-          if (body === "") body = undefined;
+          if (body === "") {
+            body = undefined;
+          }
         } catch {
           // body may not be readable
         }
@@ -174,12 +183,14 @@ function createRouterFetch(
       responseData = stripODataAnnotations(responseData);
     }
 
-    const body =
-      responseData === null || responseData === undefined
-        ? null
-        : typeof responseData === "string"
-          ? responseData
-          : JSON.stringify(responseData);
+    let body: string | null;
+    if (responseData === null || responseData === undefined) {
+      body = null;
+    } else if (typeof responseData === "string") {
+      body = responseData;
+    } else {
+      body = JSON.stringify(responseData);
+    }
 
     return new Response(body, {
       status,
@@ -245,7 +256,9 @@ export class MockFMServerConnection {
    * Get the request spy (only available if `enableSpy: true` was passed to constructor).
    */
   get spy(): RequestSpy | undefined {
-    if (!this._spy) return undefined;
+    if (!this._spy) {
+      return undefined;
+    }
     const spy = this._spy;
     return {
       get calls() {

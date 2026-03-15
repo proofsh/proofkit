@@ -561,7 +561,7 @@ export class QueryBuilder<
     return queryString;
   }
 
-  async execute<EO extends ExecuteOptions>(
+  execute<EO extends ExecuteOptions>(
     options?: ExecuteMethodOptions<EO>,
   ): Promise<
     Result<

@@ -150,7 +150,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     return `/${this.config.databaseName}/${tableId}${queryParams}`;
   }
 
-  async execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
+  execute(options?: ExecuteMethodOptions<ExecuteOptions>): Promise<Result<{ deletedCount: number }>> {
     const mergedOptions = this.mergeExecuteOptions(options);
     const tableId = this.getTableId(mergedOptions.useEntityIds);
     const url = this.buildUrl(tableId);

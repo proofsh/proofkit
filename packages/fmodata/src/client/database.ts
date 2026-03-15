@@ -100,7 +100,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
    * @internal Used by adapter packages for raw OData requests.
    * Makes requests through the Effect DI layer.
    */
-  async _makeRequest<T>(path: string, options?: RequestInit & FFetchOptions): Promise<Result<T>> {
+  _makeRequest<T>(path: string, options?: RequestInit & FFetchOptions): Promise<Result<T>> {
     const pipeline = requestFromService<T>(`/${this.databaseName}${path}`, options);
     return runAsResult(Effect.provide(pipeline, this._layer));
   }

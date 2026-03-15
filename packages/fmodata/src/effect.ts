@@ -47,7 +47,7 @@ export function requestFromService<T>(
  * Runs an Effect pipeline and converts the result back to the fmodata Result type.
  * This is the exit point from Effect back to the public API.
  */
-export async function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Promise<Result<T>> {
+export function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Promise<Result<T>> {
   return Effect.runPromise(
     effect.pipe(
       Effect.map((data): Result<T> => ({ data, error: undefined })),
@@ -109,7 +109,9 @@ export function withRetryPolicy<T>(
   effect: Effect.Effect<T, FMODataErrorType>,
   retryPolicy?: RetryPolicy,
 ): Effect.Effect<T, FMODataErrorType> {
-  if (!retryPolicy) return effect;
+  if (!retryPolicy) {
+    return effect;
+  }
   return effect.pipe(Effect.retry(buildRetrySchedule(retryPolicy)));
 }
 

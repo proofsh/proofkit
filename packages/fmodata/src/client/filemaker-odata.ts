@@ -330,7 +330,7 @@ export class FMServerConnection implements ExecutionContext {
   /**
    * @internal
    */
-  async _makeRequest<T>(
+  _makeRequest<T>(
     url: string,
     options?: RequestInit &
       FFetchOptions & {

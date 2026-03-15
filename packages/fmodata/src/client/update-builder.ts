@@ -183,7 +183,7 @@ export class ExecutableUpdateBuilder<
     return `/${this.config.databaseName}/${tableId}${queryParams}`;
   }
 
-  async execute(
+  execute(
     options?: ExecuteMethodOptions<ExecuteOptions>,
   ): Promise<
     Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
@@ -236,10 +236,11 @@ export class ExecutableUpdateBuilder<
       return { updatedCount };
     });
 
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
     return runAsResult(
       Effect.provide(withSpan(pipeline, "fmodata.update", { "fmodata.table": getTableName(this.table) }), this.layer),
-    ) as any;
+    ) as Promise<
+      Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
+    >;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value

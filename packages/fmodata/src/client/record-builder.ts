@@ -508,7 +508,7 @@ export class RecordBuilder<
     });
   }
 
-  async execute<EO extends ExecuteOptions>(
+  execute<EO extends ExecuteOptions>(
     options?: ExecuteMethodOptions<EO>,
   ): Promise<
     Result<
@@ -604,13 +604,14 @@ export class RecordBuilder<
       return result.data;
     });
 
-    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic return type
-    return runAsResult(
+    const result = runAsResult(
       Effect.provide(
         withSpan(pipeline, "fmodata.record.get", { "fmodata.table": getTableName(this.table) }),
         this.layer,
       ),
-    ) as any;
+    );
+    // biome-ignore lint/suspicious/noExplicitAny: Type assertion for complex generic return type
+    return result as Promise<Result<any>>;
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
