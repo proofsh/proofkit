@@ -15,7 +15,7 @@ function getGeneratedWebviewerScriptName(args: Pick<BuildSchemaArgs, "webviewerS
     return explicitWebviewerScriptName;
   }
   if (args.fmHttp) {
-    return normalizeScriptName(args.fmHttp.scriptName) ?? defaultWebviewerScriptName;
+    return defaultWebviewerScriptName;
   }
   return undefined;
 }

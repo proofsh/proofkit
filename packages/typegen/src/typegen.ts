@@ -12,7 +12,7 @@ import type { PackageJson } from "type-fest";
 import type { z } from "zod/v4";
 import { buildLayoutClient } from "./buildLayoutClient";
 import { buildOverrideFile, buildSchema } from "./buildSchema";
-import { commentHeader, defaultEnvNames, overrideCommentHeader } from "./constants";
+import { commentHeader, defaultEnvNames, defaultFmHttpBaseUrl, overrideCommentHeader } from "./constants";
 import { generateODataTablesSingle } from "./fmodata/typegen";
 import { formatAndSaveSourceFiles, runPostGenerateCommand } from "./formatting";
 import { getEnvValues, validateAndLogEnvValues } from "./getEnvValues";
@@ -23,7 +23,7 @@ type GlobalOptions = Omit<z.infer<typeof typegenConfig>, "config">;
 
 export const generateTypedClients = async (
   config: z.infer<typeof typegenConfig>["config"],
-  options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string },
+  options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string; configPath?: string },
 ): Promise<
   | {
       successCount: number;
@@ -51,9 +51,17 @@ export const generateTypedClients = async (
   let totalCount = 0;
   const outputPaths: string[] = [];
 
-  for (const singleConfig of configArray) {
+  const isConfigArray = Array.isArray(parsedConfig.data.config);
+  for (let configIndex = 0; configIndex < configArray.length; configIndex++) {
+    const singleConfig = configArray[configIndex];
+    if (!singleConfig) continue;
     if (singleConfig.type === "fmdapi") {
-      const result = await generateTypedClientsSingle(singleConfig, { resetOverrides, cwd });
+      const result = await generateTypedClientsSingle(singleConfig, {
+        resetOverrides,
+        cwd,
+        configPath: options?.configPath,
+        configIndex: isConfigArray ? configIndex : undefined,
+      });
       if (result) {
         totalSuccessCount += result.successCount;
         totalErrorCount += result.errorCount;
@@ -80,7 +88,7 @@ export const generateTypedClients = async (
 
 const generateTypedClientsSingle = async (
   config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }>,
-  options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string },
+  options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string; configPath?: string; configIndex?: number },
 ) => {
   const {
     envNames,
@@ -121,9 +129,18 @@ const generateTypedClientsSingle = async (
     },
   });
 
-  const isFmHttpMode = !!config.fmHttp;
+  const isFmHttpMode = config.fmHttp != null && config.fmHttp.enabled !== false;
+  const fmHttpObj = config.fmHttp ?? undefined;
+
+  if (isFmHttpMode && !config.webviewerScriptName) {
+    console.log(chalk.blue(`INFO: Generated clients will use WebViewerAdapter with script "${fmHttpObj?.scriptName ?? "execute_data_api"}".`));
+  }
+
   const envValues = getEnvValues(envNames);
-  const validationResult = validateAndLogEnvValues(envValues, envNames, { fmHttp: isFmHttpMode });
+  const validationResult = validateAndLogEnvValues(envValues, envNames, {
+    fmHttp: isFmHttpMode,
+    fmHttpConfig: isFmHttpMode ? { baseUrl: fmHttpObj?.baseUrl, connectedFileName: fmHttpObj?.connectedFileName } : undefined,
+  });
 
   if (!validationResult?.success) {
     return;
@@ -139,6 +156,69 @@ const generateTypedClientsSingle = async (
   if (validationResult.mode === "fmHttp") {
     fmHttpBaseUrl = validationResult.baseUrl;
     fmHttpConnectedFileName = validationResult.connectedFileName;
+
+    // Auto-discover connectedFileName if not provided
+    if (!fmHttpConnectedFileName) {
+      try {
+        const res = await fetch(`${fmHttpBaseUrl}/connectedFiles`);
+        if (res.ok) {
+          const files = (await res.json()) as string[];
+          if (files.length === 1) {
+            fmHttpConnectedFileName = files[0];
+            console.log(chalk.green(`Auto-discovered connected file: ${fmHttpConnectedFileName}`));
+
+            // Write discovered connectedFileName back to config file
+            if (options?.configPath) {
+              const configFilePath = path.resolve(cwd, options.configPath);
+              try {
+                const raw = fs.readFileSync(configFilePath, "utf8");
+                const { modify, applyEdits } = await import("jsonc-parser");
+                const fmtOpts = { formattingOptions: { insertSpaces: true, tabSize: 2 } };
+                // Build the JSON path: array configs use ["config", index, "fmHttp", ...], single uses ["config", "fmHttp", ...]
+                const basePath = options.configIndex !== undefined
+                  ? ["config", options.configIndex, "fmHttp"]
+                  : ["config", "fmHttp"];
+
+                // If fmHttp was `true` in the raw file, replace it with an object first
+                let current = raw;
+                const parsed = (await import("jsonc-parser")).parseTree(raw);
+                if (parsed) {
+                  const { findNodeAtLocation } = await import("jsonc-parser");
+                  const fmHttpNode = findNodeAtLocation(parsed, basePath);
+                  if (fmHttpNode?.type === "boolean") {
+                    const replaceEdits = modify(current, basePath, { enabled: true, connectedFileName: fmHttpConnectedFileName }, fmtOpts);
+                    current = applyEdits(current, replaceEdits);
+                    fs.writeFileSync(configFilePath, current, "utf8");
+                    console.log(chalk.green(`Updated config with connectedFileName: ${fmHttpConnectedFileName}`));
+                  } else {
+                    const edits = modify(current, [...basePath, "connectedFileName"], fmHttpConnectedFileName, fmtOpts);
+                    current = applyEdits(current, edits);
+                    fs.writeFileSync(configFilePath, current, "utf8");
+                    console.log(chalk.green(`Updated config with connectedFileName: ${fmHttpConnectedFileName}`));
+                  }
+                }
+              } catch (writeErr) {
+                console.log(chalk.yellow(`Could not update config file: ${writeErr instanceof Error ? writeErr.message : String(writeErr)}`));
+              }
+            }
+          } else if (files.length > 1) {
+            console.log(chalk.red("ERROR: Multiple connected files found. Please specify connectedFileName in your fmHttp config."));
+            console.log(chalk.yellow(`Connected files: ${files.join(", ")}`));
+            return;
+          } else {
+            console.log(chalk.red("ERROR: No connected files found on the FM HTTP server."));
+            return;
+          }
+        } else {
+          console.log(chalk.red(`ERROR: Failed to auto-discover connected files from ${fmHttpBaseUrl}/connectedFiles`));
+          return;
+        }
+      } catch (err) {
+        console.log(chalk.red(`ERROR: Could not reach FM HTTP server at ${fmHttpBaseUrl}`));
+        console.log(chalk.yellow("Ensure the FM HTTP server is running and accessible."));
+        return;
+      }
+    }
   } else {
     server = validationResult.server;
     db = validationResult.db;
@@ -166,7 +246,7 @@ const generateTypedClientsSingle = async (
         adapter: new FmHttpAdapter({
           baseUrl: fmHttpBaseUrl as string,
           connectedFileName: fmHttpConnectedFileName as string,
-          scriptName: config.fmHttp?.scriptName,
+          scriptName: fmHttpObj?.scriptName ?? config.webviewerScriptName,
         }),
         layout: item.layoutName,
       });
@@ -206,7 +286,7 @@ const generateTypedClientsSingle = async (
       type: validator === "zod" || validator === "zod/v4" || validator === "zod/v3" ? validator : "ts",
       strictNumbers: item.strictNumbers,
       webviewerScriptName: config?.type === "fmdapi" ? config.webviewerScriptName : undefined,
-      fmHttp: config?.type === "fmdapi" ? config.fmHttp : undefined,
+      fmHttp: config?.type === "fmdapi" ? !!config.fmHttp : undefined,
       envNames: (() => {
         // FM HTTP mode: only need baseUrl + connectedFileName
         if (isFmHttpMode) {

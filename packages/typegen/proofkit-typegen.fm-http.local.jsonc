@@ -2,8 +2,10 @@
   "$schema": "https://proofkit.dev/typegen-config-schema.json",
   "config": {
     "type": "fmdapi",
+    "webviewerScriptName": "execute_data_api",
     "fmHttp": {
-      "scriptName": "execute_data_api"
+      "enabled": true,
+      "connectedFileName": "MCP_Test"
     },
     "layouts": [
       {

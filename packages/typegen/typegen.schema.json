@@ -24,7 +24,9 @@
       ]
     }
   },
-  "required": ["config"],
+  "required": [
+    "config"
+  ],
   "additionalProperties": false,
   "definitions": {
     "__schema0": {
@@ -84,7 +86,10 @@
                     ]
                   }
                 },
-                "required": ["layoutName", "schemaName"],
+                "required": [
+                  "layoutName",
+                  "schemaName"
+                ],
                 "additionalProperties": false
               }
             },
@@ -127,7 +132,7 @@
               ]
             },
             "fmHttp": {
-              "description": "If set, typegen will use the FmHttpAdapter to fetch metadata through a local FM HTTP server during generation. Generated clients will still use the @proofkit/webviewer adapter.",
+              "description": "Enable the FM HTTP proxy for metadata fetching during typegen. Generated clients will use the @proofkit/webviewer adapter with webviewerScriptName or 'execute_data_api' as the default.",
               "allOf": [
                 {
                   "$ref": "#/definitions/__schema15"
@@ -135,7 +140,10 @@
               ]
             }
           },
-          "required": ["type", "layouts"],
+          "required": [
+            "type",
+            "layouts"
+          ],
           "additionalProperties": false
         },
         {
@@ -162,7 +170,7 @@
               "description": "If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema17"
+                  "$ref": "#/definitions/__schema20"
                 }
               ]
             },
@@ -173,7 +181,7 @@
               "description": "If true (default), field names will always be updated to match metadata, even when matching by entity ID. If false, existing field names are preserved when matching by entity ID.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema18"
+                  "$ref": "#/definitions/__schema21"
                 }
               ]
             },
@@ -182,7 +190,7 @@
               "description": "Required array of tables to generate. Only the tables specified here will be downloaded and generated. Each table can have field-level overrides for excluding fields, renaming variables, and overriding field types.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema19"
+                  "$ref": "#/definitions/__schema22"
                 }
               ]
             },
@@ -190,12 +198,15 @@
               "description": "If true, all fields will be included by default. If false, only fields that are explicitly listed in the `fields` array will be included.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema27"
+                  "$ref": "#/definitions/__schema30"
                 }
               ]
             }
           },
-          "required": ["type", "tables"],
+          "required": [
+            "type",
+            "tables"
+          ],
           "additionalProperties": false
         }
       ]
@@ -249,7 +260,11 @@
     },
     "__schema4": {
       "type": "string",
-      "enum": ["strict", "allowEmpty", "ignore"]
+      "enum": [
+        "strict",
+        "allowEmpty",
+        "ignore"
+      ]
     },
     "__schema5": {
       "type": "boolean"
@@ -286,7 +301,11 @@
       "anyOf": [
         {
           "type": "string",
-          "enum": ["zod", "zod/v4", "zod/v3"]
+          "enum": [
+            "zod",
+            "zod/v4",
+            "zod/v3"
+          ]
         },
         {
           "type": "boolean",
@@ -308,11 +327,35 @@
     "__schema15": {
       "type": "object",
       "properties": {
-        "scriptName": {
-          "description": "The name of the FileMaker script that executes Data API calls. Defaults to \"execute_data_api\".",
+        "enabled": {
+          "description": "Enable the FM HTTP proxy for metadata fetching during typegen.",
           "allOf": [
             {
               "$ref": "#/definitions/__schema16"
+            }
+          ]
+        },
+        "scriptName": {
+          "description": "The FM script the HTTP proxy calls to execute Data API operations. Overrides webviewerScriptName for the proxy call. Defaults to \"execute_data_api\".",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema17"
+            }
+          ]
+        },
+        "baseUrl": {
+          "description": "Base URL of the local FM HTTP server. Defaults to \"http://127.0.0.1:1365\". Can also be set via FM_HTTP_BASE_URL env var.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema18"
+            }
+          ]
+        },
+        "connectedFileName": {
+          "description": "Name of the connected FileMaker file. If not provided, it will be auto-discovered from the FM HTTP server's /connectedFiles endpoint and written back to your config. Can also be set via FM_CONNECTED_FILE_NAME env var.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema19"
             }
           ]
         }
@@ -320,16 +363,26 @@
       "additionalProperties": false
     },
     "__schema16": {
-      "type": "string"
-    },
-    "__schema17": {
-      "type": "boolean"
-    },
-    "__schema18": {
       "default": true,
       "type": "boolean"
     },
+    "__schema17": {
+      "type": "string"
+    },
+    "__schema18": {
+      "type": "string"
+    },
     "__schema19": {
+      "type": "string"
+    },
+    "__schema20": {
+      "type": "boolean"
+    },
+    "__schema21": {
+      "default": true,
+      "type": "boolean"
+    },
+    "__schema22": {
       "type": "array",
       "items": {
         "type": "object",
@@ -342,7 +395,7 @@
             "description": "Override the generated TypeScript variable name. The original entity set name is still used for the OData path.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema20"
+                "$ref": "#/definitions/__schema23"
               }
             ]
           },
@@ -350,7 +403,7 @@
             "description": "Field-specific overrides as an array",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema21"
+                "$ref": "#/definitions/__schema24"
               }
             ]
           },
@@ -358,7 +411,7 @@
             "description": "If undefined, the top-level setting will be used. If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema24"
+                "$ref": "#/definitions/__schema27"
               }
             ]
           },
@@ -366,7 +419,7 @@
             "description": "If undefined, the top-level setting will be used. If true, field names will always be updated to match metadata, even when matching by entity ID. If false, existing field names are preserved when matching by entity ID.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema25"
+                "$ref": "#/definitions/__schema28"
               }
             ]
           },
@@ -374,19 +427,21 @@
             "description": "If true, all fields will be included by default. If false, only fields that are explicitly listed in the `fields` array will be included.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema26"
+                "$ref": "#/definitions/__schema29"
               }
             ]
           }
         },
-        "required": ["tableName"],
+        "required": [
+          "tableName"
+        ],
         "additionalProperties": false
       }
     },
-    "__schema20": {
+    "__schema23": {
       "type": "string"
     },
-    "__schema21": {
+    "__schema24": {
       "type": "array",
       "items": {
         "type": "object",
@@ -399,7 +454,7 @@
             "description": "If true, this field will be excluded from generation",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema22"
+                "$ref": "#/definitions/__schema25"
               }
             ]
           },
@@ -407,19 +462,21 @@
             "description": "Override the inferred field type from metadata. Options: text, number, boolean, date, timestamp, container, list",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema23"
+                "$ref": "#/definitions/__schema26"
               }
             ]
           }
         },
-        "required": ["fieldName"],
+        "required": [
+          "fieldName"
+        ],
         "additionalProperties": false
       }
     },
-    "__schema22": {
+    "__schema25": {
       "type": "boolean"
     },
-    "__schema23": {
+    "__schema26": {
       "type": "string",
       "enum": [
         "text",
@@ -431,16 +488,16 @@
         "list"
       ]
     },
-    "__schema24": {
-      "type": "boolean"
-    },
-    "__schema25": {
-      "type": "boolean"
-    },
-    "__schema26": {
-      "type": "boolean"
-    },
     "__schema27": {
+      "type": "boolean"
+    },
+    "__schema28": {
+      "type": "boolean"
+    },
+    "__schema29": {
+      "type": "boolean"
+    },
+    "__schema30": {
       "default": true,
       "type": "boolean"
     }

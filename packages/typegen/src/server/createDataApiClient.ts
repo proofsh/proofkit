@@ -8,7 +8,7 @@ import { type Database, FMServerConnection } from "@proofkit/fmodata";
 import fs from "fs-extra";
 import { parse } from "jsonc-parser";
 import type { z } from "zod/v4";
-import { defaultEnvNames } from "../constants";
+import { defaultEnvNames, defaultFmHttpBaseUrl } from "../constants";
 import { typegenConfig, type typegenConfigSingle } from "../types";
 import type { ApiContext } from "./app";
 
@@ -197,7 +197,9 @@ export function createOdataClientFromConfig(config: FmodataConfig): OdataClientR
  */
 export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientResult, "config"> | CreateClientError {
   // FM HTTP mode
-  if (config.fmHttp) {
+  if (config.fmHttp != null && config.fmHttp.enabled !== false) {
+    const fmHttpObj = config.fmHttp;
+
     const getEnvName = (customName: string | undefined, defaultName: string) =>
       customName && customName.trim() !== "" ? customName : defaultName;
 
@@ -206,24 +208,20 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
       config.envNames?.fmHttp?.connectedFileName,
       defaultEnvNames.fmHttpConnectedFileName,
     );
-    const baseUrl = process.env[baseUrlEnvName];
-    const connectedFileName = process.env[connectedFileNameEnvName];
 
-    if (!(baseUrl && connectedFileName)) {
-      const missing: string[] = [];
-      if (!baseUrl) {
-        missing.push(baseUrlEnvName);
-      }
-      if (!connectedFileName) {
-        missing.push(connectedFileNameEnvName);
-      }
+    // Resolution: config value > env var > default
+    const baseUrl = fmHttpObj?.baseUrl || process.env[baseUrlEnvName] || defaultFmHttpBaseUrl;
+    const connectedFileName = fmHttpObj?.connectedFileName || process.env[connectedFileNameEnvName];
+
+    // connectedFileName is required (auto-discovery not available in sync context)
+    if (!connectedFileName) {
       return {
-        error: "Missing required environment variables for FM HTTP mode",
+        error: "Missing connectedFileName for FM HTTP mode",
         statusCode: 400,
         kind: "missing_env",
-        details: { missing: { baseUrl: !baseUrl, connectedFileName: !connectedFileName } },
-        suspectedField: baseUrl ? "db" : "server",
-        message: `Missing: ${missing.join(", ")}`,
+        details: { missing: { connectedFileName: true } },
+        suspectedField: "db",
+        message: "Set connectedFileName in your fmHttp config or FM_CONNECTED_FILE_NAME env var",
       };
     }
 
@@ -233,7 +231,7 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
         adapter: new FmHttpAdapter({
           baseUrl,
           connectedFileName,
-          scriptName: config.fmHttp.scriptName,
+          scriptName: fmHttpObj?.scriptName ?? config.webviewerScriptName,
         }),
         layout: "",
       });

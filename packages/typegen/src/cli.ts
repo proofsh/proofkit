@@ -90,6 +90,7 @@ async function runCodegen({ configLocation, resetOverrides = false }: ConfigArgs
   const result = await generateTypedClients(configParsed.data.config, {
     resetOverrides,
     postGenerateCommand: configParsed.data.postGenerateCommand,
+    configPath: configLocation,
   }).catch((err: unknown) => {
     console.error(err);
     return process.exit(1);

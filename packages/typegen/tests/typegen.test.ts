@@ -490,9 +490,8 @@ describe("typegen unit tests", () => {
       path: "unit-typegen-output/fm-http",
       generateClient: true,
       validator: false,
-      fmHttp: {
-        scriptName: "execute_data_api_custom",
-      },
+      webviewerScriptName: "execute_data_api_custom",
+      fmHttp: { enabled: true },
     };
 
     await generateTypedClients(config, { cwd: import.meta.dirname });
@@ -511,6 +510,7 @@ describe("typegen unit tests", () => {
     expect(String(url)).toContain("/callScript");
 
     const body = JSON.parse(String(init?.body ?? "{}"));
+    // FmHttpAdapter uses webviewerScriptName when fmHttp.scriptName not set
     expect(body.scriptName).toBe("execute_data_api_custom");
     const scriptParam = JSON.parse(String(body.data ?? "{}"));
     expect(scriptParam.action).toBe("metaData");

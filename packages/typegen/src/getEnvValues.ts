@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import type { z } from "zod/v4";
-import { defaultEnvNames } from "./constants";
+import { defaultEnvNames, defaultFmHttpBaseUrl } from "./constants";
 import type { typegenConfigSingle } from "./types";
 
 type EnvNames = z.infer<typeof typegenConfigSingle>["envNames"];
@@ -105,46 +105,28 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
 export function validateEnvValues(
   envValues: EnvValues,
   envNames?: EnvNames,
-  options?: { fmHttp?: boolean },
+  options?: { fmHttp?: boolean; fmHttpConfig?: { baseUrl?: string; connectedFileName?: string } },
 ): EnvValidationResult {
   const { server, db, apiKey, username, password, fmHttpBaseUrl, fmHttpConnectedFileName } = envValues;
+
+  // FM HTTP mode: resolve baseUrl and connectedFileName with fallback chain
+  // Priority: config value > env var > default/auto-discover
+  if (options?.fmHttp) {
+    const resolvedBaseUrl = options.fmHttpConfig?.baseUrl || fmHttpBaseUrl || defaultFmHttpBaseUrl;
+    const resolvedConnectedFileName = options.fmHttpConfig?.connectedFileName || fmHttpConnectedFileName;
+
+    // connectedFileName will be auto-discovered later if still missing
+    return {
+      success: true,
+      mode: "fmHttp",
+      baseUrl: resolvedBaseUrl,
+      connectedFileName: resolvedConnectedFileName ?? "",
+    };
+  }
 
   // Helper to get env name, treating empty strings as undefined
   const getEnvName = (customName: string | undefined, defaultName: string) =>
     customName && customName.trim() !== "" ? customName : defaultName;
-
-  // FM HTTP mode: only need baseUrl + connectedFileName
-  if (options?.fmHttp) {
-    const missingVars: string[] = [];
-    if (!fmHttpBaseUrl) {
-      missingVars.push(
-        getEnvName(
-          envNames?.fmHttp && "baseUrl" in envNames.fmHttp ? envNames.fmHttp.baseUrl : undefined,
-          defaultEnvNames.fmHttpBaseUrl,
-        ),
-      );
-    }
-    if (!fmHttpConnectedFileName) {
-      missingVars.push(
-        getEnvName(
-          envNames?.fmHttp && "connectedFileName" in envNames.fmHttp ? envNames.fmHttp.connectedFileName : undefined,
-          defaultEnvNames.fmHttpConnectedFileName,
-        ),
-      );
-    }
-    if (missingVars.length > 0) {
-      return {
-        success: false,
-        errorMessage: `Missing required environment variables for FM HTTP mode: ${missingVars.join(", ")}`,
-      };
-    }
-    return {
-      success: true,
-      mode: "fmHttp",
-      baseUrl: fmHttpBaseUrl as string,
-      connectedFileName: fmHttpConnectedFileName as string,
-    };
-  }
 
   // Validate required env vars (server, db, and at least one auth method)
   if (!(server && db && (apiKey || username))) {
@@ -238,7 +220,7 @@ export function validateEnvValues(
 export function validateAndLogEnvValues(
   envValues: EnvValues,
   envNames?: EnvNames,
-  options?: { fmHttp?: boolean },
+  options?: { fmHttp?: boolean; fmHttpConfig?: { baseUrl?: string; connectedFileName?: string } },
 ): EnvValidationResult | undefined {
   const result = validateEnvValues(envValues, envNames, options);
 

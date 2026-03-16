@@ -66,14 +66,31 @@ describe("getEnvValues + validateEnvValues", () => {
     }
   });
 
-  it("returns clear error when fmHttp env vars are missing", () => {
+  it("defaults baseUrl and allows empty connectedFileName for auto-discovery when fmHttp env vars are missing", () => {
     const envValues = getEnvValues();
     const result = validateEnvValues(envValues, undefined, { fmHttp: true });
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.errorMessage).toContain("FM_HTTP_BASE_URL");
-      expect(result.errorMessage).toContain("FM_CONNECTED_FILE_NAME");
+    expect(result.success).toBe(true);
+    if (result.success && result.mode === "fmHttp") {
+      expect(result.baseUrl).toBe("http://127.0.0.1:1365");
+      expect(result.connectedFileName).toBe("");
+    }
+  });
+
+  it("uses config values over env vars for fmHttp", () => {
+    process.env.FM_HTTP_BASE_URL = "http://env-url:9999";
+    process.env.FM_CONNECTED_FILE_NAME = "EnvFile";
+
+    const envValues = getEnvValues();
+    const result = validateEnvValues(envValues, undefined, {
+      fmHttp: true,
+      fmHttpConfig: { baseUrl: "http://config-url:1234", connectedFileName: "ConfigFile" },
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success && result.mode === "fmHttp") {
+      expect(result.baseUrl).toBe("http://config-url:1234");
+      expect(result.connectedFileName).toBe("ConfigFile");
     }
   });
 
