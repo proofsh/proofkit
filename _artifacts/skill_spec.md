@@ -15,7 +15,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 
 | Skill | Type | Domain | What it covers | Failure modes |
 | --- | --- | --- | --- | --- |
-| typegen-setup | core | connecting | Config, CLI, Data API + OData modes, validators, generated file structure, env vars | 7 |
+| typegen-setup | core | connecting | Config, CLI, Data API + OData + FM HTTP modes, validators, generated file structure, env vars | 11 |
 | fmdapi-client | core | data-access | DataApi factory, adapters, token stores, CRUD, find variants, scripts, validation | 6 |
 | fmodata-client | core | data-access | FMServerConnection, schema/field builders, query builder, CRUD, relationships, batch, errors | 8 |
 | webviewer-integration | core | webviewer | fmFetch, callFMScript, WebViewerAdapter, browser-only constraints, local mode perf | 6 |
@@ -25,7 +25,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 
 ## Failure Mode Inventory
 
-### typegen-setup (7 failure modes)
+### typegen-setup (11 failure modes)
 
 | # | Mistake | Priority | Source | Cross-skill? |
 | --- | --- | --- | --- | --- |
@@ -36,6 +36,10 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | 5 | Omitting type discriminator for OData config | HIGH | source + docs | — |
 | 6 | Manually redefining types instead of using generated/inferred types | CRITICAL | maintainer | fmdapi-client, fmodata-client |
 | 7 | Mixing Zod v3 and v4 in the same project | HIGH | maintainer | fmdapi-client, fmodata-client |
+| 8 | Using FmHttpAdapter in production application code | CRITICAL | source | — |
+| 9 | Setting standard FM env vars when using fmHttp mode | HIGH | source | — |
+| 10 | Suggesting OttoFMS/FetchAdapter fallback when FM HTTP fails | HIGH | maintainer | — |
+| 11 | FM HTTP WebViewer window closed or in Layout mode | HIGH | maintainer | — |
 
 ### fmdapi-client (6 failure modes)
 

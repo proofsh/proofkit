@@ -187,6 +187,56 @@ if (error) {
 }
 ```
 
+### Path D: Local WebViewer Development (FM HTTP — no credentials)
+
+For WebViewer apps running inside FileMaker, you can use FM HTTP mode to generate types from a local FileMaker file without any server credentials.
+
+**Prerequisites:**
+- FM HTTP daemon installed and running (`curl http://127.0.0.1:1365/health`)
+- FileMaker file open locally with "Connect to MCP" script run
+
+1. Install packages:
+
+```bash
+pnpm add @proofkit/fmdapi @proofkit/webviewer zod
+```
+
+2. No `.env` file needed for typegen (baseUrl defaults, connectedFileName is auto-discovered). Optionally set "connectedFileName" in the config.fmHttp.connectedFileName to override the auto-discovery.
+
+3. Create typegen config with `fmHttp` enabled:
+
+```jsonc
+{
+  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "config": {
+    "type": "fmdapi",
+    "fmHttp": { "enabled": true },
+    "layouts": [
+      { "layoutName": "api_Contacts", "schemaName": "Contacts" }
+    ],
+    "path": "schema"
+  }
+}
+```
+
+4. Run typegen — it auto-discovers the connected file and writes it back to config:
+
+```bash
+npx @proofkit/typegen
+```
+
+5. First query (runs inside FileMaker WebViewer):
+
+```ts
+import { ContactsLayout } from "./schema/client";
+
+const { data } = await ContactsLayout.findOne({
+  query: { id: "==123" },
+});
+```
+
+The generated client uses `WebViewerAdapter` with `"execute_data_api"` as the default script name. No server URL or API keys are needed at runtime — all calls go through the FileMaker script engine.
+
 ## Choosing Data API vs OData
 
 | Aspect | Data API (`@proofkit/fmdapi`) | OData (`@proofkit/fmodata`) |

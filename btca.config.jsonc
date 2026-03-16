@@ -8,6 +8,6 @@
       "branch": "main"
     }
   ],
-  "model": "GPT-5.3-Codex",
+  "model": "gpt-5.3-codex",
   "provider": "openai"
 }

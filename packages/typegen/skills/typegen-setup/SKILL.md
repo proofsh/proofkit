@@ -5,7 +5,8 @@ description: >
   validators from FileMaker layouts or OData metadata. Covers
   proofkit-typegen-config.jsonc, validator options (zod/v4, zod/v3),
   generated vs override file structure, envNames, InferTableSchema,
-  InferZodPortals, and the schema/generated/client directory layout.
+  InferZodPortals, schema/generated/client directory layout, and
+  fmHttp mode for local typegen without credentials.
 type: core
 library: proofkit
 library_version: "1.1.0-beta.15"
@@ -181,34 +182,41 @@ import { Customers } from "./schema/odata/generated/Customers";
 type CustomerRow = InferTableSchema<typeof Customers>;
 ```
 
-### Multiple configs (mixed Data API + OData)
+### Multiple configs
+
+The `config` key can be an array mixing `fmdapi` and `fmodata` entries, each with its own `path` and `envNames`.
+
+### FM HTTP mode (local development, no credentials)
+
+FM HTTP mode lets typegen fetch layout metadata from a locally running FileMaker file via the FM HTTP proxy, without needing OttoFMS, a hosted server, or any credentials. Generated clients still use `WebViewerAdapter` — FM HTTP is only used during typegen.
 
 ```jsonc
 {
   "$schema": "https://proofkit.dev/typegen-config-schema.json",
-  "config": [
-    {
-      "type": "fmdapi",
-      "path": "schema/dapi",
-      "layouts": [
-        { "layoutName": "api_Contacts", "schemaName": "Contacts" }
-      ]
-    },
-    {
-      "type": "fmodata",
-      "path": "schema/odata",
-      "envNames": {
-        "server": "ODATA_SERVER_URL",
-        "db": "ODATA_DATABASE_NAME",
-        "auth": { "apiKey": "ODATA_API_KEY" }
-      },
-      "tables": [
-        { "tableName": "Products" }
-      ]
-    }
-  ]
+  "config": {
+    "type": "fmdapi",
+    "fmHttp": { "enabled": true },
+    "layouts": [
+      { "layoutName": "api_Contacts", "schemaName": "Contacts" }
+    ]
+  }
 }
 ```
+
+`fmHttp` accepts an object with optional overrides:
+
+- `enabled` — `true` to enable (default when object is present)
+- `scriptName` — FM script the proxy calls for Data API operations. Resolution: `fmHttp.scriptName` > `webviewerScriptName` > `"execute_data_api"`
+- `baseUrl` — FM HTTP server URL (default: `http://127.0.0.1:1365`). Can also be set via `FM_HTTP_BASE_URL` env var
+- `connectedFileName` — FileMaker file name. If omitted, auto-discovered from `GET /connectedFiles` and written back to config
+
+The generated client uses `WebViewerAdapter` with `webviewerScriptName` if set, otherwise `"execute_data_api"`.
+
+**Prerequisites:**
+1. FM HTTP daemon running locally (`GET http://127.0.0.1:1365/health` should return OK)
+2. FileMaker file open on the local machine
+3. "Connect to MCP" script run in the FileMaker file (opens a WebViewer window that bridges HTTP requests)
+4. That WebViewer window must stay open in **Browse mode** (not Layout mode)
 
 ### Custom env variable names
 
@@ -417,6 +425,62 @@ Correct:
 Zod v3 and v4 have incompatible APIs (`z.infer` vs `z.output`, different `extend` behavior); use one version across all configs to avoid runtime conflicts.
 
 Source: apps/docs/content/docs/typegen/config.mdx
+
+### CRITICAL: Using FmHttpAdapter in production application code
+
+Wrong:
+```ts
+import { FmHttpAdapter } from "@proofkit/fmdapi/adapters/fm-http";
+
+const client = DataApi({
+  adapter: new FmHttpAdapter({
+    baseUrl: "http://127.0.0.1:1365",
+    connectedFileName: "MyFile",
+  }),
+  layout: "Contacts",
+});
+```
+
+Correct:
+```ts
+// Use the typegen-generated client (uses WebViewerAdapter internally)
+import { ContactsLayout } from "./schema/client";
+
+const { data } = await ContactsLayout.find({ query: { name: "==John" } });
+```
+
+`FmHttpAdapter` is internal to typegen's metadata fetching process. It only runs during code generation, never in production. Generated clients use `WebViewerAdapter` for runtime data access inside FileMaker WebViewer.
+
+### HIGH: Setting standard FM env vars when using fmHttp mode
+
+Wrong:
+```bash
+# Agent configures both standard and fmHttp vars
+FM_SERVER=https://fm.example.com
+FM_DATABASE=MyFile.fmp12
+OTTO_API_KEY=dk_abc123
+FM_HTTP_BASE_URL=http://127.0.0.1:1365
+```
+
+Correct:
+```bash
+# fmHttp mode only — no server/db/auth needed
+# baseUrl defaults to http://127.0.0.1:1365 if not set
+# connectedFileName is auto-discovered if not set
+FM_CONNECTED_FILE_NAME=MyFile
+```
+
+fmHttp mode bypasses the standard FM_SERVER/FM_DATABASE/auth env vars entirely. Setting both causes confusion when standard validation reports missing values.
+
+### HIGH: FM HTTP connection failures — troubleshooting
+
+If typegen fails to connect in fmHttp mode, do NOT suggest falling back to OttoFMS or FetchAdapter. The developer chose fmHttp because they don't have hosted credentials or are working with a local-only file.
+
+Troubleshooting checklist:
+1. **Daemon running?** `curl http://127.0.0.1:1365/health` — should return `{"service":"fm-http","status":"ok"}`
+2. **File connected?** `curl http://127.0.0.1:1365/connectedFiles` — should list the target file
+3. **File not listed?** Open the FileMaker file and run the **"Connect to MCP"** script
+4. **Still not working?** Ensure the WebViewer window opened by "Connect to MCP" is in **Browse mode**, not Layout mode. Closing this window or switching to Layout mode silently breaks the proxy.
 
 ## References
 
