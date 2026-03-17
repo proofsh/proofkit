@@ -1,17 +1,22 @@
 import {
-  getFmdapiVersion,
   getNodeMajorVersion,
-  getProofkitBetterAuthVersion,
-  getProofkitWebviewerVersion,
-  getTypegenVersion,
-  getVersion,
 } from "~/utils/getProofKitVersion.js";
+import { getProofkitReleaseTag } from "~/utils/proofkitReleaseChannel.js";
+
+const proofkitReleaseTag = getProofkitReleaseTag();
 
 /*
  * This maps the necessary packages to a version.
  * This improves performance significantly over fetching it from the npm registry.
  */
 export const dependencyVersionMap = {
+  // Resolve to "latest" or "beta" based on current changeset state / versions.
+  "@proofkit/fmdapi": proofkitReleaseTag,
+  "@proofkit/webviewer": proofkitReleaseTag,
+  "@proofkit/cli": proofkitReleaseTag,
+  "@proofkit/typegen": proofkitReleaseTag,
+  "@proofkit/better-auth": proofkitReleaseTag,
+
   // NextAuth.js
   "next-auth": "beta",
   "next-auth-adapter-filemaker": "beta",
@@ -54,14 +59,6 @@ export const dependencyVersionMap = {
   "@clerk/nextjs": "^6.3.1",
   "@clerk/themes": "^2.1.33",
 
-  // FileMaker Data API
-  "@proofkit/fmdapi": `^${getFmdapiVersion()}`,
-  "@proofkit/webviewer": `^${getProofkitWebviewerVersion()}`,
-
-  // ProofKit
-  "@proofkit/cli": `^${getVersion()}`,
-  "@proofkit/typegen": `^${getTypegenVersion()}`,
-
   // Tanstack Query
   "@tanstack/react-query": "^5.59.0",
   "@tanstack/react-query-devtools": "^5.59.0",
@@ -94,7 +91,6 @@ export const dependencyVersionMap = {
 
   // better-auth
   "better-auth": "^1.3.4",
-  "@proofkit/better-auth": `${getProofkitBetterAuthVersion()}`,
   "@daveyplate/better-auth-ui": "^2.1.3",
 
   // Mantine UI
