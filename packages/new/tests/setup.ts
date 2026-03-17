@@ -1,0 +1,1 @@
+process.env.PROOFKIT_SKIP_VERSION_CHECK = "1";
