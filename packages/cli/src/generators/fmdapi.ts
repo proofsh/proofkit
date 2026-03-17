@@ -8,7 +8,8 @@ import { SyntaxKind } from "ts-morph";
 import type { z } from "zod/v4";
 
 import { state } from "~/state.js";
-import { type envNamesSchema, getSettings } from "~/utils/parseSettings.js";
+import { logger } from "~/utils/logger.js";
+import type { envNamesSchema } from "~/utils/parseSettings.js";
 import { getNewProject } from "~/utils/ts-morph.js";
 
 // Input schema for functions like addLayout
@@ -33,6 +34,8 @@ interface FullProofkitTypegenJsonFile {
   $schema?: string;
   config: AnyDataSourceConfig | AnyDataSourceConfig[];
 }
+
+const typegenConfigFileName = "proofkit-typegen.config.jsonc";
 
 // Helper function to normalize data sources by adding default type for backwards compatibility
 // This mirrors the zod preprocess in @proofkit/typegen that defaults type to "fmdapi"
@@ -106,7 +109,7 @@ export async function addLayout({
   runCodegen?: boolean;
   dataSourceName: string;
 }) {
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   let fileContent = await readJsonConfigFile(jsonConfigPath);
 
   if (!fileContent) {
@@ -173,7 +176,7 @@ export async function addConfig({
   projectDir: string;
   runCodegen?: boolean;
 }) {
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   let fileContent = await readJsonConfigFile(jsonConfigPath);
 
   const configsToAdd = Array.isArray(config) ? config : [config];
@@ -198,26 +201,83 @@ export async function addConfig({
   }
 }
 
-export async function runCodegenCommand() {
-  const projectDir = state.projectDir;
-  const settings = getSettings();
-  if (settings.dataSources.length === 0) {
-    console.log("no data sources found, skipping typegen");
+export async function ensureWebviewerFmHttpConfig({
+  projectDir,
+  connectedFileName,
+  dataSourceName = "filemaker",
+  baseUrl,
+}: {
+  projectDir: string;
+  connectedFileName?: string;
+  dataSourceName?: string;
+  baseUrl?: string;
+}) {
+  const newConfig: FmdapiDataSourceConfig = {
+    type: "fmdapi",
+    path: `./src/config/schemas/${dataSourceName}`,
+    clearOldFiles: true,
+    clientSuffix: "Layout",
+    webviewerScriptName: "ExecuteDataApi",
+    envNames: undefined,
+    layouts: [],
+    fmHttp: {
+      enabled: true,
+      ...(baseUrl ? { baseUrl } : {}),
+      ...(connectedFileName ? { connectedFileName } : {}),
+    },
+  };
+
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
+  let fileContent = await readJsonConfigFile(jsonConfigPath);
+
+  if (!fileContent) {
+    fileContent = {
+      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      config: [newConfig],
+    };
+    await writeJsonConfigFile(jsonConfigPath, fileContent);
     return;
   }
 
-  const hasFileMakerDataSources = settings.dataSources.some((ds) => ds.type === "fm");
-
-  if (hasFileMakerDataSources) {
-    const config = await readJsonConfigFile(path.join(projectDir, "proofkit-typegen.config.jsonc"));
-    if (!config) {
-      throw new Error("proofkit-typegen.config.jsonc not found");
-    }
-
-    // make sure to load the .env file
-    dotenvConfig({ path: path.join(projectDir, ".env") });
-    await generateTypedClients(config.config, { cwd: projectDir });
+  const configArray = Array.isArray(fileContent.config) ? fileContent.config : [fileContent.config];
+  if (!Array.isArray(fileContent.config)) {
+    fileContent.config = configArray;
   }
+
+  const existingConfigIndex = configArray.findIndex(
+    (config): config is FmdapiDataSourceConfig => config.type === "fmdapi" && config.path === newConfig.path,
+  );
+
+  if (existingConfigIndex === -1) {
+    configArray.push(newConfig);
+  } else {
+    const existingConfig = configArray[existingConfigIndex] as FmdapiDataSourceConfig;
+    configArray[existingConfigIndex] = {
+      ...existingConfig,
+      ...newConfig,
+      layouts: existingConfig.layouts ?? [],
+      fmHttp: {
+        enabled: true,
+        ...(existingConfig.fmHttp ?? {}),
+        ...(newConfig.fmHttp ?? {}),
+      },
+    };
+  }
+
+  await writeJsonConfigFile(jsonConfigPath, fileContent);
+}
+
+export async function runCodegenCommand() {
+  const projectDir = state.projectDir;
+  const config = await readJsonConfigFile(path.join(projectDir, typegenConfigFileName));
+  if (!config) {
+    logger.info("no typegen config found, skipping typegen");
+    return;
+  }
+
+  // make sure to load the .env file
+  dotenvConfig({ path: path.join(projectDir, ".env") });
+  await generateTypedClients(config.config, { cwd: projectDir });
 }
 
 export function getClientSuffix({
@@ -227,7 +287,7 @@ export function getClientSuffix({
   projectDir?: string;
   dataSourceName: string;
 }): string {
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   if (!fs.existsSync(jsonConfigPath)) {
     return "Client";
   }
@@ -258,7 +318,7 @@ export function getExistingSchemas({
   projectDir?: string;
   dataSourceName: string;
 }): { layout?: string; schemaName?: string }[] {
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   if (!fs.existsSync(jsonConfigPath)) {
     return [];
   }
@@ -297,7 +357,7 @@ export async function addToFmschemaConfig({
   envNames?: z.infer<typeof envNamesSchema>;
 }) {
   const projectDir = state.projectDir;
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   let fileContent = await readJsonConfigFile(jsonConfigPath);
 
   const newDataSource: FmdapiDataSourceConfig = {
@@ -386,7 +446,7 @@ export function getFieldNamesForSchema({ schemaName, dataSourceName }: { schemaN
 
 export async function removeFromFmschemaConfig({ dataSourceName }: { dataSourceName: string }) {
   const projectDir = state.projectDir;
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   const fileContent = await readJsonConfigFile(jsonConfigPath);
 
   if (!fileContent) {
@@ -417,11 +477,11 @@ export async function removeLayout({
   dataSourceName: string;
   runCodegen?: boolean;
 }) {
-  const jsonConfigPath = path.join(projectDir, "proofkit-typegen.config.jsonc");
+  const jsonConfigPath = path.join(projectDir, typegenConfigFileName);
   const fileContent = await readJsonConfigFile(jsonConfigPath);
 
   if (!fileContent) {
-    throw new Error("proofkit-typegen.config.jsonc not found, cannot remove layout.");
+    throw new Error(`${typegenConfigFileName} not found, cannot remove layout.`);
   }
 
   let dataSourceModified = false;

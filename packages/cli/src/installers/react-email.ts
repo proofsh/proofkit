@@ -8,7 +8,7 @@ import type { PackageJson } from "type-fest";
 import { abortIfCancel } from "~/cli/utils.js";
 import { PKG_ROOT } from "~/consts.js";
 import { installDependencies } from "~/helpers/installDependencies.js";
-import { state } from "~/state.js";
+import { isNonInteractiveMode, state } from "~/state.js";
 import { addPackageDependency } from "~/utils/addPackageDependency.js";
 import { addToEnv } from "~/utils/addToEnvs.js";
 import { logger } from "~/utils/logger.js";
@@ -113,7 +113,7 @@ export async function installPlunk({ project }: { project?: Project }) {
   let apiKey: string;
   if (typeof state.apiKey === "string") {
     apiKey = state.apiKey;
-  } else if (state.ci) {
+  } else if (isNonInteractiveMode()) {
     apiKey = "";
   } else {
     apiKey = abortIfCancel(
@@ -167,7 +167,7 @@ export async function installResend({ project }: { project?: Project }) {
   let apiKey: string;
   if (typeof state.apiKey === "string") {
     apiKey = state.apiKey;
-  } else if (state.ci) {
+  } else if (isNonInteractiveMode()) {
     apiKey = "";
   } else {
     apiKey = abortIfCancel(

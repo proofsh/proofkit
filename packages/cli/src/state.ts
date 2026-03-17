@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 const schema = z
   .object({
     ci: z.boolean().default(false),
+    nonInteractive: z.boolean().default(false),
     debug: z.boolean().default(false),
     localBuild: z.boolean().default(false),
     baseCommand: z.enum(["add", "init", "deploy", "upgrade", "remove"]).optional().catch(undefined),
@@ -21,6 +22,12 @@ export let state: ProgramState = schema.parse({});
 export function initProgramState(args: unknown) {
   const parsed = schema.safeParse(args);
   if (parsed.success) {
-    state = { ...state, ...parsed.data };
+    const mergedState = { ...state, ...parsed.data };
+    const nonInteractive = mergedState.nonInteractive || mergedState.ci;
+    state = { ...mergedState, ci: nonInteractive, nonInteractive };
   }
+}
+
+export function isNonInteractiveMode() {
+  return state.nonInteractive || state.ci;
 }

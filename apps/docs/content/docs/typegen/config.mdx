@@ -76,9 +76,9 @@ The typegen tool is configured using the `proofkit-typegen-config.jsonc` file at
         "If set, will generate the client using the @proofkit/webviewer package",
     },
     fmHttp: {
-      type: "{ scriptName?: string }",
+      type: "{ enabled?: boolean; scriptName?: string; baseUrl?: string; connectedFileName?: string }",
       description:
-        "Optional local-only adapter mode for typegen metadata fetch. Generated clients still use the @proofkit/webviewer adapter.",
+        "Optional local FM HTTP mode for metadata fetching during typegen. Generated runtime clients still use the WebViewer adapter.",
     },
     generateClient: {
       type: "boolean",

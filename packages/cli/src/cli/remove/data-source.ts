@@ -6,8 +6,8 @@ import fs from "fs-extra";
 import { z } from "zod/v4";
 
 import { removeFromFmschemaConfig, runCodegenCommand } from "~/generators/fmdapi.js";
-import { ciOption, debugOption } from "~/globalOptions.js";
-import { initProgramState, state } from "~/state.js";
+import { ciOption, debugOption, nonInteractiveOption } from "~/globalOptions.js";
+import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { type DataSource, getSettings, setSettings } from "~/utils/parseSettings.js";
 import { abortIfCancel, ensureProofKitProject, UserAbortedError } from "../utils.js";
 
@@ -78,7 +78,7 @@ export const runRemoveDataSourceCommand = async (name?: string) => {
   }
 
   let confirmed = true;
-  if (!state.ci) {
+  if (!isNonInteractiveMode()) {
     confirmed = abortIfCancel(
       await p.confirm({
         message: `Are you sure you want to remove the data source "${dataSourceName}"? This will only remove it from your configuration, not replace any possible usage, which may cause TypeScript errors.`,
@@ -133,6 +133,7 @@ export const makeRemoveDataSourceCommand = () => {
     .description("Remove a data source from your project")
     .option("--name <name>", "Name of the data source to remove")
     .addOption(ciOption)
+    .addOption(nonInteractiveOption)
     .addOption(debugOption)
     .action(async (options) => {
       const schema = z.object({

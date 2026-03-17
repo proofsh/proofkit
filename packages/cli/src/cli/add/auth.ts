@@ -4,8 +4,8 @@ import { Command } from "commander";
 import { z } from "zod/v4";
 
 import { addAuth } from "~/generators/auth.js";
-import { ciOption, debugOption } from "~/globalOptions.js";
-import { initProgramState, state } from "~/state.js";
+import { ciOption, debugOption, nonInteractiveOption } from "~/globalOptions.js";
+import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { getSettings } from "~/utils/parseSettings.js";
 import { abortIfCancel } from "../utils.js";
 
@@ -44,7 +44,7 @@ export async function runAddAuthAction() {
   if (type === "fmaddon") {
     const emailProviderAnswer =
       state.emailProvider ??
-      (state.ci ? "none" : undefined) ??
+      (isNonInteractiveMode() ? "none" : undefined) ??
       abortIfCancel(
         await select({
           message: `What email provider do you want to use?\n${chalk.dim(
@@ -88,6 +88,7 @@ export const makeAddAuthCommand = () => {
     .option("--emailProvider <emailProvider>", "Email provider to use (only for FM Add-on Auth)")
     .option("--apiKey <apiKey>", "API key to use for the email provider (only for FM Add-on Auth)")
     .addOption(ciOption)
+    .addOption(nonInteractiveOption)
     .addOption(debugOption)
 
     .action(async () => {

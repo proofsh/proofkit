@@ -2,6 +2,8 @@ import {
   getFmdapiVersion,
   getNodeMajorVersion,
   getProofkitBetterAuthVersion,
+  getProofkitWebviewerVersion,
+  getTypegenVersion,
   getVersion,
 } from "~/utils/getProofKitVersion.js";
 
@@ -34,10 +36,11 @@ export const dependencyVersionMap = {
   tailwindcss: "^4.1.10",
   postcss: "^8.4.41",
   "@tailwindcss/postcss": "^4.1.10",
+  "@tailwindcss/vite": "^4.2.1",
   "class-variance-authority": "^0.7.1",
   clsx: "^2.1.1",
-  "tailwind-merge": "^3.3.1",
-  "tw-animate-css": "^1.3.4",
+  "tailwind-merge": "^3.5.0",
+  "tw-animate-css": "^1.4.0",
 
   // tRPC
   "@trpc/client": "^11.0.0-rc.446",
@@ -53,9 +56,11 @@ export const dependencyVersionMap = {
 
   // FileMaker Data API
   "@proofkit/fmdapi": `^${getFmdapiVersion()}`,
+  "@proofkit/webviewer": `^${getProofkitWebviewerVersion()}`,
 
   // ProofKit
   "@proofkit/cli": `^${getVersion()}`,
+  "@proofkit/typegen": `^${getTypegenVersion()}`,
 
   // Tanstack Query
   "@tanstack/react-query": "^5.59.0",
@@ -85,7 +90,7 @@ export const dependencyVersionMap = {
   "@radix-ui/react-slot": "^1.2.3",
 
   // Icons (for shadcn/ui)
-  "lucide-react": "^0.518.0",
+  "lucide-react": "^0.577.0",
 
   // better-auth
   "better-auth": "^1.3.4",

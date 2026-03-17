@@ -36,12 +36,12 @@ describe("Non-Interactive CLI Tests", () => {
     30_000, // 30s timeout for cleanup of large node_modules
   );
 
-  it("should create a project with FileMaker integration in CI mode", () => {
+  it("should create a browser project with FileMaker integration in non-interactive mode", () => {
     // Build the command with all necessary flags for non-interactive mode
     const command = [
       `node "${cliPath}" init`,
       projectName,
-      "--ci",
+      "--non-interactive",
       "--appType browser",
       "--dataSource filemaker",
       `--server "${testEnv.OTTO_SERVER_URL}"`,
@@ -56,10 +56,7 @@ describe("Non-Interactive CLI Tests", () => {
     expect(() => {
       execSync(command, {
         cwd: testDir,
-        env: {
-          ...process.env,
-          CI: "true",
-        },
+        env: process.env,
         encoding: "utf-8",
       });
     }).not.toThrow();

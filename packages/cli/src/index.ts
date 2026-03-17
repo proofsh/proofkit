@@ -13,8 +13,8 @@ import { makeTypegenCommand } from "./cli/typegen/index.js";
 import { makeUpgradeCommand } from "./cli/update/makeUpgradeCommand.js";
 import { UserAbortedError } from "./cli/utils.js";
 import { npmName } from "./consts.js";
-import { ciOption } from "./globalOptions.js";
-import { initProgramState, state } from "./state.js";
+import { ciOption, nonInteractiveOption } from "./globalOptions.js";
+import { initProgramState, isNonInteractiveMode } from "./state.js";
 import { getVersion } from "./utils/getProofKitVersion.js";
 import { getSettings, type Settings } from "./utils/parseSettings.js";
 import { checkAndRenderVersionWarning } from "./utils/renderVersionWarning.js";
@@ -31,6 +31,7 @@ const main = async () => {
     .version(version)
     .command("default", { hidden: true, isDefault: true })
     .addOption(ciOption)
+    .addOption(nonInteractiveOption)
     .action(async (args) => {
       initProgramState(args);
 
@@ -41,8 +42,10 @@ const main = async () => {
         // void
       }
 
-      if (state.ci) {
-        logger.warn("Running in CI mode");
+      if (isNonInteractiveMode()) {
+        throw new Error(
+          "The default command is interactive-only in non-interactive mode. Run an explicit command such as `proofkit init <name> --non-interactive`.",
+        );
       }
 
       if (settings) {

@@ -1,10 +1,6 @@
 import open from "open";
-import { resolve } from "path";
-import { fileURLToPath } from "url";
 import { buildFmpUrl, resolveFileMakerTarget } from "./filemaker.js";
 
-const currentDirectory = fileURLToPath(new URL(".", import.meta.url));
-const thePath = resolve(currentDirectory, "../dist", "index.html");
 const target = await resolveFileMakerTarget();
 
 if (!target) {
@@ -18,7 +14,6 @@ await open(
   buildFmpUrl({
     host: target.host,
     fileName: target.fileName,
-    scriptName: "UploadWebviewerWidget",
-    parameter: thePath,
+    scriptName: "Launch Web Viewer for Dev",
   }),
 );

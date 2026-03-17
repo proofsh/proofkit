@@ -1,0 +1,18 @@
+{
+  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "config": {
+    "type": "fmdapi",
+    "path": "./src/config/schemas/filemaker",
+    "clearOldFiles": true,
+    "clientSuffix": "Layout",
+    "validator": "zod/v4",
+    "webviewerScriptName": "ExecuteDataApi",
+    "fmHttp": {
+      "enabled": true
+    },
+    "layouts": [
+      // Add layouts here when you're ready to generate clients.
+      // { "layoutName": "API_Customers", "schemaName": "Customers" }
+    ]
+  }
+}

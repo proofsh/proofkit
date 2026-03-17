@@ -6,9 +6,32 @@ import ora from "ora";
 
 import { PKG_ROOT } from "~/consts.js";
 import type { InstallerOptions } from "~/installers/index.js";
-import { state } from "~/state.js";
-import { copyCursorRules } from "~/upgrades/cursorRules.js";
+import { isNonInteractiveMode, state } from "~/state.js";
 import { logger } from "~/utils/logger.js";
+
+const AGENT_METADATA_DIRS = new Set([".agents", ".claude", ".clawed", ".clinerules", ".cursor", ".windsurf"]);
+
+function getMeaningfulDirectoryEntries(projectDir: string): string[] {
+  return fs.readdirSync(projectDir).filter((entry) => {
+    if (AGENT_METADATA_DIRS.has(entry)) {
+      return false;
+    }
+
+    const entryPath = path.join(projectDir, entry);
+    let stats: fs.Stats;
+    try {
+      stats = fs.lstatSync(entryPath);
+    } catch {
+      return false;
+    }
+
+    if (stats.isFile() && entry.startsWith(".")) {
+      return false;
+    }
+
+    return true;
+  });
+}
 
 // This bootstraps the base Next.js application
 export const scaffoldProject = async ({ projectName, pkgManager, noInstall }: InstallerOptions) => {
@@ -30,11 +53,24 @@ export const scaffoldProject = async ({ projectName, pkgManager, noInstall }: In
   const spinner = ora(`Scaffolding in: ${projectDir}...\n`).start();
 
   if (fs.existsSync(projectDir)) {
-    if (fs.readdirSync(projectDir).length === 0) {
+    const meaningfulEntries = getMeaningfulDirectoryEntries(projectDir);
+
+    if (meaningfulEntries.length === 0) {
       if (projectName !== ".") {
         spinner.info(`${chalk.cyan.bold(projectName)} exists but is empty, continuing...\n`);
       }
     } else {
+      if (isNonInteractiveMode()) {
+        spinner.fail(
+          `${chalk.redBright.bold("Error:")} ${chalk.cyan.bold(
+            projectName,
+          )} already exists and isn't empty. Remove the existing files or choose a different directory.`,
+        );
+        throw new Error(
+          `Cannot initialize into a non-empty directory in non-interactive mode: ${meaningfulEntries.join(", ")}`,
+        );
+      }
+
       spinner.stopAndPersist();
       const overwriteDir = await p.select({
         message: `${chalk.redBright.bold("Warning:")} ${chalk.cyan.bold(
@@ -84,9 +120,6 @@ export const scaffoldProject = async ({ projectName, pkgManager, noInstall }: In
 
   // Copy the main template
   fs.copySync(srcDir, projectDir);
-
-  // Copy cursor rules
-  copyCursorRules();
 
   // Rename gitignore
   fs.renameSync(path.join(projectDir, "_gitignore"), path.join(projectDir, ".gitignore"));

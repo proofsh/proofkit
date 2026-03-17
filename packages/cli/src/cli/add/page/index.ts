@@ -9,8 +9,8 @@ import { nextjsTemplates, wvTemplates } from "~/cli/add/page/templates.js";
 import { PKG_ROOT } from "~/consts.js";
 import { getExistingSchemas } from "~/generators/fmdapi.js";
 import { addRouteToNav } from "~/generators/route.js";
-import { ciOption, debugOption } from "~/globalOptions.js";
-import { initProgramState, state } from "~/state.js";
+import { ciOption, debugOption, nonInteractiveOption } from "~/globalOptions.js";
+import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
 import { type DataSource, getSettings, mergeSettings } from "~/utils/parseSettings.js";
 import { abortIfCancel, ensureProofKitProject } from "../../utils.js";
@@ -38,7 +38,7 @@ export const runAddPageAction = async (opts?: {
   let routeName = opts?.routeName;
   let replacedMainPage = settings.replacedMainPage;
 
-  if (state.appType === "webviewer" && !replacedMainPage && !state.ci && !routeName) {
+  if (state.appType === "webviewer" && !replacedMainPage && !isNonInteractiveMode() && !routeName) {
     const replaceMainPage = abortIfCancel(
       await p.select({
         message: "Do you want to replace the default page?",
@@ -183,6 +183,7 @@ export const makeAddPageCommand = () => {
   });
 
   addPageCommand.addOption(ciOption);
+  addPageCommand.addOption(nonInteractiveOption);
   addPageCommand.addOption(debugOption);
 
   addPageCommand.hook("preAction", () => {

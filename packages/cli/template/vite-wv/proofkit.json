@@ -1,6 +1,9 @@
 {
+  "ui": "shadcn",
   "auth": { "type": "none" },
   "envFile": ".env",
   "appType": "webviewer",
-  "appliedUpgrades": ["shadcn"]
+  "dataSources": [],
+  "replacedMainPage": false,
+  "registryTemplates": []
 }

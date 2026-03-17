@@ -26,6 +26,12 @@ Install the package:
 pnpm add @proofkit/fmdapi
 ```
 
+If you want the companion `typegen-setup` skill available locally in this project, also install:
+
+```bash
+pnpm add -D @proofkit/typegen@*
+```
+
 ### OttoAdapter (recommended)
 
 Requires [OttoFMS](https://ottofms.com/) installed on the FileMaker Server. No token management needed — the proxy handles sessions.

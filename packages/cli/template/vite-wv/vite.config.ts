@@ -1,10 +1,9 @@
-import path from "path";
-import { defineConfig } from "vite";
+import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
-// https://vitejs.dev/config/
 export default defineConfig({
   server: {
     port: 5175,
@@ -14,5 +13,5 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  plugins: [TanStackRouterVite({}), react(), viteSingleFile()],
+  plugins: [react(), tailwindcss(), viteSingleFile()],
 });

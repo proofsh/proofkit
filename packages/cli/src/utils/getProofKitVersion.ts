@@ -28,3 +28,18 @@ export const getNodeMajorVersion = () => {
 export const getProofkitBetterAuthVersion = () => {
   return __BETTER_AUTH_VERSION__;
 };
+
+export const getProofkitWebviewerVersion = () => {
+  return __WEBVIEWER_VERSION__;
+};
+
+export const getTypegenVersion = () => {
+  const packageJsonPath = path.join(PKG_ROOT, "packages", "typegen", "package.json");
+
+  try {
+    const packageJsonContent = fs.readJSONSync(packageJsonPath) as PackageJson;
+    return packageJsonContent.version ?? "1.1.0-beta.16";
+  } catch {
+    return "1.1.0-beta.16";
+  }
+};

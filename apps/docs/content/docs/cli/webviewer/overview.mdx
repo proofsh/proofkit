@@ -11,7 +11,7 @@ The FileMaker Web Viewer object is a powerful way to build rich, interactive exp
 
 #### What is the difference between the WebViewer and the browser-based project created with the ProofKit CLI?
 
-The primary difference is the framework used. For browser-based projects, we use [Next.js](https://nextjs.org/) and the WebViewer project uses [Vite](https://vitejs.dev/) and [Tanstack Router](https://tanstack.com/router). Next.js is a full-stack framework, meaning that it results in some code that is expected to run on a server AND some code that runs in the browser. Vite allows us to build s single bundle of code for the browser that can be store in FileMaker and if needed, we can use the FileMaker Pro client as the "server" to run private functions and "host" the code.
+The primary difference is the framework and runtime shape. Browser-based projects use [Next.js](https://nextjs.org/) while the WebViewer starter uses [Vite](https://vitejs.dev/) with a small browser-only React app. That keeps the WebViewer scaffold close to a stock Vite starter while still being ready for ProofKit WebViewer integration, Tailwind v4, and shadcn component installs.
 
 #### Can I build WebViewer applications using Next.js?
 
@@ -20,3 +20,7 @@ Yes! This is sometimes preferred if you already hae a web app and want to keep t
 #### Does this technique work in Web Direct?
 
 Yes. The ProofKit WebViewer Addon includes a custom function that wraps your web code so the injected FileMaker JavaScript code will still interface with the WebViewer, even in Web Direct.
+
+#### Do I need a hosted FileMaker server to start?
+
+No. You can scaffold the WebViewer app without hosted FileMaker credentials. When you are ready to generate layout clients, ProofKit prefers the local FM HTTP path first and only needs hosted server setup if you choose that route.

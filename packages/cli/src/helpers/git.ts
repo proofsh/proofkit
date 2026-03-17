@@ -6,6 +6,7 @@ import { execa } from "execa";
 import fs from "fs-extra";
 import ora from "ora";
 
+import { isNonInteractiveMode } from "~/state.js";
 import { logger } from "~/utils/logger.js";
 
 const isGitInstalled = (dir: string): boolean => {
@@ -70,6 +71,11 @@ export const initializeGit = async (projectDir: string) => {
   if (isInside && isRoot) {
     // Dir is a root git repo
     spinner.stop();
+    if (isNonInteractiveMode()) {
+      throw new Error(
+        `Cannot initialize git in non-interactive mode because "${dirName}" already contains a git repository.`,
+      );
+    }
     const overwriteGit = await p.confirm({
       message: `${chalk.redBright.bold(
         "Warning:",
@@ -86,6 +92,11 @@ export const initializeGit = async (projectDir: string) => {
   } else if (isInside && !isRoot) {
     // Dir is inside a git worktree
     spinner.stop();
+    if (isNonInteractiveMode()) {
+      throw new Error(
+        `Cannot initialize git in non-interactive mode because "${dirName}" is already inside a git worktree.`,
+      );
+    }
     const initializeChildGitRepo = await p.confirm({
       message: `${chalk.redBright.bold(
         "Warning:",

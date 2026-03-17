@@ -11,24 +11,18 @@ import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock";
 // import Prerequisites from "../../../components/Prerequisites.mdx";
 import InitCommand from "@/components/InitCommand";
 
-Creating a ProofKit project for a FileMaker WebViewer is extremely similar to the browser-based version as covered in the [main Getting Started guide](/docs/cli/guides/getting-started). This document will simply highlight the key differences.
+Creating a ProofKit project for a FileMaker WebViewer is extremely similar to the browser-based version as covered in the [main Getting Started guide](/docs/cli/guides/getting-started). This document highlights the WebViewer-specific workflow.
 
 ## Prep your FileMaker file
 
-- The file must be hosted on a FileMaker server running OttoFMS (4.7 or later)
-- The server must have the Data API enabled.
-- You must have a user account that has the `fmrest` extended privilege enabled.
-- The Full Access user account must have the `fmurlscript` extended privilege enabled (Allow URLs to run FileMaker scripts)
+- Install the ProofKit WebViewer add-on into the file you want to target.
+- Make sure the file has the scripts needed by your WebViewer workflow, such as `Launch Web Viewer for Dev` and `UploadWebviewerWidget`.
+- If you want local typegen without a hosted server, start the FM HTTP bridge and keep a connected FileMaker file open.
 
-<Callout type="info" title="Why does it have to be hosted?">
-  The ProofKit CLI uses the metadata endpoint of the Data API to learn about the
-  layouts and fields in your file to generate type-safe code that can be used in
-  your webviewer. This is only for development though; once you build your web
-  code for production, it can interact directly with the FileMaker Pro client
-  and will work even offline.
-
-In a future release, we may provide a way to scaffold a new webviewer project for use with local development, but there are other tradeoffs to consider.
-
+<Callout type="info" title="Hosted FileMaker is no longer required for scaffolding">
+  A new WebViewer project can be scaffolded without OttoFMS or hosted FileMaker credentials.
+  When you are ready to generate layout clients, ProofKit prefers the local FM HTTP path first.
+  Hosted FileMaker server setup is still available later when you want it.
 </Callout>
 
 ## Creating a ProofKit Project
@@ -39,29 +33,27 @@ Run the following command to scaffold a new ProofKit project, choosing the `webv
 
 Refer to the [main Getting Started guide](/docs/cli/guides/getting-started) for more details on the prompts and options available.
 
-## Install the ProofKit WebViewer Addon
+The scaffolded app already includes Tailwind v4, shadcn config, helper scripts, and a starter `proofkit-typegen.config.jsonc` file wired for FM HTTP.
 
-The ProofKit CLI will automatically install the ProofKit WebViewer to your computer, but you must install it into your FileMaker file to receive the necessary tables, layouts, and scripts.
+## Generate layout clients later
 
-To easily install the add-on, enter Layout mode on any layout and open the "Add-ons" tab in the left pane. Click the + icon in the lower left corner, then select the "ProofKit Auth" add-on from the list.
+When you are ready to add generated FileMaker clients:
 
-<Callout type="warning" title="Troubleshooting">
-If you don't see the add-on after initialing your project with the CLI, quit and re-open FileMaker Pro.
-</Callout>
+- Edit `proofkit-typegen.config.jsonc` and add the layouts you want.
+- Run `pnpm typegen` or `pnpm typegen:ui`.
+- If FM HTTP is running with a connected file, ProofKit can use that local path instead of a hosted server.
 
 ## Developing with the WebViewer
 
-When you run the dev server with the `dev` command, a localhost URL will be displayed for you to see your project in a browser. **DO NOT OPEN THIS URL IN A BROWSER**
+When you run the dev server with the `dev` command, a localhost URL will be displayed. Unlike older templates, the starter app is browser-safe and can render there normally. You still need FileMaker to test script execution and real WebViewer behavior.
 
 In modern FileMaker versions, the WebViewer is just as capable as any other browser, but if your users are going to exclusively be running this code in a WebViewer, you should also be developing with the the WebViewer as your browser. Plus, it's the only way to test the FileMaker interactions that you will likely build.
-
-Thankfully, the ProofKit WebViewer Addon makes it easy to switch your webviewer from dev mode and production mode.
 
 With your dev server running (e.g. `pnpm dev`), open a **seperate** terminal instance and run:
 
 <CliCommand command="launch-fm" />
 
-which will open your FileMaker file in FileMaker Pro and run the `Launch Web Viewer for Dev` script. This script will ensure that you're on the correct layout and that the WebViewer is running in dev mode—pointing to your localhost URL.
+This command prefers a locally connected FM HTTP file first, then falls back to `FM_SERVER` and `FM_DATABASE` from `.env`. It opens FileMaker Pro and runs the `Launch Web Viewer for Dev` script so your WebViewer points at the local dev server.
 
 You can use the other utility scripts to build your own version of this behavior:
 
@@ -82,7 +74,7 @@ The final command is simply a shortcut for running the `build` and `upload` comm
 
 The `build` command will compile your project into a single html file, which will be output to the `dist` directory.
 
-The `upload` command will use the fmp URL protocol to call a script in your FileMaker file with the path to the html file. The FileMaker script will read the data from that file and insert it into a single-record field in the `ProofKitWV` table.
+The `upload` command uses the fmp URL protocol to call a script in your FileMaker file with the path to the built html file. Like `launch-fm`, it prefers a locally connected FM HTTP file before falling back to hosted server env vars.
 
 <Callout type="warning" title="Data Migrations">
 If you are working with a seperated Dev/Production environments and running migrations to deploy your code to production, the uploaded code will not transfer to your production environment. See the [Deployment Methods](/webviewer/deployment-methods) page for more details.
