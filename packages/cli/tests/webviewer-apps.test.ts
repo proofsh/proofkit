@@ -103,6 +103,31 @@ describe("WebViewer CLI Tests", () => {
     expect(existsSync(join(projectDir, ".DS_Store"))).toBe(true);
   });
 
+  it("should fail in non-interactive mode when .gitignore already exists", () => {
+    mkdirSync(projectDir, { recursive: true });
+    writeFileSync(join(projectDir, ".gitignore"), "node_modules/\n");
+
+    const command = [
+      `node "${cliPath}" init`,
+      projectName,
+      "--non-interactive",
+      "--appType webviewer",
+      "--noGit",
+      "--noInstall",
+    ].join(" ");
+
+    expect(() => {
+      execSync(command, {
+        cwd: testDir,
+        env: process.env,
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
+    }).toThrow(nonInteractiveDirectoryError);
+
+    expect(existsSync(join(projectDir, "package.json"))).toBe(false);
+  });
+
   it("should fail without prompting when a non-interactive target directory has real files", () => {
     mkdirSync(projectDir, { recursive: true });
     writeFileSync(join(projectDir, "README.md"), "existing content");

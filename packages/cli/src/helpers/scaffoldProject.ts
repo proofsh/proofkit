@@ -17,6 +17,10 @@ function getMeaningfulDirectoryEntries(projectDir: string): string[] {
       return false;
     }
 
+    if (entry === ".gitignore") {
+      return true;
+    }
+
     if (entry.startsWith(".")) {
       return false;
     }
