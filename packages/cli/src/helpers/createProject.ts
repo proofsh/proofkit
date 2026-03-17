@@ -14,10 +14,17 @@ interface CreateProjectOptions {
   packages: PkgInstallerMap;
   scopedAppName: string;
   noInstall: boolean;
+  force: boolean;
   appRouter: boolean;
 }
 
-export const createBareProject = async ({ projectName, scopedAppName, packages, noInstall }: CreateProjectOptions) => {
+export const createBareProject = async ({
+  projectName,
+  scopedAppName,
+  packages,
+  noInstall,
+  force,
+}: CreateProjectOptions) => {
   const pkgManager = getUserPkgManager();
   state.projectDir = path.resolve(process.cwd(), projectName);
 
@@ -27,6 +34,7 @@ export const createBareProject = async ({ projectName, scopedAppName, packages, 
     pkgManager,
     scopedAppName,
     noInstall,
+    force,
   });
 
   addPackageDependency({

@@ -51,7 +51,12 @@ function readChangesetPreState(startDir = process.cwd()): ChangesetPreState | nu
 
 export function hasAnyPrereleaseVersion(versionCandidates?: Array<string | null>) {
   if (versionCandidates) {
-    return versionCandidates.some((version) => semver.valid(version) && semver.prerelease(version));
+    return versionCandidates.some((version) => {
+      if (!version) {
+        return false;
+      }
+      return semver.valid(version) && semver.prerelease(version);
+    });
   }
 
   const readVersion = (getter: () => string) => {

@@ -27,6 +27,7 @@ import { abortIfCancel } from "./utils.js";
 interface CliFlags {
   noGit: boolean;
   noInstall: boolean;
+  force: boolean;
   default: boolean;
   importAlias: string;
   server?: string;
@@ -59,6 +60,7 @@ interface CliFlags {
 const defaultOptions: CliFlags = {
   noGit: false,
   noInstall: false,
+  force: false,
   default: false,
   CI: false,
   tailwind: false,
@@ -95,6 +97,7 @@ export const makeInitCommand = () => {
     .option("--dataSource [type]", "The data source to use for the web app (filemaker or none)", undefined)
     .option("--noGit", "Explicitly tell the CLI to not initialize a new git repo in the project", false)
     .option("--noInstall", "Explicitly tell the CLI to not run the package manager's install command", false)
+    .option("-f, --force", "Force overwrite target directory when it already contains files", false)
     .addOption(ciOption)
     .addOption(nonInteractiveOption)
     .addOption(debugOption)
@@ -184,6 +187,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     scopedAppName,
     packages: usePackages,
     noInstall: cliOptions.noInstall,
+    force: cliOptions.force,
     appRouter: cliOptions.appRouter,
   });
   setImportAlias(projectDir, "@/");

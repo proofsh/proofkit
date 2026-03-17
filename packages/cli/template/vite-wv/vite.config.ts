@@ -1,5 +1,6 @@
 import path from "node:path";
 import react from "@vitejs/plugin-react";
+import { fmBridge } from "@proofkit/webviewer/vite-plugins";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
@@ -13,5 +14,5 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  plugins: [react(), tailwindcss(), viteSingleFile()],
+  plugins: [fmBridge(), react(), tailwindcss(), viteSingleFile()],
 });
