@@ -8,7 +8,7 @@ const config = defineConfig({
 export default mergeConfig(
   config,
   tanstackViteConfig({
-    entry: ["./src/main.ts", "./src/adapter.ts"],
+    entry: ["./src/main.ts", "./src/adapter.ts", "./src/vite-plugins.ts"],
     externalDeps: ["@proofkit/fmdapi"],
     srcDir: "./src",
   }),
