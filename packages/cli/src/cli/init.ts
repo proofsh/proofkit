@@ -138,6 +138,8 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
   const pkgManager = getUserPkgManager();
   const cliOptions = opts ?? defaultOptions;
   const nonInteractive = isNonInteractiveMode();
+  const noInstall = cliOptions.noInstall ?? (opts as { install?: boolean } | undefined)?.install === false;
+  const noGit = cliOptions.noGit ?? (opts as { git?: boolean } | undefined)?.git === false;
   // capture ui choice early into state
   state.ui = (cliOptions.ui ?? "shadcn") as "shadcn" | "mantine";
 
@@ -186,7 +188,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     projectName: appDir,
     scopedAppName,
     packages: usePackages,
-    noInstall: cliOptions.noInstall,
+    noInstall,
     force: cliOptions.force,
     appRouter: cliOptions.appRouter,
   });
@@ -238,7 +240,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
   // for webviewer apps FM is required, so don't ask
   let dataSource =
     state.appType === "webviewer"
-      ? (cliOptions.dataSource ?? "filemaker")
+      ? (cliOptions.dataSource ?? (nonInteractive && !cliOptions.server ? "none" : "filemaker"))
       : (cliOptions.dataSource ?? (nonInteractive ? "none" : undefined));
   if (!dataSource) {
     dataSource = abortIfCancel(
@@ -279,18 +281,33 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
 
   await askForAuth({ projectDir });
 
-  await installDependencies({ projectDir });
-
-  if (dataSource === "filemaker") {
-    await runCodegenCommand();
+  if (!noInstall) {
+    await installDependencies({ projectDir });
   }
 
-  if (!cliOptions.noGit) {
+  if (dataSource === "filemaker") {
+    const hasExplicitFileMakerInputs = Boolean(
+      cliOptions.server ||
+        cliOptions.adminApiKey ||
+        cliOptions.dataApiKey ||
+        cliOptions.fileName ||
+        cliOptions.layoutName ||
+        cliOptions.schemaName,
+    );
+
+    const shouldSkipInitialCodegen = state.appType === "webviewer" && nonInteractive && !hasExplicitFileMakerInputs;
+
+    if (!shouldSkipInitialCodegen) {
+      await runCodegenCommand();
+    }
+  }
+
+  if (!noGit) {
     await initializeGit(projectDir);
   }
 
   logNextSteps({
     projectName: appDir,
-    noInstall: cliOptions.noInstall,
+    noInstall,
   });
 };

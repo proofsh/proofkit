@@ -24,7 +24,9 @@ const version = getVersion();
 const main = async () => {
   const program = new Command();
   renderTitle();
-  await checkAndRenderVersionWarning();
+  if (process.env.PROOFKIT_SKIP_VERSION_CHECK !== "1") {
+    await checkAndRenderVersionWarning();
+  }
 
   program
     .name(npmName)

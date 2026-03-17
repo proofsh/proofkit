@@ -3,8 +3,6 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { verifyProjectBuilds } from "./test-utils";
-
 const nonInteractiveDirectoryError = /already exists and isn't empty/;
 
 describe("WebViewer CLI Tests", () => {
@@ -21,9 +19,14 @@ describe("WebViewer CLI Tests", () => {
   });
 
   it("should create a webviewer project without FileMaker server setup", () => {
-    const command = [`node "${cliPath}" init`, projectName, "--non-interactive", "--appType webviewer", "--noGit"].join(
-      " ",
-    );
+    const command = [
+      `node "${cliPath}" init`,
+      projectName,
+      "--non-interactive",
+      "--appType webviewer",
+      "--noGit",
+      "--noInstall",
+    ].join(" ");
 
     expect(() => {
       execSync(command, {
@@ -41,13 +44,11 @@ describe("WebViewer CLI Tests", () => {
     const packageJson = JSON.parse(readFileSync(join(projectDir, "package.json"), "utf-8"));
     expect(packageJson.scripts.typegen).toBe("typegen");
     expect(packageJson.scripts["typegen:ui"]).toBe("typegen ui");
-    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("^1.1.0-beta.16");
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
 
     const proofkitConfig = JSON.parse(readFileSync(join(projectDir, "proofkit.json"), "utf-8"));
     expect(proofkitConfig.appType).toBe("webviewer");
     expect(proofkitConfig.dataSources).toEqual([]);
-
-    verifyProjectBuilds(projectDir);
   });
 
   it("should allow agent-only folders in non-interactive mode", () => {

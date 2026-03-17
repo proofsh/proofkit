@@ -12,7 +12,7 @@ import type { PackageJson } from "type-fest";
 import type { z } from "zod/v4";
 import { buildLayoutClient } from "./buildLayoutClient";
 import { buildOverrideFile, buildSchema } from "./buildSchema";
-import { commentHeader, defaultEnvNames, defaultFmHttpBaseUrl, overrideCommentHeader } from "./constants";
+import { commentHeader, defaultEnvNames, overrideCommentHeader } from "./constants";
 import { generateODataTablesSingle } from "./fmodata/typegen";
 import { formatAndSaveSourceFiles, runPostGenerateCommand } from "./formatting";
 import { getEnvValues, validateAndLogEnvValues } from "./getEnvValues";
@@ -54,7 +54,9 @@ export const generateTypedClients = async (
   const isConfigArray = Array.isArray(parsedConfig.data.config);
   for (let configIndex = 0; configIndex < configArray.length; configIndex++) {
     const singleConfig = configArray[configIndex];
-    if (!singleConfig) continue;
+    if (!singleConfig) {
+      continue;
+    }
     if (singleConfig.type === "fmdapi") {
       const result = await generateTypedClientsSingle(singleConfig, {
         resetOverrides,
@@ -133,13 +135,19 @@ const generateTypedClientsSingle = async (
   const fmHttpObj = config.fmHttp ?? undefined;
 
   if (isFmHttpMode && !config.webviewerScriptName) {
-    console.log(chalk.blue(`INFO: Generated clients will use WebViewerAdapter with script "${fmHttpObj?.scriptName ?? "execute_data_api"}".`));
+    console.log(
+      chalk.blue(
+        `INFO: Generated clients will use WebViewerAdapter with script "${fmHttpObj?.scriptName ?? "execute_data_api"}".`,
+      ),
+    );
   }
 
   const envValues = getEnvValues(envNames);
   const validationResult = validateAndLogEnvValues(envValues, envNames, {
     fmHttp: isFmHttpMode,
-    fmHttpConfig: isFmHttpMode ? { baseUrl: fmHttpObj?.baseUrl, connectedFileName: fmHttpObj?.connectedFileName } : undefined,
+    fmHttpConfig: isFmHttpMode
+      ? { baseUrl: fmHttpObj?.baseUrl, connectedFileName: fmHttpObj?.connectedFileName }
+      : undefined,
   });
 
   if (!validationResult?.success) {
@@ -175,9 +183,8 @@ const generateTypedClientsSingle = async (
                 const { modify, applyEdits } = await import("jsonc-parser");
                 const fmtOpts = { formattingOptions: { insertSpaces: true, tabSize: 2 } };
                 // Build the JSON path: array configs use ["config", index, "fmHttp", ...], single uses ["config", "fmHttp", ...]
-                const basePath = options.configIndex !== undefined
-                  ? ["config", options.configIndex, "fmHttp"]
-                  : ["config", "fmHttp"];
+                const basePath =
+                  options.configIndex !== undefined ? ["config", options.configIndex, "fmHttp"] : ["config", "fmHttp"];
 
                 // If fmHttp was `true` in the raw file, replace it with an object first
                 let current = raw;
@@ -186,7 +193,12 @@ const generateTypedClientsSingle = async (
                   const { findNodeAtLocation } = await import("jsonc-parser");
                   const fmHttpNode = findNodeAtLocation(parsed, basePath);
                   if (fmHttpNode?.type === "boolean") {
-                    const replaceEdits = modify(current, basePath, { enabled: true, connectedFileName: fmHttpConnectedFileName }, fmtOpts);
+                    const replaceEdits = modify(
+                      current,
+                      basePath,
+                      { enabled: true, connectedFileName: fmHttpConnectedFileName },
+                      fmtOpts,
+                    );
                     current = applyEdits(current, replaceEdits);
                     fs.writeFileSync(configFilePath, current, "utf8");
                     console.log(chalk.green(`Updated config with connectedFileName: ${fmHttpConnectedFileName}`));
@@ -198,11 +210,19 @@ const generateTypedClientsSingle = async (
                   }
                 }
               } catch (writeErr) {
-                console.log(chalk.yellow(`Could not update config file: ${writeErr instanceof Error ? writeErr.message : String(writeErr)}`));
+                console.log(
+                  chalk.yellow(
+                    `Could not update config file: ${writeErr instanceof Error ? writeErr.message : String(writeErr)}`,
+                  ),
+                );
               }
             }
           } else if (files.length > 1) {
-            console.log(chalk.red("ERROR: Multiple connected files found. Please specify connectedFileName in your fmHttp config."));
+            console.log(
+              chalk.red(
+                "ERROR: Multiple connected files found. Please specify connectedFileName in your fmHttp config.",
+              ),
+            );
             console.log(chalk.yellow(`Connected files: ${files.join(", ")}`));
             return;
           } else {
@@ -213,7 +233,7 @@ const generateTypedClientsSingle = async (
           console.log(chalk.red(`ERROR: Failed to auto-discover connected files from ${fmHttpBaseUrl}/connectedFiles`));
           return;
         }
-      } catch (err) {
+      } catch (_err) {
         console.log(chalk.red(`ERROR: Could not reach FM HTTP server at ${fmHttpBaseUrl}`));
         console.log(chalk.yellow("Ensure the FM HTTP server is running and accessible."));
         return;

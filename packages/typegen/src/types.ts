@@ -210,7 +210,9 @@ const fmHttpFieldObject = z.object({
 
 const fmHttpField = z
   .preprocess((val) => {
-    if (val === true) return { enabled: true };
+    if (val === true) {
+      return { enabled: true };
+    }
     return val;
   }, fmHttpFieldObject)
   .optional()

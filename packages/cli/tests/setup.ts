@@ -6,6 +6,7 @@ import { beforeAll } from "vitest";
 beforeAll(() => {
   // Ensure test environment variables are loaded
   dotenv.config({ path: path.resolve(__dirname, "../.env.test") });
+  process.env.PROOFKIT_SKIP_VERSION_CHECK = "1";
 });
 
 // Build the CLI before running any tests

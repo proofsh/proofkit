@@ -1,6 +1,4 @@
-import {
-  getNodeMajorVersion,
-} from "~/utils/getProofKitVersion.js";
+import { getNodeMajorVersion } from "~/utils/getProofKitVersion.js";
 import { getProofkitReleaseTag } from "~/utils/proofkitReleaseChannel.js";
 
 const proofkitReleaseTag = getProofkitReleaseTag();

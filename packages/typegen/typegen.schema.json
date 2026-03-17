@@ -24,9 +24,7 @@
       ]
     }
   },
-  "required": [
-    "config"
-  ],
+  "required": ["config"],
   "additionalProperties": false,
   "definitions": {
     "__schema0": {
@@ -86,10 +84,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "layoutName",
-                  "schemaName"
-                ],
+                "required": ["layoutName", "schemaName"],
                 "additionalProperties": false
               }
             },
@@ -140,10 +135,7 @@
               ]
             }
           },
-          "required": [
-            "type",
-            "layouts"
-          ],
+          "required": ["type", "layouts"],
           "additionalProperties": false
         },
         {
@@ -203,10 +195,7 @@
               ]
             }
           },
-          "required": [
-            "type",
-            "tables"
-          ],
+          "required": ["type", "tables"],
           "additionalProperties": false
         }
       ]
@@ -260,11 +249,7 @@
     },
     "__schema4": {
       "type": "string",
-      "enum": [
-        "strict",
-        "allowEmpty",
-        "ignore"
-      ]
+      "enum": ["strict", "allowEmpty", "ignore"]
     },
     "__schema5": {
       "type": "boolean"
@@ -301,11 +286,7 @@
       "anyOf": [
         {
           "type": "string",
-          "enum": [
-            "zod",
-            "zod/v4",
-            "zod/v3"
-          ]
+          "enum": ["zod", "zod/v4", "zod/v3"]
         },
         {
           "type": "boolean",
@@ -432,9 +413,7 @@
             ]
           }
         },
-        "required": [
-          "tableName"
-        ],
+        "required": ["tableName"],
         "additionalProperties": false
       }
     },
@@ -467,9 +446,7 @@
             ]
           }
         },
-        "required": [
-          "fieldName"
-        ],
+        "required": ["fieldName"],
         "additionalProperties": false
       }
     },
