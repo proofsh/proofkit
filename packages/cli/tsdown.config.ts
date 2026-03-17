@@ -24,6 +24,7 @@ const readPackageVersion = (packagePath: string) => {
 const FMDAPI_VERSION = readPackageVersion("fmdapi");
 const BETTER_AUTH_VERSION = readPackageVersion("better-auth");
 const WEBVIEWER_VERSION = readPackageVersion("webviewer");
+const TYPEGEN_VERSION = readPackageVersion("typegen");
 
 export default defineConfig({
   clean: true,
@@ -44,6 +45,7 @@ export default defineConfig({
         __FMDAPI_VERSION__: JSON.stringify(FMDAPI_VERSION),
         __BETTER_AUTH_VERSION__: JSON.stringify(BETTER_AUTH_VERSION),
         __WEBVIEWER_VERSION__: JSON.stringify(WEBVIEWER_VERSION),
+        __TYPEGEN_VERSION__: JSON.stringify(TYPEGEN_VERSION),
         __REGISTRY_URL__: JSON.stringify(isDev ? "http://localhost:3005" : "https://proofkit.dev"),
       },
     }),

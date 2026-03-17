@@ -101,8 +101,8 @@ Add new Button variant for secondary actions
 "@proofkit/typegen": patch
 ---
 
-- spindle-ui: Add new Button variant for secondary actions
-- spindle-tokens: Fix color token contrast ratio
+- @proofkit/cli: Add new Button variant for secondary actions
+- @proofkit/typegen: Fix color token contrast ratio
 ```
 
 **Important guidelines:**

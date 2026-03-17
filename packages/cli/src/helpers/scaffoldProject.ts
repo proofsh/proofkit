@@ -17,15 +17,7 @@ function getMeaningfulDirectoryEntries(projectDir: string): string[] {
       return false;
     }
 
-    const entryPath = path.join(projectDir, entry);
-    let stats: fs.Stats;
-    try {
-      stats = fs.lstatSync(entryPath);
-    } catch {
-      return false;
-    }
-
-    if (stats.isFile() && entry.startsWith(".")) {
+    if (entry.startsWith(".")) {
       return false;
     }
 

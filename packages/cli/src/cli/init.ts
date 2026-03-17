@@ -234,7 +234,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
   // for webviewer apps FM is required, so don't ask
   let dataSource =
     state.appType === "webviewer"
-      ? (cliOptions.dataSource ?? "none")
+      ? (cliOptions.dataSource ?? "filemaker")
       : (cliOptions.dataSource ?? (nonInteractive ? "none" : undefined));
   if (!dataSource) {
     dataSource = abortIfCancel(

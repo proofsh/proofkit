@@ -51,6 +51,26 @@ export async function promptForFileMakerDataSource({
         baseUrl: fmHttpStatus.baseUrl,
       });
 
+      // Persist the datasource in project settings
+      const newDataSource: z.infer<typeof dataSourceSchema> = {
+        type: "fm",
+        name: localDataSourceName,
+        envNames:
+          localDataSourceName === "filemaker"
+            ? {
+                database: "FM_DATABASE",
+                server: "FM_SERVER",
+                apiKey: "OTTO_API_KEY",
+              }
+            : {
+                database: `${localDataSourceName.toUpperCase()}_FM_DATABASE`,
+                server: `${localDataSourceName.toUpperCase()}_FM_SERVER`,
+                apiKey: `${localDataSourceName.toUpperCase()}_OTTO_API_KEY`,
+              },
+      };
+      settings.dataSources.push(newDataSource);
+      setSettings(settings);
+
       if (opts.layoutName && opts.schemaName) {
         await addLayout({
           projectDir,
@@ -63,6 +83,8 @@ export async function promptForFileMakerDataSource({
             },
           ],
         });
+      } else if (opts.layoutName || opts.schemaName) {
+        throw new Error("Both --layoutName and --schemaName must be provided together.");
       } else {
         p.note(
           `Detected local FM HTTP at ${fmHttpStatus.baseUrl} with connected file "${connectedFileName}". Edit ${chalk.cyan(
