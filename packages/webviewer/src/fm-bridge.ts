@@ -1,6 +1,7 @@
 import type { HtmlTagDescriptor, Plugin } from "vite";
 
 const TRAILING_SLASH_PATTERN = /\/$/;
+const CONNECTED_FILES_TIMEOUT_MS = 5000;
 
 export interface FmBridgeOptions {
   fileName?: string;
@@ -42,14 +43,23 @@ export const resolveWsUrl = (options: Pick<FmBridgeOptions, "fmHttpBaseUrl" | "w
 
 export const discoverConnectedFileName = async (baseUrl: string): Promise<string> => {
   const connectedFilesUrl = `${normalizeBaseUrl(baseUrl)}/connectedFiles`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, CONNECTED_FILES_TIMEOUT_MS);
+  const reachabilityErrorMessage = `fmBridge could not reach ${connectedFilesUrl}. Start fm-http and connect a FileMaker webviewer.`;
 
   let response: Response;
   try {
-    response = await fetch(connectedFilesUrl);
+    response = await fetch(connectedFilesUrl, {
+      signal: controller.signal,
+    });
   } catch (error) {
-    throw new Error(`fmBridge could not reach ${connectedFilesUrl}. Start fm-http and connect a FileMaker webviewer.`, {
+    throw new Error(reachabilityErrorMessage, {
       cause: error,
     });
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {

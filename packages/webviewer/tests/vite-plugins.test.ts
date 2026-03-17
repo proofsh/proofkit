@@ -75,7 +75,38 @@ describe("discoverConnectedFileName", () => {
     );
 
     await expect(discoverConnectedFileName("http://localhost:1365")).resolves.toBe("Contacts");
-    expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:1365/connectedFiles");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://localhost:1365/connectedFiles",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("aborts stalled requests with the standard reachability error", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const abortError = new DOMException("The operation was aborted.", "AbortError");
+      vi.mocked(globalThis.fetch).mockImplementation(
+        (_input, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => {
+              reject(abortError);
+            });
+          }),
+      );
+
+      const pendingRequest = discoverConnectedFileName("http://localhost:1365");
+      const pendingExpectation = expect(pendingRequest).rejects.toMatchObject({
+        cause: abortError,
+        message:
+          "fmBridge could not reach http://localhost:1365/connectedFiles. Start fm-http and connect a FileMaker webviewer.",
+      });
+
+      await vi.advanceTimersByTimeAsync(5000);
+      await pendingExpectation;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects non-ok HTTP responses", async () => {
