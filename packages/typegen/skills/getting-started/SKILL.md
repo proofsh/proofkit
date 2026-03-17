@@ -193,7 +193,7 @@ For WebViewer apps running inside FileMaker, you can use FM HTTP mode to generat
 
 **Prerequisites:**
 - FM HTTP daemon installed and running (`curl http://127.0.0.1:1365/health`)
-- FileMaker file open locally with "Connect to MCP" script run
+- FileMaker file reachable via the FM HTTP `connectedFiles` endpoint. The most common setup is to open the file locally and run a script such as "Connect to MCP", but the script name may differ in your solution as long as it establishes the bridge.
 
 1. Install packages:
 
