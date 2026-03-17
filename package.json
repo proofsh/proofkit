@@ -15,6 +15,8 @@
     "release": "turbo run build --filter={./packages/*} && changeset publish",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
+    "new:dev": "pnpm --filter @proofkit/new dev",
+    "new:cli": "node packages/new/dist/index.js",
     "knip": "knip",
     "prepare": "husky"
   },
