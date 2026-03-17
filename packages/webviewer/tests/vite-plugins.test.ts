@@ -137,6 +137,10 @@ describe("fmBridge", () => {
       debug: true,
     });
 
+    if (typeof plugin.apply === "function") {
+      expect(plugin.apply({} as never, { command: "serve", mode: "development" } as never)).toBe(true);
+    }
+
     const tags = await plugin.transformIndexHtml?.("");
 
     expect(tags).toEqual([
@@ -149,5 +153,20 @@ describe("fmBridge", () => {
       },
     ]);
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("opts out of build mode", async () => {
+    const plugin = fmBridge({
+      fmHttpBaseUrl: "http://localhost:1365",
+    });
+
+    expect(typeof plugin.apply).toBe("function");
+    if (typeof plugin.apply !== "function") {
+      return;
+    }
+
+    expect(plugin.apply({} as never, { command: "build", mode: "production" } as never)).toBe(false);
+    await expect(plugin.transformIndexHtml?.("")).resolves.toBeUndefined();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });

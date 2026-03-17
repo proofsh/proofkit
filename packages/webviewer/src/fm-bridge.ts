@@ -104,11 +104,19 @@ export const fmBridge = (options: FmBridgeOptions = {}): Plugin => {
   const wsUrl = resolveWsUrl(options);
   const debug = options.debug === true;
   let resolvedFileName: string | null = trimToNull(options.fileName);
+  let isServeMode = true;
 
   return {
     name: "proofkit-fm-bridge",
-    apply: "serve",
+    apply(_config, { command }) {
+      isServeMode = command === "serve";
+      return isServeMode;
+    },
     async configureServer() {
+      if (!isServeMode) {
+        return;
+      }
+
       if (resolvedFileName) {
         return;
       }
@@ -116,6 +124,10 @@ export const fmBridge = (options: FmBridgeOptions = {}): Plugin => {
       resolvedFileName = await discoverConnectedFileName(baseUrl);
     },
     async transformIndexHtml() {
+      if (!isServeMode) {
+        return;
+      }
+
       if (!resolvedFileName) {
         resolvedFileName = await discoverConnectedFileName(baseUrl);
       }
