@@ -6,6 +6,7 @@ import {
   CliContext,
   CodegenService,
   ConsoleService,
+  type FileMakerBootstrapArtifacts,
   FileMakerService,
   FileSystemService,
   GitService,
@@ -17,39 +18,108 @@ import {
 } from "~/core/context.js";
 import type { AppType, FileMakerInputs, ProofKitSettings, UIType } from "~/core/types.js";
 import type { PackageManager } from "~/utils/packageManager.js";
+import { createDataSourceEnvNames, updateTypegenConfig } from "~/utils/projectFiles.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export interface PromptScript {
+  text?: string[];
+  select?: string[];
+  confirm?: boolean[];
+  password?: string[];
+  searchSelect?: string[];
+}
+
+export interface ConsoleTranscript {
+  info: string[];
+  warn: string[];
+  error: string[];
+  success: string[];
+  note: Array<{ message: string; title?: string }>;
+}
 
 export function makeTestLayer(options: {
   cwd: string;
   packageManager: PackageManager;
+  nonInteractive?: boolean;
+  prompts?: PromptScript;
+  console?: ConsoleTranscript;
   tracker?: {
     commands: string[];
     gitInits: number;
     codegens: number;
     filemakerBootstraps: number;
   };
+  fileMaker?: {
+    localFmHttp?: {
+      healthy: boolean;
+      baseUrl?: string;
+      connectedFiles?: string[];
+    };
+  };
 }) {
   const tracker = options.tracker;
+  const promptScript = {
+    text: [...(options.prompts?.text ?? [])],
+    select: [...(options.prompts?.select ?? [])],
+    confirm: [...(options.prompts?.confirm ?? [])],
+    password: [...(options.prompts?.password ?? [])],
+    searchSelect: [...(options.prompts?.searchSelect ?? [])],
+  };
+  const consoleTranscript = options.console;
 
   const layer = Layer.mergeAll(
     Layer.succeed(CliContext, {
       cwd: options.cwd,
       debug: false,
-      nonInteractive: true,
+      nonInteractive: options.nonInteractive ?? true,
       packageManager: options.packageManager,
     }),
     Layer.succeed(PromptService, {
-      text: async ({ defaultValue }: { defaultValue?: string }) => defaultValue ?? "value",
-      select: async <T extends string>({ options }: { options: Array<{ value: T }> }) => options[0]?.value ?? ("" as T),
-      confirm: async ({ initialValue }: { initialValue?: boolean }) => initialValue ?? false,
+      text: ({ defaultValue }: { defaultValue?: string }) => {
+        const next = promptScript.text.shift();
+        return Promise.resolve(next ?? defaultValue ?? "value");
+      },
+      password: () => Promise.resolve(promptScript.password.shift() ?? "password"),
+      select: <T extends string>({ options }: { options: { value: T }[] }) => {
+        const next = promptScript.select.shift();
+        if (next) {
+          const match = options.find((option) => option.value === next);
+          if (match) {
+            return Promise.resolve(match.value);
+          }
+        }
+        return Promise.resolve(options[0]?.value ?? ("" as T));
+      },
+      searchSelect: <T extends string>({ options }: { options: { value: T }[] }) => {
+        const next = promptScript.searchSelect.shift();
+        if (next) {
+          const match = options.find((option) => option.value === next);
+          if (match) {
+            return Promise.resolve(match.value);
+          }
+        }
+        return Promise.resolve(options[0]?.value ?? ("" as T));
+      },
+      confirm: async ({ initialValue }: { initialValue?: boolean }) =>
+        promptScript.confirm.shift() ?? initialValue ?? false,
     }),
     Layer.succeed(ConsoleService, {
-      info: () => undefined,
-      warn: () => undefined,
-      error: () => undefined,
-      success: () => undefined,
-      note: () => undefined,
+      info: (message: string) => {
+        consoleTranscript?.info.push(message);
+      },
+      warn: (message: string) => {
+        consoleTranscript?.warn.push(message);
+      },
+      error: (message: string) => {
+        consoleTranscript?.error.push(message);
+      },
+      success: (message: string) => {
+        consoleTranscript?.success.push(message);
+      },
+      note: (message: string, title?: string) => {
+        consoleTranscript?.note.push({ message, title });
+      },
     }),
     Layer.succeed(FileSystemService, {
       exists: async (targetPath: string) => fs.pathExists(targetPath),
@@ -133,7 +203,82 @@ export function makeTestLayer(options: {
       },
     }),
     Layer.succeed(FileMakerService, {
-      bootstrap: async (projectDir: string, settings: ProofKitSettings, inputs: FileMakerInputs) => {
+      detectLocalFmHttp: async () => ({
+        baseUrl: options.fileMaker?.localFmHttp?.baseUrl ?? "http://127.0.0.1:1365",
+        healthy: options.fileMaker?.localFmHttp?.healthy ?? false,
+        connectedFiles: options.fileMaker?.localFmHttp?.connectedFiles ?? [],
+      }),
+      validateHostedServerUrl: async (serverUrl: string) => ({
+        normalizedUrl: serverUrl,
+        versions: {
+          fmsVersion: "21.0.0",
+          ottoVersion: "4.8.0",
+        },
+      }),
+      getOttoFMSToken: async () => ({ token: "admin_token" }),
+      listFiles: async () => [{ filename: "Contacts.fmp12", status: "open" }],
+      listAPIKeys: async () => [
+        {
+          key: "dk_existing",
+          user: "Admin",
+          database: "Contacts.fmp12",
+          label: "Existing key",
+        },
+      ],
+      createDataAPIKeyWithCredentials: async () => ({ apiKey: "dk_created" }),
+      deployDemoFile: async () => ({ apiKey: "dk_demo", filename: "ProofKitDemo.fmp12" }),
+      listLayouts: async () => ["API_Contacts", "Contacts"],
+      createFileMakerBootstrapArtifacts: (
+        settings: ProofKitSettings,
+        inputs: FileMakerInputs,
+        appType: AppType,
+      ): Promise<FileMakerBootstrapArtifacts> => {
+        const envNames = createDataSourceEnvNames("filemaker");
+        return Promise.resolve({
+          settings: {
+            ...settings,
+            dataSources: [
+              ...settings.dataSources,
+              {
+                type: "fm",
+                name: "filemaker",
+                envNames,
+              },
+            ],
+          },
+          envVars:
+            inputs.mode === "hosted-otto"
+              ? {
+                  [envNames.database]: inputs.fileName,
+                  [envNames.server]: inputs.server,
+                  [envNames.apiKey]: inputs.dataApiKey,
+                }
+              : {},
+          envSchemaEntries:
+            inputs.mode === "hosted-otto"
+              ? [
+                  {
+                    name: envNames.database,
+                    zodSchema: 'z.string().endsWith(".fmp12")',
+                    defaultValue: inputs.fileName,
+                  },
+                  { name: envNames.server, zodSchema: "z.string().url()", defaultValue: inputs.server },
+                  { name: envNames.apiKey, zodSchema: 'z.string().startsWith("dk_")', defaultValue: inputs.dataApiKey },
+                ]
+              : [],
+          typegenConfig: {
+            mode: inputs.mode,
+            dataSourceName: "filemaker",
+            envNames: inputs.mode === "hosted-otto" ? envNames : undefined,
+            fmHttpBaseUrl: inputs.mode === "local-fm-http" ? inputs.fmHttpBaseUrl : undefined,
+            connectedFileName: inputs.mode === "local-fm-http" ? inputs.fileName : undefined,
+            layoutName: inputs.layoutName,
+            schemaName: inputs.schemaName,
+            appType,
+          },
+        });
+      },
+      bootstrap: async (projectDir: string, settings: ProofKitSettings, inputs: FileMakerInputs, appType: AppType) => {
         if (tracker) {
           tracker.filemakerBootstraps += 1;
         }
@@ -152,11 +297,30 @@ export function makeTestLayer(options: {
             },
           ],
         };
-        const envPath = path.join(projectDir, ".env");
-        const content = (await fs.readFile(envPath, "utf8")).concat(
-          `FM_DATABASE=${inputs.fileName}\nFM_SERVER=${inputs.server}\nOTTO_API_KEY=${inputs.dataApiKey}\n`,
+        if (inputs.mode === "hosted-otto") {
+          const envPath = path.join(projectDir, ".env");
+          const content = (await fs.readFile(envPath, "utf8")).concat(
+            `FM_DATABASE=${inputs.fileName}\nFM_SERVER=${inputs.server}\nOTTO_API_KEY=${inputs.dataApiKey}\n`,
+          );
+          await fs.writeFile(envPath, content, "utf8");
+        }
+        await updateTypegenConfig(
+          {
+            exists: async (targetPath: string) => fs.pathExists(targetPath),
+            readFile: async (targetPath: string) => fs.readFile(targetPath, "utf8"),
+            writeFile: async (targetPath: string, content: string) => fs.writeFile(targetPath, content, "utf8"),
+          },
+          projectDir,
+          {
+            appType,
+            dataSourceName: "filemaker",
+            envNames: inputs.mode === "hosted-otto" ? createDataSourceEnvNames("filemaker") : undefined,
+            fmHttpBaseUrl: inputs.mode === "local-fm-http" ? inputs.fmHttpBaseUrl : undefined,
+            connectedFileName: inputs.mode === "local-fm-http" ? inputs.fileName : undefined,
+            layoutName: inputs.layoutName,
+            schemaName: inputs.schemaName,
+          },
         );
-        await fs.writeFile(envPath, content, "utf8");
         return nextSettings;
       },
     }),

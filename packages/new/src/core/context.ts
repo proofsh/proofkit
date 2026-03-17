@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { AppType, FileMakerInputs, ProofKitSettings, UIType } from "~/core/types.js";
+import type { AppType, FileMakerEnvNames, FileMakerInputs, ProofKitSettings, UIType } from "~/core/types.js";
 import type { PackageManager } from "~/utils/packageManager.js";
 
 export interface CliContextValue {
@@ -22,9 +22,19 @@ export interface PromptService {
     defaultValue?: string;
     validate?: (value: string) => string | undefined;
   }) => Promise<string>;
+  readonly password: (options: {
+    message: string;
+    validate?: (value: string) => string | undefined;
+  }) => Promise<string>;
   readonly select: <T extends string>(options: {
     message: string;
     options: Array<{ value: T; label: string; hint?: string }>;
+  }) => Promise<T>;
+  readonly searchSelect: <T extends string>(options: {
+    message: string;
+    searchLabel?: string;
+    emptyMessage?: string;
+    options: Array<{ value: T; label: string; hint?: string; keywords?: string[] }>;
   }) => Promise<T>;
   readonly confirm: (options: { message: string; initialValue?: boolean }) => Promise<boolean>;
 }
@@ -99,11 +109,89 @@ export interface SettingsService {
 
 export const SettingsService = Context.GenericTag<SettingsService>("@proofkit/new/SettingsService");
 
+export interface FmHttpStatus {
+  baseUrl: string;
+  healthy: boolean;
+  connectedFiles: string[];
+}
+
+export interface FileMakerServerVersions {
+  fmsVersion: string;
+  ottoVersion: string | null;
+}
+
+export interface OttoFileInfo {
+  filename: string;
+  status: string;
+}
+
+export interface OttoApiKeyInfo {
+  key: string;
+  user: string;
+  database: string;
+  label: string;
+}
+
+export interface FileMakerDataSourceEntry {
+  type: "fm";
+  name: string;
+  envNames: FileMakerEnvNames;
+}
+
+export interface FileMakerBootstrapArtifacts {
+  settings: ProofKitSettings;
+  envVars: Record<string, string>;
+  envSchemaEntries: Array<{
+    name: string;
+    zodSchema: string;
+    defaultValue: string;
+  }>;
+  typegenConfig: {
+    mode: FileMakerInputs["mode"];
+    dataSourceName: string;
+    envNames?: FileMakerEnvNames;
+    fmHttpBaseUrl?: string;
+    connectedFileName?: string;
+    layoutName?: string;
+    schemaName?: string;
+    appType: AppType;
+  };
+}
+
 export interface FileMakerService {
+  readonly detectLocalFmHttp: (baseUrl?: string) => Promise<FmHttpStatus>;
+  readonly validateHostedServerUrl: (
+    serverUrl: string,
+    ottoPort?: number | null,
+  ) => Promise<{
+    normalizedUrl: string;
+    versions: FileMakerServerVersions;
+  }>;
+  readonly getOttoFMSToken: (options: { url: URL }) => Promise<{ token: string }>;
+  readonly listFiles: (options: { url: URL; token: string }) => Promise<OttoFileInfo[]>;
+  readonly listAPIKeys: (options: { url: URL; token: string }) => Promise<OttoApiKeyInfo[]>;
+  readonly createDataAPIKeyWithCredentials: (options: {
+    url: URL;
+    filename: string;
+    username: string;
+    password: string;
+  }) => Promise<{ apiKey: string }>;
+  readonly deployDemoFile: (options: {
+    url: URL;
+    token: string;
+    operation: "install" | "replace";
+  }) => Promise<{ apiKey: string; filename: string }>;
+  readonly listLayouts: (options: { dataApiKey: string; fmFile: string; server: string }) => Promise<string[]>;
+  readonly createFileMakerBootstrapArtifacts: (
+    settings: ProofKitSettings,
+    inputs: FileMakerInputs,
+    appType: AppType,
+  ) => Promise<FileMakerBootstrapArtifacts>;
   readonly bootstrap: (
     projectDir: string,
     settings: ProofKitSettings,
     inputs: FileMakerInputs,
+    appType: AppType,
   ) => Promise<ProofKitSettings>;
 }
 

@@ -1,14 +1,12 @@
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
+import { getSharedTemplateDir, makeInitRequest, readScaffoldArtifacts } from "./init-fixtures.js";
 import { makeTestLayer } from "./test-layer.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe("executeInitPlan command paths", () => {
   it("runs install, git, codegen, and filemaker bootstrap through services", async () => {
@@ -21,7 +19,7 @@ describe("executeInitPlan command paths", () => {
     };
 
     const plan = planInit(
-      {
+      makeInitRequest({
         projectName: "fm-app",
         scopedAppName: "fm-app",
         appDir: "fm-app",
@@ -36,17 +34,25 @@ describe("executeInitPlan command paths", () => {
         importAlias: "~/",
         nonInteractive: true,
         debug: false,
+        skipFileMakerSetup: false,
         hasExplicitFileMakerInputs: true,
         fileMaker: {
+          mode: "hosted-otto",
+          dataSourceName: "filemaker",
+          envNames: {
+            database: "FM_DATABASE",
+            server: "FM_SERVER",
+            apiKey: "OTTO_API_KEY",
+          },
           server: "https://example.com",
           fileName: "Contacts.fmp12",
           dataApiKey: "dk_123",
           layoutName: "API_Contacts",
           schemaName: "Contacts",
         },
-      },
+      }),
       {
-        templateDir: path.resolve(__dirname, "../../cli/template/vite-wv"),
+        templateDir: getSharedTemplateDir("vite-wv"),
       },
     );
 
@@ -57,10 +63,11 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.codegens).toBe(1);
     expect(tracker.gitInits).toBe(1);
 
-    const settings = await fs.readJson(path.join(cwd, "fm-app", "proofkit.json"));
-    const envFile = await fs.readFile(path.join(cwd, "fm-app", ".env"), "utf8");
-    expect(settings.dataSources).toHaveLength(1);
+    const { proofkitJson, envFile, typegenConfig } = await readScaffoldArtifacts(path.join(cwd, "fm-app"));
+    expect(proofkitJson.dataSources).toHaveLength(1);
     expect(envFile).toContain("FM_DATABASE=Contacts.fmp12");
+    expect(typegenConfig).toContain("API_Contacts");
+    expect(typegenConfig).toContain("Contacts");
   });
 
   it("supports force overwrite for an existing directory", async () => {
@@ -70,7 +77,7 @@ describe("executeInitPlan command paths", () => {
     await fs.writeFile(path.join(projectDir, "README.md"), "old content");
 
     const plan = planInit(
-      {
+      makeInitRequest({
         projectName: "force-app",
         scopedAppName: "force-app",
         appDir: "force-app",
@@ -85,10 +92,11 @@ describe("executeInitPlan command paths", () => {
         importAlias: "~/",
         nonInteractive: true,
         debug: false,
+        skipFileMakerSetup: false,
         hasExplicitFileMakerInputs: false,
-      },
+      }),
       {
-        templateDir: path.resolve(__dirname, "../../cli/template/nextjs-shadcn"),
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
       },
     );
 

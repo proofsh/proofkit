@@ -4,6 +4,7 @@ export type AppType = "browser" | "webviewer";
 export type UIType = "shadcn" | "mantine";
 export type DataSourceType = "filemaker" | "none";
 export type OverwriteMode = "overwrite" | "clear";
+export type FileMakerMode = "hosted-otto" | "local-fm-http";
 
 export interface CliFlags {
   noGit: boolean;
@@ -26,14 +27,37 @@ export interface CliFlags {
   appType?: AppType;
 }
 
-export interface FileMakerInputs {
+export interface FileMakerEnvNames {
+  database: string;
+  server: string;
+  apiKey: string;
+}
+
+export interface HostedFileMakerInputs {
+  mode: "hosted-otto";
+  dataSourceName: string;
+  envNames: FileMakerEnvNames;
   server: string;
   fileName: string;
   dataApiKey: string;
   layoutName?: string;
   schemaName?: string;
   adminApiKey?: string;
+  fmsVersion?: string;
+  ottoVersion?: string | null;
 }
+
+export interface LocalFmHttpInputs {
+  mode: "local-fm-http";
+  dataSourceName: string;
+  envNames: FileMakerEnvNames;
+  fmHttpBaseUrl: string;
+  fileName: string;
+  layoutName?: string;
+  schemaName?: string;
+}
+
+export type FileMakerInputs = HostedFileMakerInputs | LocalFmHttpInputs;
 
 export interface InitRequest {
   projectName: string;
@@ -50,6 +74,7 @@ export interface InitRequest {
   importAlias: string;
   nonInteractive: boolean;
   debug: boolean;
+  skipFileMakerSetup: boolean;
   fileMaker?: FileMakerInputs;
   hasExplicitFileMakerInputs: boolean;
 }
@@ -76,6 +101,7 @@ export interface InitPlan {
   targetDir: string;
   templateDir: string;
   overwriteMode?: OverwriteMode;
+  packageManagerCommand: string;
   packageJson: {
     name: string;
     packageManager?: string;
@@ -102,6 +128,7 @@ export interface InitPlan {
     runInitialCodegen: boolean;
     initializeGit: boolean;
   };
+  nextSteps: string[];
 }
 
 export interface InitResult {

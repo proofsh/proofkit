@@ -1,31 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { planInit } from "~/core/planInit.js";
-import type { InitRequest } from "~/core/types.js";
-
-function makeRequest(overrides: Partial<InitRequest> = {}): InitRequest {
-  return {
-    projectName: "demo-app",
-    scopedAppName: "demo-app",
-    appDir: "demo-app",
-    appType: "browser",
-    ui: "shadcn",
-    dataSource: "none",
-    packageManager: "pnpm",
-    noInstall: false,
-    noGit: false,
-    force: false,
-    cwd: "/tmp/workspace",
-    importAlias: "~/",
-    nonInteractive: true,
-    debug: false,
-    hasExplicitFileMakerInputs: false,
-    ...overrides,
-  };
-}
+import { makeInitRequest } from "./init-fixtures.js";
 
 describe("planInit", () => {
   it("plans a browser scaffold", () => {
-    const plan = planInit(makeRequest(), {
+    const plan = planInit(makeInitRequest(), {
       templateDir: "/templates/browser",
       packageManagerVersion: "10.0.0",
     });
@@ -41,7 +20,7 @@ describe("planInit", () => {
 
   it("plans a webviewer scaffold with no install and no git", () => {
     const plan = planInit(
-      makeRequest({
+      makeInitRequest({
         appType: "webviewer",
         dataSource: "none",
         noInstall: true,
@@ -60,11 +39,18 @@ describe("planInit", () => {
 
   it("plans filemaker bootstrap and initial codegen when inputs are explicit", () => {
     const plan = planInit(
-      makeRequest({
+      makeInitRequest({
         appType: "webviewer",
         dataSource: "filemaker",
         hasExplicitFileMakerInputs: true,
         fileMaker: {
+          mode: "hosted-otto",
+          dataSourceName: "filemaker",
+          envNames: {
+            database: "FM_DATABASE",
+            server: "FM_SERVER",
+            apiKey: "OTTO_API_KEY",
+          },
           server: "https://example.com",
           fileName: "Contacts.fmp12",
           dataApiKey: "dk_123",
@@ -83,7 +69,7 @@ describe("planInit", () => {
 
   it("skips initial codegen for non-interactive webviewer runs without explicit inputs", () => {
     const plan = planInit(
-      makeRequest({
+      makeInitRequest({
         appType: "webviewer",
         dataSource: "filemaker",
       }),

@@ -17,8 +17,11 @@ import {
 import { UserAbortedError } from "~/core/errors.js";
 import { applyPackageJsonMutations } from "~/core/planInit.js";
 import type { InitPlan } from "~/core/types.js";
+import { normalizeImportAlias, replaceTextInFiles } from "~/utils/projectFiles.js";
 
 const AGENT_METADATA_DIRS = new Set([".agents", ".claude", ".clawed", ".clinerules", ".cursor", ".windsurf"]);
+const IMPORT_ALIAS_WILDCARD_REGEX = /\*/g;
+const IMPORT_ALIAS_TRAILING_SLASH_REGEX = /\/?$/;
 
 function getMeaningfulDirectoryEntries(entries: string[]) {
   return entries.filter((entry) => {
@@ -135,19 +138,30 @@ export const executeInitPlan = (plan: InitPlan) =>
       yield* Effect.promise(() => fs.writeFile(write.path, write.content));
     }
 
+    yield* Effect.promise(() => replaceTextInFiles(fs, plan.targetDir, "__PNPM_COMMAND__", plan.packageManagerCommand));
+    if (plan.request.importAlias !== "~/") {
+      yield* Effect.promise(() =>
+        replaceTextInFiles(fs, plan.targetDir, "~/", normalizeImportAlias(plan.request.importAlias)),
+      );
+      yield* Effect.promise(() =>
+        replaceTextInFiles(
+          fs,
+          plan.targetDir,
+          "@/",
+          plan.request.importAlias
+            .replace(IMPORT_ALIAS_WILDCARD_REGEX, "")
+            .replace(IMPORT_ALIAS_TRAILING_SLASH_REGEX, "/"),
+        ),
+      );
+    }
+
     let nextSettings = plan.settings;
     if (plan.tasks.bootstrapFileMaker && plan.request.fileMaker) {
       const fileMakerInputs = plan.request.fileMaker;
       nextSettings = yield* Effect.promise(() =>
-        fileMakerService.bootstrap(plan.targetDir, nextSettings, fileMakerInputs),
+        fileMakerService.bootstrap(plan.targetDir, nextSettings, fileMakerInputs, plan.request.appType),
       );
       yield* Effect.promise(() => settingsService.writeSettings(plan.targetDir, nextSettings));
-      yield* Effect.promise(() =>
-        settingsService.ensureTypegenConfig(plan.targetDir, {
-          appType: plan.request.appType,
-          fileMaker: fileMakerInputs,
-        }),
-      );
     }
 
     if (plan.tasks.runInstall) {
@@ -181,5 +195,6 @@ export const executeInitPlan = (plan: InitPlan) =>
         packageManagerVersion ? ` using ${plan.request.packageManager}@${packageManagerVersion}` : ""
       }`,
     );
+    consoleService.note(plan.nextSteps.map((step) => `  ${step}`).join("\n"), "Next steps");
     return plan;
   });
