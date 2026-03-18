@@ -1,5 +1,16 @@
 import { Card, Cards } from "fumadocs-ui/components/card";
-import { Bot, Brain, Code, Database, Globe, RectangleEllipsis, ShieldCheck, Terminal, WandSparkles, WebhookIcon } from "lucide-react";
+import {
+  Bot,
+  Brain,
+  Code,
+  Database,
+  Globe,
+  RectangleEllipsis,
+  ShieldCheck,
+  Terminal,
+  WandSparkles,
+  WebhookIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import ProofKitLogo from "@/../public/proofkit.png";
@@ -150,8 +161,8 @@ export default function HomePage() {
                   Works with any agent
                 </div>
                 <p className="text-gray-500 text-sm">
-                  Skills are bundled with each package — just install and your AI coding tool picks them up automatically.
-                  Compatible with Claude Code, Cursor, Windsurf, and more.
+                  Skills are bundled with each package — just install and your AI coding tool picks them up
+                  automatically. Compatible with Claude Code, Cursor, Windsurf, and more.
                 </p>
               </div>
             </div>

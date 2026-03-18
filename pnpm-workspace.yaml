@@ -1,5 +1,6 @@
 packages:
   - apps/*
   - packages/*
+  - '!packages/cli-old'
   - '!packages/tmp'
   - packages/typegen/web

@@ -23,19 +23,15 @@ export function AgentCommand({
   return (
     <div className="group relative my-4 font-mono text-sm">
       <div className="overflow-hidden rounded-lg border border-[#e87a2a] bg-[#1a1a2e]">
-        <div className="flex items-center justify-between border-b border-[#e87a2a]/40 px-4 py-2">
-          <span className="text-xs text-[#e87a2a]">{label}</span>
+        <div className="flex items-center justify-between border-[#e87a2a]/40 border-b px-4 py-2">
+          <span className="text-[#e87a2a] text-xs">{label}</span>
           <button
-            type="button"
-            onClick={copy}
-            className="rounded-md p-1 text-[#7a7a9e] transition-colors hover:text-[#e0e0e0]"
             aria-label="Copy command"
+            className="rounded-md p-1 text-[#7a7a9e] transition-colors hover:text-[#e0e0e0]"
+            onClick={copy}
+            type="button"
           >
-            {copied ? (
-              <CheckIcon className="size-4 text-green-400" />
-            ) : (
-              <CopyIcon className="size-4" />
-            )}
+            {copied ? <CheckIcon className="size-4 text-green-400" /> : <CopyIcon className="size-4" />}
           </button>
         </div>
         <div className="px-4 py-3">
