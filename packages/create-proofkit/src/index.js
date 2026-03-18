@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { execa } from "execa";
 import { createRequire } from "node:module";
+import { execa } from "execa";
 import { getUserPkgManager } from "./getUserPkgManager.js";
 
 const require = createRequire(import.meta.url);

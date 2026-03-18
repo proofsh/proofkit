@@ -62,7 +62,12 @@
       "arrowParentheses": "always",
       "quoteStyle": "double"
     },
-    "globals": ["__FMDAPI_VERSION__", "__BETTER_AUTH_VERSION__", "__WEBVIEWER_VERSION__", "__TYPEGEN_VERSION__"]
+    "globals": [
+      "__FMDAPI_VERSION__",
+      "__BETTER_AUTH_VERSION__",
+      "__WEBVIEWER_VERSION__",
+      "__TYPEGEN_VERSION__"
+    ]
   },
   "json": {
     "formatter": {
