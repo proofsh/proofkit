@@ -28,7 +28,7 @@ import {
   ValidationError,
 } from "@proofkit/fmodata";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
-import { assert, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { z } from "zod/v4";
 
 describe("Error Handling", () => {
@@ -223,7 +223,7 @@ describe("Error Handling", () => {
       expect(validationError.value).toBeDefined();
     });
 
-    it("should preserve Standard Schema issues in cause property", async () => {
+    it("should preserve Standard Schema issues on the error instance without setting cause", async () => {
       const invalidData = [
         {
           id: "1",
@@ -245,13 +245,9 @@ describe("Error Handling", () => {
       expect(result.error).toBeInstanceOf(ValidationError);
       const validationError = result.error as ValidationError;
 
-      // The cause property (ES2022 Error.cause) contains the Standard Schema issues array
-      // This follows the same pattern as uploadthing and is validator-agnostic
-      assert(validationError.cause, "Cause is not defined");
-
-      // The cause should be the Standard Schema issues array
-      expect(Array.isArray(validationError.cause)).toBe(true);
-      expect(validationError.cause).toBe(validationError.issues);
+      expect(Array.isArray(validationError.issues)).toBe(true);
+      expect(validationError.issues.length).toBeGreaterThan(0);
+      expect(validationError.cause).toBeUndefined();
 
       // The issues array is always available
       expect(validationError.issues).toBeDefined();

@@ -112,8 +112,12 @@ export class ValidationError extends FMODataError {
       cause?: Error["cause"];
     },
   ) {
-    const cause = options?.cause ?? issues;
-    super(message, { cause });
+    const cause = options?.cause;
+    if (cause === undefined) {
+      super(message);
+    } else {
+      super(message, { cause });
+    }
     this.field = options?.field;
     this.issues = issues;
     this.value = options?.value;
