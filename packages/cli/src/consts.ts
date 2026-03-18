@@ -16,6 +16,7 @@ export const AGENT_INSTRUCTIONS = [
   "Before doing any AI-assisted development here, run `npx @tanstack/intent@latest install` in the project root to load skills relevant to this project",
 ].join("\n");
 
+// Registry URL is injected at build time via tsdown define.
 declare const __REGISTRY_URL__: string;
 export const DEFAULT_REGISTRY_URL =
   typeof __REGISTRY_URL__ !== "undefined" && __REGISTRY_URL__ ? __REGISTRY_URL__ : "https://proofkit.dev";
@@ -27,14 +28,12 @@ const TITLE_ASCII = `
  _| |_    | |    | \\__. || \\__. |  | |    _| | \\  \\_  | | | |,
 |_____|  [___]    '.__.'  '.__.'  [___]  |____||____|[___]\\__/
 `;
-
 export function getTitleText(version: string) {
   const versionText = `v${version}`;
   const lineWidth = 61;
   const padding = Math.max(lineWidth - versionText.length, 0);
   return `${TITLE_ASCII}${" ".repeat(padding)}${versionText}\n`;
 }
-
 function resolveTemplateRoot(): string {
   const candidates = [path.join(PKG_ROOT, "template"), path.resolve(PKG_ROOT, "../cli/template")] as const;
 
