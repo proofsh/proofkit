@@ -10,15 +10,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.ts"],
-    // Exclude E2E tests that require real credentials
-    exclude: ["**/node_modules/**", "**/dist/**", "tests/browser-apps.test.ts"],
-    testTimeout: 60_000, // 60 seconds for CLI tests which can be slow
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-      include: ["src/**/*.ts"],
-    },
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/**/*.smoke.test.ts"],
+    fileParallelism: false,
+    testTimeout: 60_000,
   },
 });

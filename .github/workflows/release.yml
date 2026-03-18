@@ -59,8 +59,11 @@ jobs:
           doppler configure set project proofkit
           doppler configure set config test
 
-      - name: Run Tests
+      - name: Run Deterministic Contract Tests
         run: pnpm test
+
+      - name: Run CLI External Integration Smoke Tests
+        run: doppler run -- pnpm --filter @proofkit/cli test:smoke
 
       - name: Run fmodata E2E Tests
         run: pnpm --filter @proofkit/fmodata test:e2e

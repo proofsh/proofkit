@@ -1,0 +1,60 @@
+---
+description: |
+  This rule documents the package manager configuration and usage. It should be included when:
+  1. Installing dependencies
+  2. Running scripts
+  3. Managing project packages
+  4. Running development commands
+  5. Executing build or test operations
+globs:
+  - "package.json"
+  - "yarn.lock"
+  - ".yarnrc"
+alwaysApply: true
+---
+# Package Manager Configuration
+
+This rule documents the package manager setup and usage requirements.
+
+<rule>
+name: package_manager
+description: Documents package manager configuration and usage requirements
+
+configuration:
+  name: "yarn"
+  version: "latest"
+  commands:
+    install: "yarn install"
+    build: "yarn build"
+    dev: "yarn dev"
+    typegen: "yarn typegen"
+    typecheck: "yarn tsc"
+  notes: "Always use yarn instead of npm or pnpm for consistency"
+  dev_server_guidelines:
+    - "Never relaunch the dev server command if it may already be running"
+    - "Use yarn dev only when explicitly needed to start the server for the first time"
+    - "For code changes, just save the files and the server will automatically reload"
+
+examples:
+  - description: "Installing dependencies"
+    correct: "yarn install"
+    incorrect: 
+      - "npm install"
+      - "pnpm install"
+  
+  - description: "Running scripts"
+    correct: "yarn script-name"
+    incorrect:
+      - "npm run script-name"
+      - "pnpm run script-name"
+
+  - description: "Adding dependencies"
+    correct: "yarn add package-name"
+    incorrect:
+      - "npm install package-name"
+      - "pnpm add package-name"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

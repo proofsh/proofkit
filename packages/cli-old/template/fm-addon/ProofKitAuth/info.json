@@ -1,0 +1,8 @@
+﻿{
+  "GUID": "77BDB4D6-5CF8-4740-AB5F-19837A831C21",
+  "Clients": ["ProofKit"],
+  "Attribution": "Proof+Geist",
+  "URL": "https://proofkit.dev/auth/fm-addon",
+  "Icon_Color": "#7F7F7F",
+  "Version": "1.0"
+}

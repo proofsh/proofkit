@@ -1,7 +1,6 @@
 import gradient from "gradient-string";
-
-import { TITLE_TEXT } from "~/consts.js";
-import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
+import { getTitleText } from "~/consts.js";
+import { detectUserPackageManager } from "~/utils/packageManager.js";
 
 const proofTheme = {
   purple: "#89216B",
@@ -10,11 +9,10 @@ const proofTheme = {
 };
 
 export const proofGradient = gradient(Object.values(proofTheme));
-export const renderTitle = () => {
-  // resolves weird behavior where the ascii is offset
-  const pkgManager = getUserPkgManager();
+export function renderTitle(version = "0.0.0-private") {
+  const pkgManager = detectUserPackageManager();
   if (pkgManager === "yarn" || pkgManager === "pnpm") {
     console.log("");
   }
-  console.log(proofGradient.multiline(TITLE_TEXT));
-};
+  console.log(proofGradient.multiline(getTitleText(version)));
+}

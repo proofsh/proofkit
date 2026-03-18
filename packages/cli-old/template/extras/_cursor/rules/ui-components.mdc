@@ -1,0 +1,57 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# UI Components and Styling
+
+This rule documents the UI component library and styling conventions used in the project.
+
+<rule>
+name: ui_components
+description: Documents UI component library usage and styling conventions
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: directory
+    pattern: "src/components/"
+  - type: content
+    pattern: "@mantine/"
+
+conventions:
+  component_library:
+    - Mantine v7 as primary UI framework
+    - Tabler icons for iconography
+    - Mantine React Table for data grids
+    - Custom components extend Mantine base
+  
+  styling:
+    - PostCSS for processing
+    - Mantine theme customization
+    - CSS modules for component styles
+    - CSS variables for theming
+  
+  components:
+    - Atomic design principles
+    - Consistent prop interfaces
+    - Accessibility first
+    - Responsive design patterns
+  
+  forms:
+    - React Hook Form for form state
+    - Zod for validation schemas
+    - Mantine form components
+    - Custom form layouts
+
+dependencies:
+  mantine_core: "^7.17.0"
+  mantine_hooks: "^7.17.0"
+  mantine_dates: "^7.17.0"
+  mantine_notifications: "^7.17.0"
+  react_hook_form: "^7.54.2"
+  zod: "^3.24.2"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

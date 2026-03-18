@@ -17,10 +17,14 @@
     "pub:release": "npm publish --access public",
     "pub:beta": "npm publish --tag beta --access public",
     "lint": "biome check . --write",
-    "lint:summary": "biome check . --reporter=summary"
+    "lint:summary": "biome check . --reporter=summary",
+    "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "execa": "^9.6.1"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.17"
   },
   "engines": {
     "node": ">=20.12.0"

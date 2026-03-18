@@ -3,12 +3,10 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "~/*": ["./src/*"],
-      "@config/*": ["../config/*"]
+      "~/*": ["./src/*"]
     },
-    "checkJs": true,
     "strictNullChecks": true
   },
-  "exclude": ["template"],
-  "include": ["src", "tsdown.config.ts", "../reset.d.ts", "index.d.ts"]
+  "exclude": ["template", "dist"],
+  "include": ["src", "tests", "tsdown.config.ts", "vitest.config.ts"]
 }

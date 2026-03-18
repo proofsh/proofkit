@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "~/*": ["./src/*"],
+      "@config/*": ["../config/*"]
+    },
+    "checkJs": true,
+    "strictNullChecks": true
+  },
+  "exclude": ["template"],
+  "include": ["src", "tsdown.config.ts", "../reset.d.ts", "index.d.ts"]
+}

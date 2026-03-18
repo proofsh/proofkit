@@ -1,0 +1,518 @@
+﻿
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.0766B2B7768E6DCDC52A6A033BCA45AD</StringID>
+	<SourceText>proofkit_auth_sessions</SourceText>
+	<TargetText>proofkit_auth_sessions</TargetText>
+	<Comment>com.fmi.basetable.proofkit_auth_sessions</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.12131E1A6355305D7BDC841A925C5A56</StringID>
+	<SourceText>proofkit_auth_email_verification</SourceText>
+	<TargetText>proofkit_auth_email_verification</TargetText>
+	<Comment>com.fmi.basetable.proofkit_auth_email_verification</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.5E70A3CC1ED3EBCD700544DFF336C69A</StringID>
+	<SourceText>proofkit_auth_password_reset</SourceText>
+	<TargetText>proofkit_auth_password_reset</TargetText>
+	<Comment>com.fmi.basetable.proofkit_auth_password_reset</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.C68768AAA87CA3FAB34F82AC78F568DA</StringID>
+	<SourceText>proofkit_auth_users</SourceText>
+	<TargetText>proofkit_auth_users</TargetText>
+	<Comment>com.fmi.basetable.proofkit_auth_users</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_email_verification::0A2A6F666A2955B3C0D398EA50924A61</StringID>
+	<SourceText>code</SourceText>
+	<TargetText>code</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_email_verification::code</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_email_verification::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_email_verification::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_email_verification::5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_email_verification::email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_email_verification::74434AB5FCE4FAAEFDC691DB64D55AB1</StringID>
+	<SourceText>expires_at</SourceText>
+	<TargetText>expires_at</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_email_verification::expires_at</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_email_verification::C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_email_verification::id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_password_reset::0A2A6F666A2955B3C0D398EA50924A61</StringID>
+	<SourceText>code</SourceText>
+	<TargetText>code</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_password_reset::code</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_password_reset::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_password_reset::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_password_reset::5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_password_reset::email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_password_reset::65E3C50A87BB3076D0E717CDAEAA8001</StringID>
+	<SourceText>email_verified</SourceText>
+	<TargetText>email_verified</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_password_reset::email_verified</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_password_reset::74434AB5FCE4FAAEFDC691DB64D55AB1</StringID>
+	<SourceText>expires_at</SourceText>
+	<TargetText>expires_at</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_password_reset::expires_at</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_password_reset::C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_password_reset::id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_sessions::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_sessions::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_sessions::57A056C71AA448A69FBD9960B1053E99</StringID>
+	<SourceText>expiresAt</SourceText>
+	<TargetText>expiresAt</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_sessions::expiresAt</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_sessions::C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_sessions::id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_users::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_users::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_users::5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_users::email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_users::6C65589BF319743648F1CAB95738F7B3</StringID>
+	<SourceText>emailVerified</SourceText>
+	<TargetText>emailVerified</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_users::emailVerified</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_users::7CBBAD414D9185890C6AE6EA4AE96E5C</StringID>
+	<SourceText>password_hash</SourceText>
+	<TargetText>password_hash</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_users::password_hash</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.basetable.field.proofkit_auth_users::DD6F8C0A5163A91CBDCAAFEC3DB91266</StringID>
+	<SourceText>username</SourceText>
+	<TargetText>username</TargetText>
+	<Comment>com.fmi.basetable.field.proofkit_auth_users::username</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.calculation.text.1F27E3E6452F6E3D407EC45CDFF933C3</StringID>
+	<SourceText>https://proofkit.dev/auth/fm-addon/</SourceText>
+	<TargetText>https://proofkit.dev/auth/fm-addon/</TargetText>
+	<Comment>com.fmi.calculation.text.https://proofkit.dev/auth/fm-addon/</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.calculation.text.59AFA301111C185DBC5DD64F78DB356F</StringID>
+	<SourceText>https://proofkit.dev</SourceText>
+	<TargetText>https://proofkit.dev</TargetText>
+	<Comment>com.fmi.calculation.text.https://proofkit.dev</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layout.0766B2B7768E6DCDC52A6A033BCA45AD</StringID>
+	<SourceText>proofkit_auth_sessions</SourceText>
+	<TargetText>proofkit_auth_sessions</TargetText>
+	<Comment>com.fmi.layout.proofkit_auth_sessions</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layout.12131E1A6355305D7BDC841A925C5A56</StringID>
+	<SourceText>proofkit_auth_email_verification</SourceText>
+	<TargetText>proofkit_auth_email_verification</TargetText>
+	<Comment>com.fmi.layout.proofkit_auth_email_verification</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layout.5E70A3CC1ED3EBCD700544DFF336C69A</StringID>
+	<SourceText>proofkit_auth_password_reset</SourceText>
+	<TargetText>proofkit_auth_password_reset</TargetText>
+	<Comment>com.fmi.layout.proofkit_auth_password_reset</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layout.C68768AAA87CA3FAB34F82AC78F568DA</StringID>
+	<SourceText>proofkit_auth_users</SourceText>
+	<TargetText>proofkit_auth_users</TargetText>
+	<Comment>com.fmi.layout.proofkit_auth_users</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.0A2A6F666A2955B3C0D398EA50924A61</StringID>
+	<SourceText>code</SourceText>
+	<TargetText>code</TargetText>
+	<Comment>com.fmi.layoutobject.text.code</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.1D65D2EF432DC000BD3A8B0E4DEEF346</StringID>
+	<SourceText>Session</SourceText>
+	<TargetText>Session</TargetText>
+	<Comment>com.fmi.layoutobject.text.Session</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.367E8386949124D8EAB7A725C6370BCE</StringID>
+	<SourceText>User</SourceText>
+	<TargetText>User</TargetText>
+	<Comment>com.fmi.layoutobject.text.User</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.3CA8D8AD5BCF2CC9CE79B9AFA97339AC</StringID>
+	<SourceText>This table stores your web users. You can customize this table with additional fields or relate it to an existing users table in your own app</SourceText>
+	<TargetText>This table stores your web users. You can customize this table with additional fields or relate it to an existing users table in your own app</TargetText>
+	<Comment>com.fmi.layoutobject.text.This table stores your web users. You can customize this table with additional fields or relate it to an existing users table in your own app</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.layoutobject.text.id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.layoutobject.text.email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.57A056C71AA448A69FBD9960B1053E99</StringID>
+	<SourceText>expiresAt</SourceText>
+	<TargetText>expiresAt</TargetText>
+	<Comment>com.fmi.layoutobject.text.expiresAt</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.65E3C50A87BB3076D0E717CDAEAA8001</StringID>
+	<SourceText>email_verified</SourceText>
+	<TargetText>email_verified</TargetText>
+	<Comment>com.fmi.layoutobject.text.email_verified</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.67D86F2872734BED828FE6CC9AC70499</StringID>
+	<SourceText>Password Reset</SourceText>
+	<TargetText>Password Reset</TargetText>
+	<Comment>com.fmi.layoutobject.text.Password Reset</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.6C65589BF319743648F1CAB95738F7B3</StringID>
+	<SourceText>emailVerified</SourceText>
+	<TargetText>emailVerified</TargetText>
+	<Comment>com.fmi.layoutobject.text.emailVerified</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.74434AB5FCE4FAAEFDC691DB64D55AB1</StringID>
+	<SourceText>expires_at</SourceText>
+	<TargetText>expires_at</TargetText>
+	<Comment>com.fmi.layoutobject.text.expires_at</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.7CBBAD414D9185890C6AE6EA4AE96E5C</StringID>
+	<SourceText>password_hash</SourceText>
+	<TargetText>password_hash</TargetText>
+	<Comment>com.fmi.layoutobject.text.password_hash</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.7FCE1B3FF9247B2EFD3EFFB225B9DC8A</StringID>
+	<SourceText>Related User</SourceText>
+	<TargetText>Related User</TargetText>
+	<Comment>com.fmi.layoutobject.text.Related User</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.864D7760326E5A71EAA190E2B81A2630</StringID>
+	<SourceText>It&apos;s safe to delete this record if the verification has expired</SourceText>
+	<TargetText>It&apos;s safe to delete this record if the verification has expired</TargetText>
+	<Comment>com.fmi.layoutobject.text.It&apos;s safe to delete this record if the verification has expired</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.A2A111D0912ED62DFCF6C56D413DEE3E</StringID>
+	<SourceText>This table stores active logged in sessions for your web app. If a session is expired it can be deleted. Deleting an active session will force the user to login again.</SourceText>
+	<TargetText>This table stores active logged in sessions for your web app. If a session is expired it can be deleted. Deleting an active session will force the user to login again.</TargetText>
+	<Comment>com.fmi.layoutobject.text.This table stores active logged in sessions for your web app. If a session is expired it can be deleted. Deleting an active session will force the user to login again.</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.BE53E00FB97CB96633D9264982373233</StringID>
+	<SourceText>time in milliseconds</SourceText>
+	<TargetText>time in milliseconds</TargetText>
+	<Comment>com.fmi.layoutobject.text.time in milliseconds</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.layoutobject.text.id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.DBCCD67197DD180FF75AD2AA9FD1333D</StringID>
+	<SourceText>When a user needs to reset their password, this table stores the password reset code sent to their email. After verification, the record will be deleted so it&apos;s often empty</SourceText>
+	<TargetText>When a user needs to reset their password, this table stores the password reset code sent to their email. After verification, the record will be deleted so it&apos;s often empty</TargetText>
+	<Comment>com.fmi.layoutobject.text.When a user needs to reset their password, this table stores the password reset code sent to their email. After verification, the record will be deleted so it&apos;s often empty</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.DD6F8C0A5163A91CBDCAAFEC3DB91266</StringID>
+	<SourceText>username</SourceText>
+	<TargetText>username</TargetText>
+	<Comment>com.fmi.layoutobject.text.username</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.F35C746B404A8FD17848FCA5A9500A15</StringID>
+	<SourceText>When a user wants to change their email, this table stores the new email address until it is verified. After verification, the record will be deleted so it&apos;s often empty</SourceText>
+	<TargetText>When a user wants to change their email, this table stores the new email address until it is verified. After verification, the record will be deleted so it&apos;s often empty</TargetText>
+	<Comment>com.fmi.layoutobject.text.When a user wants to change their email, this table stores the new email address until it is verified. After verification, the record will be deleted so it&apos;s often empty</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.F7B6AD0D6B71B4C978FB5A2BFC1BAAEF</StringID>
+	<SourceText>Email Verifications</SourceText>
+	<TargetText>Email Verifications</TargetText>
+	<Comment>com.fmi.layoutobject.text.Email Verifications</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.layoutobject.text.F8C144711470F2FE602C612E30803932</StringID>
+	<SourceText>Learn more at proofkit.dev</SourceText>
+	<TargetText>Learn more at proofkit.dev</TargetText>
+	<Comment>com.fmi.layoutobject.text.Learn more at proofkit.dev</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.0766B2B7768E6DCDC52A6A033BCA45AD</StringID>
+	<SourceText>proofkit_auth_sessions</SourceText>
+	<TargetText>proofkit_auth_sessions</TargetText>
+	<Comment>com.fmi.tableoccurrence.proofkit_auth_sessions</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.12131E1A6355305D7BDC841A925C5A56</StringID>
+	<SourceText>proofkit_auth_email_verification</SourceText>
+	<TargetText>proofkit_auth_email_verification</TargetText>
+	<Comment>com.fmi.tableoccurrence.proofkit_auth_email_verification</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.5E70A3CC1ED3EBCD700544DFF336C69A</StringID>
+	<SourceText>proofkit_auth_password_reset</SourceText>
+	<TargetText>proofkit_auth_password_reset</TargetText>
+	<Comment>com.fmi.tableoccurrence.proofkit_auth_password_reset</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.C68768AAA87CA3FAB34F82AC78F568DA</StringID>
+	<SourceText>proofkit_auth_users</SourceText>
+	<TargetText>proofkit_auth_users</TargetText>
+	<Comment>com.fmi.tableoccurrence.proofkit_auth_users</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::0A2A6F666A2955B3C0D398EA50924A61</StringID>
+	<SourceText>code</SourceText>
+	<TargetText>code</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::code</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::74434AB5FCE4FAAEFDC691DB64D55AB1</StringID>
+	<SourceText>expires_at</SourceText>
+	<TargetText>expires_at</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::expires_at</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_email_verification::id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::0A2A6F666A2955B3C0D398EA50924A61</StringID>
+	<SourceText>code</SourceText>
+	<TargetText>code</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::code</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::65E3C50A87BB3076D0E717CDAEAA8001</StringID>
+	<SourceText>email_verified</SourceText>
+	<TargetText>email_verified</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::email_verified</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::74434AB5FCE4FAAEFDC691DB64D55AB1</StringID>
+	<SourceText>expires_at</SourceText>
+	<TargetText>expires_at</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::expires_at</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_password_reset::id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_sessions::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_sessions::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_sessions::57A056C71AA448A69FBD9960B1053E99</StringID>
+	<SourceText>expiresAt</SourceText>
+	<TargetText>expiresAt</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_sessions::expiresAt</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_sessions::C9E0452F2F891DD359995C99F6A2D0E3</StringID>
+	<SourceText>id_user</SourceText>
+	<TargetText>id_user</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_sessions::id_user</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_users::4B68129F6621C41900B27BF59AB8FD9B</StringID>
+	<SourceText>id</SourceText>
+	<TargetText>id</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_users::id</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_users::5588ADDA2E7F62A48B84279D69752C99</StringID>
+	<SourceText>email</SourceText>
+	<TargetText>email</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_users::email</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_users::6C65589BF319743648F1CAB95738F7B3</StringID>
+	<SourceText>emailVerified</SourceText>
+	<TargetText>emailVerified</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_users::emailVerified</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_users::7CBBAD414D9185890C6AE6EA4AE96E5C</StringID>
+	<SourceText>password_hash</SourceText>
+	<TargetText>password_hash</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_users::password_hash</Comment>
+</DynamicTemplateString>
+
+<DynamicTemplateString>
+	<StringID>com.fmi.tableoccurrence.field.proofkit_auth_users::DD6F8C0A5163A91CBDCAAFEC3DB91266</StringID>
+	<SourceText>username</SourceText>
+	<TargetText>username</TargetText>
+	<Comment>com.fmi.tableoccurrence.field.proofkit_auth_users::username</Comment>
+</DynamicTemplateString>

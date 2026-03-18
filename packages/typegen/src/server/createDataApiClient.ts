@@ -242,7 +242,7 @@ export function createClientFromConfig(config: FmdapiConfig): Omit<CreateClientR
         error: errorMessage,
         statusCode: 400,
         kind: "adapter_error",
-        suspectedField: baseUrlEnvName,
+        suspectedField: "server",
         message: errorMessage,
       };
     }

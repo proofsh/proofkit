@@ -1,7 +1,7 @@
 {
   "name": "@proofkit/cli",
-  "version": "2.0.0-beta.22",
-  "description": "Create web application with the ProofKit stack",
+  "version": "2.0.0-beta.0",
+  "description": "Interactive CLI to scaffold and manage ProofKit projects",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -30,9 +30,8 @@
     "dist",
     "template",
     "README.md",
-    "index.d.ts",
-    "LICENSE",
     "CHANGELOG.md",
+    "index.d.ts",
     "package.json"
   ],
   "engines": {
@@ -51,12 +50,18 @@
     "pub:beta": "NODE_ENV=production pnpm build && npm publish --tag beta --access public",
     "pub:next": "NODE_ENV=production pnpm build && npm publish --tag next --access public",
     "pub:release": "NODE_ENV=production pnpm build && npm publish --access public",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:smoke": "PROOFKIT_RUN_SMOKE_TESTS=1 vitest run --config vitest.smoke.config.ts"
   },
   "dependencies": {
     "@better-fetch/fetch": "1.1.17",
     "@clack/core": "^0.3.5",
     "@clack/prompts": "^0.11.0",
+    "@effect/cli": "0.74.0",
+    "@effect/platform": "0.95.0",
+    "@effect/platform-node": "0.105.0",
+    "@effect/printer": "0.48.0",
+    "@effect/printer-ansi": "0.48.0",
     "@inquirer/prompts": "^8.3.2",
     "@proofkit/fmdapi": "workspace:*",
     "@proofkit/typegen": "workspace:*",
@@ -65,6 +70,7 @@
     "chalk": "5.4.1",
     "commander": "^14.0.2",
     "dotenv": "^16.6.1",
+    "effect": "^3.20.0",
     "es-toolkit": "^1.43.0",
     "execa": "^9.6.1",
     "fast-glob": "^3.3.3",
@@ -80,7 +86,8 @@
     "semver": "^7.7.3",
     "shadcn": "^2.10.0",
     "sort-package-json": "^2.15.1",
-    "ts-morph": "^26.0.0"
+    "ts-morph": "^26.0.0",
+    "type-fest": "^3.13.1"
   },
   "devDependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
@@ -119,10 +126,12 @@
     "superjson": "^2.2.6",
     "tailwindcss": "^4.1.18",
     "tsdown": "^0.14.2",
-    "type-fest": "^3.13.1",
     "typescript": "^5.9.3",
     "ultracite": "7.0.8",
     "vitest": "^4.0.17",
     "zod": "^4.3.5"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,0 +1,38 @@
+{
+  "name": "webviewer-demo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "build:upload": "__PNPM_COMMAND__ build && __PNPM_COMMAND__ upload",
+    "dev": "vite",
+    "launch-fm": "node ./scripts/launch-fm.js",
+    "proofkit": "proofkit",
+    "serve": "vite preview",
+    "start": "vite",
+    "typegen": "typegen",
+    "typegen:ui": "typegen ui",
+    "upload": "node ./scripts/upload.js",
+    "lint": "ultracite check .",
+    "format": "ultracite fix ."
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-router": "^1.167.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@proofkit/typegen": "^1.1.0-beta.16",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "dotenv": "^17.3.1",
+    "open": "^11.0.0",
+    "typescript": "^5.9.3",
+    "ultracite": "7.0.8",
+    "vite": "^7.3.1",
+    "vite-plugin-singlefile": "^2.3.2"
+  }
+}

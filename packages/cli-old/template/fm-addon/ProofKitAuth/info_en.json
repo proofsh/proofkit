@@ -1,0 +1,8 @@
+﻿{
+  "Title": "FileMaker Add-on Auth",
+  "Description": "FileMaker Add-on Auth - User authentication with FileMaker web apps",
+  "Version": "1.0",
+  "Category": "Web",
+  "Type": "fmaddon",
+  "RequiredFMPVersion": "20.0.0"
+}

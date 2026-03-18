@@ -1,7 +1,18 @@
 #!/usr/bin/env node
 
 import { execa } from "execa";
+import { createRequire } from "node:module";
 import { getUserPkgManager } from "./getUserPkgManager.js";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json");
+
+function getCliSpecifier() {
+  const version = packageJson.version;
+  const tag = version.includes("-") ? "beta" : "latest";
+
+  return `@proofkit/cli@${tag}`;
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -19,7 +30,7 @@ async function main() {
   }
 
   try {
-    await execa(pkgManagerCmd, ["@proofkit/cli@latest", "init", ...args], {
+    await execa(pkgManagerCmd, [getCliSpecifier(), "init", ...args], {
       stdio: "inherit",
       env: {
         ...process.env,

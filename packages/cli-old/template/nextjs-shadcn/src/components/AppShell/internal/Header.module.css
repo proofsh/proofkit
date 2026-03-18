@@ -1,0 +1,33 @@
+.header {
+  margin-bottom: 7.5rem;
+  background-color: var(--pk-header-bg, transparent);
+  border-bottom: 1px solid var(--pk-border, rgba(0,0,0,0.08));
+}
+
+.inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.link {
+  display: block;
+  line-height: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.link:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .link:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}

@@ -1,0 +1,51 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Next.js Framework Configuration
+
+This rule documents the Next.js framework setup and conventions used in this project.
+
+<rule>
+name: nextjs_framework
+description: Documents Next.js framework setup, routing conventions, and best practices
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: directory
+    pattern: "src/(app|components)/"
+
+conventions:
+  routing:
+    - App Router is used (not Pages Router)
+    - Routes are defined in src/app directory
+    - Layout components should be named layout.tsx
+    - Page components should be named page.tsx
+    - Loading states should be in loading.tsx
+    - Error boundaries should be in error.tsx
+  
+  components:
+    - React Server Components (RSC) are default
+    - Client components must be marked with "use client"
+    - Components live in src/components/
+    - Shared layouts in src/components/layouts/
+    - UI components in src/components/ui/
+  
+  data_fetching:
+    - Server components fetch data directly
+    - Client components use React Query
+    - API routes defined in src/app/api/
+    - Server actions used for mutations
+
+frameworks:
+  next: "15.1.7"
+  react: "19.0.0-rc"
+  typescript: "^5"
+  mantine: "^7.17.0"
+  tanstack_query: "^5.59.0"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 
