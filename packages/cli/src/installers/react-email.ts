@@ -121,7 +121,6 @@ export async function installPlunk({ project }: { project?: Project }) {
         message: `Enter your Plunk API key\n${chalk.dim(
           "Enter your Secret API Key from https://app.useplunk.com/settings/api",
         )}`,
-        placeholder: "...or leave blank to do this later",
       }),
     );
   }
@@ -175,7 +174,6 @@ export async function installResend({ project }: { project?: Project }) {
         message: `Enter your Resend API key\n${chalk.dim(
           `Only "Sending Access" permission required: https://resend.com/api-keys`,
         )}`,
-        placeholder: "...or leave blank to do this later",
       }),
     );
   }

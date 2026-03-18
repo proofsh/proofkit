@@ -1,14 +1,16 @@
 import https from "node:https";
 import axios from "axios";
 
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-});
+function createHttpsAgent() {
+  return new https.Agent({
+    rejectUnauthorized: process.env.PROOFKIT_ALLOW_INSECURE_TLS !== "1",
+  });
+}
 
 export async function getJson<T>(url: string, options?: { headers?: Record<string, string>; timeout?: number }) {
   const response = await axios.get<T>(url, {
     headers: options?.headers,
-    httpsAgent,
+    httpsAgent: createHttpsAgent(),
     timeout: options?.timeout ?? 10_000,
     validateStatus: null,
   });
@@ -22,7 +24,7 @@ export async function postJson<T>(
 ) {
   const response = await axios.post<T>(url, data, {
     headers: options?.headers,
-    httpsAgent,
+    httpsAgent: createHttpsAgent(),
     timeout: options?.timeout ?? 10_000,
     validateStatus: null,
   });
@@ -32,7 +34,7 @@ export async function postJson<T>(
 export async function deleteJson(url: string, options?: { headers?: Record<string, string>; timeout?: number }) {
   const response = await axios.delete(url, {
     headers: options?.headers,
-    httpsAgent,
+    httpsAgent: createHttpsAgent(),
     timeout: options?.timeout ?? 10_000,
     validateStatus: null,
   });
@@ -53,11 +55,10 @@ export async function requestJson<T>(
     method: options?.method ?? "GET",
     data: options?.body,
     headers: options?.headers,
-    httpsAgent,
+    httpsAgent: createHttpsAgent(),
     timeout: options?.timeoutMs ?? 10_000,
-    validateStatus: null,
   });
-  return response.data;
+  return response;
 }
 
 export async function requestText(
@@ -72,7 +73,7 @@ export async function requestText(
     url: url.toString(),
     method: options?.method ?? "GET",
     headers: options?.headers,
-    httpsAgent,
+    httpsAgent: createHttpsAgent(),
     timeout: options?.timeoutMs ?? 10_000,
     responseType: "text",
     validateStatus: null,

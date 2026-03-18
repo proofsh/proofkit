@@ -82,7 +82,6 @@ export function filterSearchOptions<T extends string>(
 export function text(options: {
   message: string;
   defaultValue?: string;
-  placeholder?: string;
   validate?: (value: string) => string | undefined;
 }) {
   return withCancelSentinel(() =>
@@ -103,7 +102,7 @@ export function password(options: { message: string; validate?: (value: string) 
   );
 }
 
-export function confirm(options: { message: string; initialValue?: boolean; active?: string; inactive?: string }) {
+export function confirm(options: { message: string; initialValue?: boolean }) {
   return withCancelSentinel(
     () =>
       inquirerConfirm({
@@ -136,7 +135,6 @@ export function select<T extends string>(options: {
 
 export function searchSelect<T extends string>(options: {
   message: string;
-  searchLabel?: string;
   emptyMessage?: string;
   options: SearchPromptOption<T>[];
 }) {

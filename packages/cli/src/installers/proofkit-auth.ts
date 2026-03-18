@@ -113,8 +113,6 @@ export const proofkitAuthInstaller = async () => {
         await p.confirm({
           message: "I have followed the above instructions, continue installing",
           initialValue: true,
-          active: "Continue",
-          inactive: "Abort",
         }),
       );
 

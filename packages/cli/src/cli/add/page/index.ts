@@ -61,7 +61,6 @@ export const runAddPageAction = async (opts?: {
     routeName = abortIfCancel(
       await p.text({
         message: "Enter the URL PATH for your new page",
-        placeholder: "/my-page",
         validate: (value) => {
           if (value.length === 0) {
             return "URL path is required";

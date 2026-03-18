@@ -181,8 +181,6 @@ ${url.origin}/otto/app/api-keys`,
       const tryAgain = abortIfCancel(
         await clack.confirm({
           message: "Do you want to try and enter credentials again?",
-          active: "Yes, try again",
-          inactive: "No, abort",
         }),
       );
       if (!tryAgain) {

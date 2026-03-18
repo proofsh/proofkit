@@ -152,7 +152,6 @@ export async function promptForFileMakerDataSource({
       abortIfCancel(
         await p.searchSelect({
           message: `Which file would you like to connect to? ${chalk.dim("(TIP: Select the file where your data is stored)")}`,
-          searchLabel: "Search files",
           emptyMessage: "No matching files found.",
           options: [
             {
@@ -181,8 +180,6 @@ export async function promptForFileMakerDataSource({
       const replace = abortIfCancel(
         await p.confirm({
           message: "The demo file already exists, do you want to replace it with a fresh copy?",
-          active: "Yes, replace",
-          inactive: "No, select another file",
           initialValue: false,
         }),
       );
@@ -217,7 +214,6 @@ export async function promptForFileMakerDataSource({
       const selectedKey = abortIfCancel(
         await p.searchSelect({
           message: `Which OttoFMS Data API key would you like to use? ${chalk.dim(`(This determines the access that you'll have to the data in this file)`)}`,
-          searchLabel: "Search API keys",
           emptyMessage: "No matching API keys found.",
           options: [
             ...thisFileApiKeys.map((key) => ({

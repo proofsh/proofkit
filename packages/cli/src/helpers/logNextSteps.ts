@@ -6,13 +6,8 @@ import { state } from "~/state.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
 import { logger } from "~/utils/logger.js";
 
-const formatRunCommand = (
-  pkgManager: ReturnType<typeof getUserPkgManager>,
-  command: string,
-) =>
-  ["npm", "bun"].includes(pkgManager)
-    ? `${pkgManager} run ${command}`
-    : `${pkgManager} ${command}`;
+const formatRunCommand = (pkgManager: ReturnType<typeof getUserPkgManager>, command: string) =>
+  ["npm", "bun"].includes(pkgManager) ? `${pkgManager} run ${command}` : `${pkgManager} ${command}`;
 
 // This logs the next steps that the user should take in order to advance the project
 export const logNextSteps = ({
@@ -24,9 +19,7 @@ export const logNextSteps = ({
   logger.info(chalk.bold("Next steps:"));
   logger.dim("\nNavigate to the project directory:");
   projectName !== "." && logger.info(`  cd ${projectName}`);
-  logger.dim(
-    "(or open in your code editor, and run the rest of these commands from there)",
-  );
+  logger.dim("(or open in your code editor, and run the rest of these commands from there)");
 
   if (noInstall) {
     logger.dim("\nInstall dependencies:");
@@ -38,9 +31,7 @@ export const logNextSteps = ({
     }
   }
 
-  logger.dim(
-    "\nAgent instruction (required before continuing any AI-assisted development in this project):",
-  );
+  logger.dim("\nAgent instruction (required before continuing any AI-assisted development in this project):");
   logger.info("  npx @tanstack/intent@latest install");
   logger.dim(
     "  Have your agent run this command in the newly created project so it can discover and learn important skills relevant to the project.",
@@ -53,15 +44,11 @@ export const logNextSteps = ({
     logger.dim("\nWhen you're ready to generate FileMaker clients:");
     logger.info(`  ${formatRunCommand(pkgManager, "typegen")}`);
 
-    logger.dim(
-      "\nTo open the starter inside FileMaker once your file is ready:",
-    );
+    logger.dim("\nTo open the starter inside FileMaker once your file is ready:");
     logger.info(`  ${formatRunCommand(pkgManager, "launch-fm")}`);
   }
 
-  logger.dim(
-    "\nOr, run the ProofKit command again to add more to your project:",
-  );
+  logger.dim("\nOr, run the ProofKit command again to add more to your project:");
   logger.info(`  ${formatRunCommand(pkgManager, "proofkit")}`);
   logger.dim("(Must be inside the project directory)");
 };

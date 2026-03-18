@@ -32,7 +32,7 @@ async function promptForSchemaFromDataSource({
     dataSourceName: dataSource.name,
   })
     .map((s) => s.schemaName)
-    .filter(Boolean);
+    .filter((schemaName): schemaName is string => Boolean(schemaName));
 
   if (schemas.length === 0) {
     p.cancel("This data source doesn't have any schemas to load data from");
@@ -46,7 +46,7 @@ async function promptForSchemaFromDataSource({
   const schemaName = abortIfCancel(
     await p.select({
       message: "Which schema should this template use?",
-      options: schemas.map((schema) => ({ label: schema ?? "", value: schema ?? "" })),
+      options: schemas.map((schema) => ({ label: schema, value: schema })),
     }),
   );
   return schemaName;
@@ -125,7 +125,6 @@ export async function installFromRegistry(name: string) {
       routeName = abortIfCancel(
         await p.text({
           message: "Enter the URL PATH for your new page",
-          placeholder: "/my-page",
           validate: (value) => {
             if (value.length === 0) {
               return "URL path is required";

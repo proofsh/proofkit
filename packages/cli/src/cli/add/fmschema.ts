@@ -112,7 +112,6 @@ export const runAddSchemaAction = async (opts?: {
     abortIfCancel(
       await p.searchSelect({
         message: "Select a new layout to read data from",
-        searchLabel: "Search layouts",
         emptyMessage: "No matching layouts found.",
         options: layouts
           .filter((layout) => !existingLayouts.includes(layout))
@@ -132,7 +131,6 @@ export const runAddSchemaAction = async (opts?: {
         message: `Enter a friendly name for the new schema.\n${chalk.dim("This will the name by which you refer to this layout in your codebase")}`,
         // initialValue: selectedLayout,
         defaultValue: defaultSchemaName,
-        placeholder: defaultSchemaName,
         validate: (input) => {
           if (input === "") {
             return; // allow empty input for the default value

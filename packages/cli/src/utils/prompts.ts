@@ -15,12 +15,30 @@ import {
   select as inquirerSelect,
 } from "@inquirer/prompts";
 
+const CANCEL_SYMBOL = Symbol.for("@proofkit/new/prompt-cancelled");
+
 export const intro = clackIntro;
-export const isCancel = clackIsCancel;
 export const log = clackLog;
 export const note = clackNote;
 export const outro = clackOutro;
 export const spinner = clackSpinner;
+
+function isPromptCancel(error: unknown) {
+  return error instanceof Error && error.name === "ExitPromptError";
+}
+
+function withCancelSentinel<T>(fn: () => Promise<T>): Promise<T | symbol> {
+  return fn().catch((error: unknown) => {
+    if (isPromptCancel(error)) {
+      return CANCEL_SYMBOL;
+    }
+    throw error;
+  });
+}
+
+export function isCancel(value: unknown): value is symbol {
+  return value === CANCEL_SYMBOL || clackIsCancel(value);
+}
 
 export interface PromptOption<T extends string> {
   value: T;
@@ -72,69 +90,78 @@ export function textPrompt(options: {
   defaultValue?: string;
   validate?: (value: string) => string | undefined;
 }) {
-  return inquirerInput({
-    message: options.message,
-    default: options.defaultValue,
-    validate: normalizeValidate(options.validate),
-  });
+  return withCancelSentinel(() =>
+    inquirerInput({
+      message: options.message,
+      default: options.defaultValue,
+      validate: normalizeValidate(options.validate),
+    }),
+  );
 }
 
 export function passwordPrompt(options: { message: string; validate?: (value: string) => string | undefined }) {
-  return inquirerPassword({
-    message: options.message,
-    validate: normalizeValidate(options.validate),
-  });
+  return withCancelSentinel(() =>
+    inquirerPassword({
+      message: options.message,
+      validate: normalizeValidate(options.validate),
+    }),
+  );
 }
 
 export function confirmPrompt(options: { message: string; initialValue?: boolean }) {
-  return inquirerConfirm({
-    message: options.message,
-    default: options.initialValue,
-  });
+  return withCancelSentinel(() =>
+    inquirerConfirm({
+      message: options.message,
+      default: options.initialValue,
+    }),
+  );
 }
 
 export function selectPrompt<T extends string>(options: { message: string; options: PromptOption<T>[] }) {
-  return inquirerSelect<T>({
-    message: options.message,
-    pageSize: 10,
-    choices: options.options.map((option) => ({
-      value: option.value,
-      name: option.label,
-      description: option.hint,
-      disabled: normalizeDisabledMessage(option.disabled),
-    })),
-  });
-}
-
-export function searchSelectPrompt<T extends string>(options: {
-  message: string;
-  searchLabel?: string;
-  emptyMessage?: string;
-  options: SearchPromptOption<T>[];
-}) {
-  return inquirerSearch<T>({
-    message: options.message,
-    pageSize: 10,
-    source: (input) => {
-      const filtered = filterSearchOptions(options.options, input);
-      if (filtered.length === 0) {
-        return [
-          {
-            value: "__no_matches__" as T,
-            name: options.emptyMessage ?? "No matches found. Keep typing to refine your search.",
-            disabled: options.emptyMessage ?? "No matches found",
-          },
-        ];
-      }
-
-      return filtered.map((option) => ({
+  return withCancelSentinel(() =>
+    inquirerSelect<T>({
+      message: options.message,
+      pageSize: 10,
+      choices: options.options.map((option) => ({
         value: option.value,
         name: option.label,
         description: option.hint,
         disabled: normalizeDisabledMessage(option.disabled),
-      }));
-    },
-  });
+      })),
+    }),
+  );
+}
+
+export function searchSelectPrompt<T extends string>(options: {
+  message: string;
+  emptyMessage?: string;
+  options: SearchPromptOption<T>[];
+}) {
+  return withCancelSentinel(() =>
+    inquirerSearch<T>({
+      message: options.message,
+      pageSize: 10,
+      source: (input) => {
+        const filtered = filterSearchOptions(options.options, input);
+        if (filtered.length === 0) {
+          return [
+            {
+              value: "__no_matches__" as T,
+              name: options.emptyMessage ?? "No matches found. Keep typing to refine your search.",
+              disabled: options.emptyMessage ?? "No matches found",
+            },
+          ];
+        }
+
+        return filtered.map((option) => ({
+          value: option.value,
+          name: option.label,
+          description: option.hint,
+          disabled: normalizeDisabledMessage(option.disabled),
+        }));
+      },
+    }),
+  );
 }
 
 export function multiSearchSelectPrompt<T extends string>(options: {
@@ -142,15 +169,17 @@ export function multiSearchSelectPrompt<T extends string>(options: {
   options: SearchPromptOption<T>[];
   required?: boolean;
 }) {
-  return inquirerCheckbox<T>({
-    message: options.message,
-    pageSize: 10,
-    required: options.required,
-    choices: options.options.map((option) => ({
-      value: option.value,
-      name: option.label,
-      description: option.hint,
-      disabled: normalizeDisabledMessage(option.disabled),
-    })),
-  });
+  return withCancelSentinel(() =>
+    inquirerCheckbox<T>({
+      message: options.message,
+      pageSize: 10,
+      required: options.required,
+      choices: options.options.map((option) => ({
+        value: option.value,
+        name: option.label,
+        description: option.hint,
+        disabled: normalizeDisabledMessage(option.disabled),
+      })),
+    }),
+  );
 }

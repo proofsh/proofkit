@@ -71,8 +71,6 @@ export async function ensureWebViewerAddonInstalled() {
         await p.confirm({
           message: "I have followed the above instructions, continue installing",
           initialValue: true,
-          active: "Continue",
-          inactive: "Abort",
         }),
       );
 

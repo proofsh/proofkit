@@ -20,6 +20,16 @@ function createEnvFileContent() {
   return ["# When adding additional environment variables, update the schema alongside this file.", ""].join("\n");
 }
 
+const sharedUiDependencies = {
+  "@radix-ui/react-slot": "^1.2.3",
+  "class-variance-authority": "^0.7.1",
+  clsx: "^2.1.1",
+  "lucide-react": "^0.577.0",
+  "tailwind-merge": "^3.5.0",
+  tailwindcss: "^4.1.10",
+  "tw-animate-css": "^1.4.0",
+} satisfies Record<string, string>;
+
 export function planInit(
   request: InitRequest,
   options: { templateDir: string; packageManagerVersion?: string },
@@ -46,29 +56,17 @@ export function planInit(
   };
 
   if (request.appType === "browser") {
-    packageJson.dependencies["@radix-ui/react-slot"] = "^1.2.3";
+    Object.assign(packageJson.dependencies, sharedUiDependencies);
     packageJson.dependencies["@tailwindcss/postcss"] = "^4.1.10";
-    packageJson.dependencies["class-variance-authority"] = "^0.7.1";
-    packageJson.dependencies.clsx = "^2.1.1";
-    packageJson.dependencies["lucide-react"] = "^0.577.0";
     packageJson.dependencies["next-themes"] = "^0.4.6";
-    packageJson.dependencies["tailwind-merge"] = "^3.5.0";
-    packageJson.dependencies.tailwindcss = "^4.1.10";
-    packageJson.dependencies["tw-animate-css"] = "^1.4.0";
   }
 
   if (request.appType === "webviewer") {
+    Object.assign(packageJson.dependencies, sharedUiDependencies);
     packageJson.dependencies["@proofkit/fmdapi"] = releaseTag;
     packageJson.dependencies["@proofkit/webviewer"] = releaseTag;
     packageJson.dependencies["@tanstack/react-query"] = "^5.90.21";
     packageJson.dependencies["@tanstack/react-router"] = "^1.167.4";
-    packageJson.dependencies["@radix-ui/react-slot"] = "^1.2.3";
-    packageJson.dependencies["class-variance-authority"] = "^0.7.1";
-    packageJson.dependencies.clsx = "^2.1.1";
-    packageJson.dependencies["lucide-react"] = "^0.577.0";
-    packageJson.dependencies["tailwind-merge"] = "^3.5.0";
-    packageJson.dependencies.tailwindcss = "^4.1.10";
-    packageJson.dependencies["tw-animate-css"] = "^1.4.0";
     packageJson.dependencies.zod = "^4";
     packageJson.devDependencies["@proofkit/typegen"] = releaseTag;
     packageJson.devDependencies["@tailwindcss/vite"] = "^4.2.1";

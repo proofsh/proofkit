@@ -16,5 +16,5 @@ export function detectUserPackageManager(): PackageManager {
     return "npm";
   }
 
-  return "pnpm";
+  return "npm";
 }

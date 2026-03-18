@@ -32,7 +32,6 @@ export interface PromptService {
   }) => Promise<T>;
   readonly searchSelect: <T extends string>(options: {
     message: string;
-    searchLabel?: string;
     emptyMessage?: string;
     options: Array<{ value: T; label: string; hint?: string; keywords?: string[]; disabled?: boolean | string }>;
   }) => Promise<T>;

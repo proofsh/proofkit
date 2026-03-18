@@ -78,29 +78,38 @@ async function resolveHostedFileMakerInputs({
 
   const { normalizedUrl, versions } = await fileMakerService.validateHostedServerUrl(rawServer);
   const hostedUrl = new URL(normalizedUrl);
-
-  if (!(flags.adminApiKey || (versions.ottoVersion && compareSemver(versions.ottoVersion, "4.7.0") >= 0))) {
-    throw new Error(
-      "OttoFMS 4.7.0 or later is required to auto-login. Upgrade OttoFMS or pass --admin-api-key for hosted setup.",
-    );
-  }
-
-  const token = flags.adminApiKey ?? (await fileMakerService.getOttoFMSToken({ url: hostedUrl })).token;
-  const files = await fileMakerService.listFiles({ url: hostedUrl, token });
   const demoFileName = "ProofKitDemo.fmp12";
 
-  if (files.length === 0) {
-    throw new Error(`No hosted FileMaker files were found on ${hostedUrl.origin}.`);
+  let selectedFile = flags.fileName;
+  let dataApiKey = flags.dataApiKey;
+  let layoutName = flags.layoutName;
+  let schemaName = flags.schemaName;
+  let token: string | undefined;
+  let files: Awaited<ReturnType<FileMakerService["listFiles"]>> = [];
+  const requireHostedToken = () => {
+    if (!token) {
+      throw new Error("OttoFMS authentication is required for hosted setup.");
+    }
+    return token;
+  };
+
+  if (!(selectedFile && dataApiKey)) {
+    if (!(flags.adminApiKey || (versions.ottoVersion && compareSemver(versions.ottoVersion, "4.7.0") >= 0))) {
+      throw new Error(
+        "OttoFMS 4.7.0 or later is required to auto-login. Upgrade OttoFMS or pass --admin-api-key for hosted setup.",
+      );
+    }
+    token = flags.adminApiKey ?? (await fileMakerService.getOttoFMSToken({ url: hostedUrl })).token;
   }
 
-  let selectedFile = flags.fileName;
   if (!selectedFile) {
     if (nonInteractive) {
       throw new Error("Missing required FileMaker inputs in non-interactive mode: --file-name, --data-api-key.");
     }
+
+    files = await fileMakerService.listFiles({ url: hostedUrl, token: requireHostedToken() });
     selectedFile = await prompt.searchSelect({
       message: "Which file would you like to connect to?",
-      searchLabel: "Search files",
       options: [
         {
           value: "$deploy-demo",
@@ -121,11 +130,14 @@ async function resolveHostedFileMakerInputs({
     });
   }
 
-  let dataApiKey = flags.dataApiKey;
-  let layoutName = flags.layoutName;
-  let schemaName = flags.schemaName;
+  if (!selectedFile) {
+    throw new Error("No FileMaker file was selected.");
+  }
 
   if (selectedFile === "$deploy-demo") {
+    if (files.length === 0) {
+      files = await fileMakerService.listFiles({ url: hostedUrl, token: requireHostedToken() });
+    }
     const demoExists = files.some((file) => file.filename === demoFileName);
     const replaceDemo =
       demoExists && !nonInteractive
@@ -136,7 +148,7 @@ async function resolveHostedFileMakerInputs({
         : demoExists;
     const deployed = await fileMakerService.deployDemoFile({
       url: hostedUrl,
-      token,
+      token: requireHostedToken(),
       operation: replaceDemo ? "replace" : "install",
     });
     selectedFile = deployed.filename;
@@ -145,16 +157,12 @@ async function resolveHostedFileMakerInputs({
     schemaName ??= "Contacts";
   }
 
-  if (!selectedFile) {
-    throw new Error("No FileMaker file was selected.");
+  if (!dataApiKey && nonInteractive) {
+    throw new Error("Missing required FileMaker inputs in non-interactive mode: --data-api-key.");
   }
 
   if (!dataApiKey) {
-    if (nonInteractive) {
-      throw new Error("Missing required FileMaker inputs in non-interactive mode: --data-api-key.");
-    }
-
-    const apiKeys = (await fileMakerService.listAPIKeys({ url: hostedUrl, token })).filter(
+    const apiKeys = (await fileMakerService.listAPIKeys({ url: hostedUrl, token: requireHostedToken() })).filter(
       (apiKey) => apiKey.database === selectedFile,
     );
 
@@ -163,7 +171,6 @@ async function resolveHostedFileMakerInputs({
         ? "create"
         : await prompt.searchSelect({
             message: "Which OttoFMS Data API key would you like to use?",
-            searchLabel: "Search API keys",
             options: [
               ...apiKeys.map((apiKey) => ({
                 value: apiKey.key,
@@ -202,6 +209,10 @@ async function resolveHostedFileMakerInputs({
     }
   }
 
+  if (!dataApiKey) {
+    throw new Error("No FileMaker Data API key was selected.");
+  }
+
   const layouts = await fileMakerService.listLayouts({
     dataApiKey,
     fmFile: selectedFile,
@@ -221,7 +232,6 @@ async function resolveHostedFileMakerInputs({
     if (shouldConfigureLayout) {
       layoutName = await prompt.searchSelect({
         message: "Select a layout to read data from",
-        searchLabel: "Search layouts",
         options: layouts.map((layout) => ({
           value: layout,
           label: layout,
@@ -382,11 +392,15 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       ).pipe(Effect.map((value) => value as AppType));
     }
 
+    const hasExplicitFileMakerInputs = Boolean(
+      flags.server || flags.adminApiKey || flags.dataApiKey || flags.fileName || flags.layoutName || flags.schemaName,
+    );
+
     let dataSource: DataSourceType = "none";
     if (flags.dataSource) {
       dataSource = flags.dataSource;
     } else if (appType === "webviewer") {
-      dataSource = nonInteractive && !flags.server ? "none" : "filemaker";
+      dataSource = hasExplicitFileMakerInputs || !(nonInteractive && !flags.server) ? "filemaker" : "none";
     }
 
     if (!(nonInteractive || flags.dataSource) && appType !== "webviewer") {

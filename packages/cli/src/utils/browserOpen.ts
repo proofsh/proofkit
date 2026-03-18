@@ -1,6 +1,6 @@
 import open from "open";
 
-export async function openBrowser(url: string) {
+export async function openBrowser(url: string): Promise<void> {
   try {
     await open(url);
   } catch {
@@ -8,4 +8,4 @@ export async function openBrowser(url: string) {
   }
 }
 
-export const openExternal = openBrowser;
+export const openExternal: (url: string) => Promise<void> = openBrowser;

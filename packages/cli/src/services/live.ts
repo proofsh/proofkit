@@ -65,7 +65,7 @@ interface LayoutFolder {
 
 function transformLayoutList(layouts: LayoutFolder[]): string[] {
   const flatten = (layout: LayoutFolder): string[] => {
-    if ("isFolder" in layout) {
+    if (layout.isFolder === true) {
       const folderLayouts = Array.isArray(layout.folderLayoutNames) ? layout.folderLayoutNames : [];
       return folderLayouts.flatMap((item) => flatten(item));
     }
@@ -103,7 +103,6 @@ const promptService = {
     ) as T,
   searchSelect: async <T extends string>(options: {
     message: string;
-    searchLabel?: string;
     emptyMessage?: string;
     options: Array<{ value: T; label: string; hint?: string; keywords?: string[]; disabled?: boolean | string }>;
   }) => unwrap(await searchSelectPrompt(options)) as T,
@@ -317,15 +316,15 @@ const fileMakerService = {
     let ottoVersion: string | null = null;
     const otto4Response = await getJson<{ response?: { Otto?: { version?: string } } }>(
       new URL("/otto/api/info", normalizedUrl).toString(),
-    );
-    ottoVersion = otto4Response.data?.response?.Otto?.version ?? null;
+    ).catch(() => undefined);
+    ottoVersion = otto4Response?.data?.response?.Otto?.version ?? null;
 
     if (!ottoVersion) {
       const otto3Url = new URL(normalizedUrl);
       otto3Url.port = ottoPort ? String(ottoPort) : "3030";
       otto3Url.pathname = "/api/otto/info";
-      const otto3Response = await getJson<{ Otto?: { version?: string } }>(otto3Url.toString());
-      ottoVersion = otto3Response.data?.Otto?.version ?? null;
+      const otto3Response = await getJson<{ Otto?: { version?: string } }>(otto3Url.toString()).catch(() => undefined);
+      ottoVersion = otto3Response?.data?.Otto?.version ?? null;
     }
 
     return {
@@ -504,7 +503,9 @@ const fileMakerService = {
       throw new Error("No deployment ID was returned when deploying the demo file.");
     }
 
-    while (true) {
+    const deploymentDeadline = Date.now() + 300_000;
+    let deploymentCompleted = false;
+    while (Date.now() < deploymentDeadline) {
       await new Promise((resolve) => setTimeout(resolve, 2500));
       const status = await fileMakerService.getDeploymentStatus({
         url,
@@ -517,8 +518,14 @@ const fileMakerService = {
           spin.stop("Demo deployment failed");
           throw new Error("ProofKit Demo deployment did not complete successfully.");
         }
+        deploymentCompleted = true;
         break;
       }
+    }
+
+    if (!deploymentCompleted) {
+      spin.stop("Demo deployment timed out");
+      throw new Error("ProofKit Demo deployment timed out after 5 minutes.");
     }
 
     const apiKey = await fileMakerService.createDataAPIKeyWithCredentials({

@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { planInit } from "~/core/planInit.js";
 import { makeInitRequest } from "./init-fixtures.js";
@@ -9,7 +10,7 @@ describe("planInit", () => {
       packageManagerVersion: "10.0.0",
     });
 
-    expect(plan.targetDir).toBe("/tmp/workspace/demo-app");
+    expect(plan.targetDir).toBe(path.resolve("/tmp/workspace", "demo-app"));
     expect(plan.templateDir).toBe("/templates/browser");
     expect(plan.packageJson.name).toBe("demo-app");
     expect(plan.settings.appType).toBe("browser");
