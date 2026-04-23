@@ -34,6 +34,12 @@ const result = await db.from(users).list().execute({
 });
 ```
 
+Use `ROWID` to hydrate a record when a webhook payload only gives you system columns:
+
+```typescript
+const result = await db.from(users).get({ ROWID: 2 }).execute();
+```
+
 <Callout type="warning">
 Special columns are only included when no `$select` query is applied (per OData specification). When using `.select()`, special columns are excluded even if `includeSpecialColumns` is enabled.
 </Callout>

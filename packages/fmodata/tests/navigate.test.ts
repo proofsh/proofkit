@@ -90,6 +90,13 @@ describe("navigate", () => {
     );
   });
 
+  it("should support navigation from ROWID record locators", () => {
+    const db = client.database("test_db");
+    const queryBuilder = db.from(contacts).get({ ROWID: 2 }).navigate(users);
+
+    expect(queryBuilder.select({ name: users.name }).getQueryString()).toBe("/contacts(ROWID=2)/users?$select=name");
+  });
+
   it("should navigate w/o needing to get a record first", () => {
     const db = client.database("test_db");
     const queryBuilder = db.from(contacts).navigate(users).list();

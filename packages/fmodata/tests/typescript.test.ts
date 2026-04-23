@@ -60,9 +60,12 @@ describe("fmodata", () => {
     it("should support get() for single record retrieval", () => {
       const table = db.from(contacts);
       const getBuilder = table.get("my-uuid");
+      const rowIdBuilder = table.get({ ROWID: 2 });
 
       expect(getBuilder).toBeDefined();
       expect(getBuilder.getRequestConfig).toBeDefined();
+      expect(rowIdBuilder).toBeDefined();
+      expect(rowIdBuilder.getRequestConfig).toBeDefined();
     });
 
     it("should support getSingleField() API", () => {

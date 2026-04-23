@@ -21,6 +21,7 @@ import {
   extractAffectedRows,
   mergeMutationExecuteOptions,
   mergePreferHeaderValues,
+  type RecordLocator,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
 import { parseErrorResponse } from "./error-parser";
@@ -67,7 +68,21 @@ export class UpdateBuilder<
       layer: this.layer,
       data: this.data,
       mode: "byId",
-      recordId: id,
+      recordLocator: id,
+      returnPreference: this.returnPreference,
+    });
+  }
+
+  /**
+   * Update a single record by ROWID
+   */
+  byRowId(rowId: number): ExecutableUpdateBuilder<Occ, true, ReturnPreference> {
+    return new ExecutableUpdateBuilder<Occ, true, ReturnPreference>({
+      occurrence: this.table,
+      layer: this.layer,
+      data: this.data,
+      mode: "byId",
+      recordLocator: { ROWID: rowId },
       returnPreference: this.returnPreference,
     });
   }
@@ -121,7 +136,7 @@ export class ExecutableUpdateBuilder<
   private readonly table: Occ;
   private readonly data: Partial<InferSchemaOutputFromFMTable<Occ>>;
   private readonly mode: "byId" | "byFilter";
-  private readonly recordId?: string | number;
+  private readonly recordLocator?: RecordLocator;
   private readonly queryBuilder?: QueryBuilder<Occ>;
   private readonly returnPreference: ReturnPreference;
   private readonly layer: FMODataLayer;
@@ -132,7 +147,7 @@ export class ExecutableUpdateBuilder<
     layer: FMODataLayer;
     data: Partial<InferSchemaOutputFromFMTable<Occ>>;
     mode: "byId" | "byFilter";
-    recordId?: string | number;
+    recordLocator?: RecordLocator;
     queryBuilder?: QueryBuilder<Occ>;
     returnPreference: ReturnPreference;
   }) {
@@ -140,7 +155,7 @@ export class ExecutableUpdateBuilder<
     this.layer = config.layer;
     this.data = config.data;
     this.mode = config.mode;
-    this.recordId = config.recordId;
+    this.recordLocator = config.recordLocator;
     this.queryBuilder = config.queryBuilder;
     this.returnPreference = config.returnPreference;
     const runtime = createClientRuntime(this.layer);
@@ -175,7 +190,7 @@ export class ExecutableUpdateBuilder<
       tableId,
       tableName: getTableName(this.table),
       mode: this.mode,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
       queryBuilder: this.queryBuilder,
       useEntityIds: shouldUseIds,
       builderName: "ExecutableUpdateBuilder",
@@ -258,7 +273,7 @@ export class ExecutableUpdateBuilder<
       tableId,
       tableName: getTableName(this.table),
       mode: this.mode,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
       queryBuilder: this.queryBuilder,
       useEntityIds: this.config.useEntityIds,
       builderName: "ExecutableUpdateBuilder",

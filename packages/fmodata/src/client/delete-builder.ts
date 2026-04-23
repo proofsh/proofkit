@@ -9,6 +9,7 @@ import {
   buildMutationUrl,
   extractAffectedRows,
   mergeMutationExecuteOptions,
+  type RecordLocator,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
 import { parseErrorResponse } from "./error-parser";
@@ -43,7 +44,19 @@ export class DeleteBuilder<Occ extends FMTable<any, any>> {
       occurrence: this.table,
       layer: this.layer,
       mode: "byId",
-      recordId: id,
+      recordLocator: id,
+    });
+  }
+
+  /**
+   * Delete a single record by ROWID
+   */
+  byRowId(rowId: number): ExecutableDeleteBuilder<Occ> {
+    return new ExecutableDeleteBuilder<Occ>({
+      occurrence: this.table,
+      layer: this.layer,
+      mode: "byId",
+      recordLocator: { ROWID: rowId },
     });
   }
 
@@ -80,7 +93,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
 {
   private readonly table: Occ;
   private readonly mode: "byId" | "byFilter";
-  private readonly recordId?: string | number;
+  private readonly recordLocator?: RecordLocator;
   private readonly queryBuilder?: QueryBuilder<Occ>;
   private readonly layer: FMODataLayer;
   private readonly config: ODataConfig;
@@ -89,13 +102,13 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
     occurrence: Occ;
     layer: FMODataLayer;
     mode: "byId" | "byFilter";
-    recordId?: string | number;
+    recordLocator?: RecordLocator;
     queryBuilder?: QueryBuilder<Occ>;
   }) {
     this.table = config.occurrence;
     this.layer = config.layer;
     this.mode = config.mode;
-    this.recordId = config.recordId;
+    this.recordLocator = config.recordLocator;
     this.queryBuilder = config.queryBuilder;
     this.config = createClientRuntime(this.layer).config;
   }
@@ -115,7 +128,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       tableId,
       tableName: getTableName(this.table),
       mode: this.mode,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
       queryBuilder: this.queryBuilder,
       useEntityIds,
       builderName: "ExecutableDeleteBuilder",
@@ -145,7 +158,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       tableId,
       tableName: getTableName(this.table),
       mode: this.mode,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
       queryBuilder: this.queryBuilder,
       useEntityIds: this.config.useEntityIds,
       builderName: "ExecutableDeleteBuilder",

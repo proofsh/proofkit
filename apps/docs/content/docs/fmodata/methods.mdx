@@ -14,6 +14,7 @@ Quick reference for all available methods and operators in `@proofkit/fmodata`.
 | `list()` | Retrieve multiple records | `db.from(users).list().execute()` |
 | `count()` | Count records without fetching rows | `db.from(users).count().where(eq(users.active, true)).execute()` |
 | `get(id)` | Get a single record by ID | `db.from(users).get("user-123").execute()` |
+| `get({ ROWID })` | Get a single record by FileMaker `ROWID` | `db.from(users).get({ ROWID: 2 }).execute()` |
 | `getSingleField(column)` | Get a single field value | `db.from(users).get("user-123").getSingleField(users.email).execute()` |
 | `single()` | Ensure exactly one record | `db.from(users).list().where(eq(...)).single().execute()` |
 | `maybeSingle()` | Get at most one record (returns null if none) | `db.from(users).list().where(eq(...)).maybeSingle().execute()` |
@@ -25,6 +26,7 @@ Quick reference for all available methods and operators in `@proofkit/fmodata`.
 | `insert(data)` | Insert a new record | `db.from(users).insert({ username: "john" }).execute()` |
 | `update(data)` | Update records | `db.from(users).update({ active: true }).byId("user-123").execute()` |
 | `delete()` | Delete records | `db.from(users).delete().byId("user-123").execute()` |
+| `byRowId(rowId)` | Target a single record by FileMaker `ROWID` | `db.from(users).update({ active: true }).byRowId(2).execute()` |
 
 ## Query Modifiers
 

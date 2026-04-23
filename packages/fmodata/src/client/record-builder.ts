@@ -31,6 +31,7 @@ import {
   processSelectWithRenames,
   resolveTableId,
 } from "./builders/index";
+import { buildRecordPath, type RecordLocator } from "./builders/mutation-helpers";
 import { parseErrorResponse } from "./error-parser";
 import type { ResolveExpandedRelations, SystemColumnsFromOption, SystemColumnsOption } from "./query/types";
 import { QueryBuilder } from "./query-builder";
@@ -189,7 +190,7 @@ export class RecordBuilder<
     ExecutableBuilder<ExecutableRecordBuilderReturn<Occ, IsSingleField, FieldColumn, Selected, Expands, SystemCols>>
 {
   private readonly table: Occ;
-  private readonly recordId: string | number;
+  private readonly recordLocator: RecordLocator;
   private readonly operation?: "getSingleField" | "navigate";
   private readonly operationParam?: string;
   // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
@@ -250,10 +251,10 @@ export class RecordBuilder<
   constructor(config: {
     occurrence: Occ;
     layer: FMODataLayer;
-    recordId: string | number;
+    recordLocator: RecordLocator;
   }) {
     this.table = config.occurrence;
-    this.recordId = config.recordId;
+    this.recordLocator = config.recordLocator;
     const runtime = createClientRuntime(config.layer);
     this.layer = runtime.layer;
     this.config = runtime.config;
@@ -312,7 +313,7 @@ export class RecordBuilder<
     >({
       occurrence: this.table,
       layer: this.layer,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
     });
     // Use type assertion to allow assignment to readonly properties on new instance
 
@@ -364,7 +365,7 @@ export class RecordBuilder<
     >({
       occurrence: this.table,
       layer: this.layer,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
     });
     // Use type assertion to allow assignment to readonly properties on new instance
 
@@ -508,7 +509,7 @@ export class RecordBuilder<
     const newBuilder = new RecordBuilder<Occ, false, FieldColumn, Selected, any, DatabaseIncludeSpecialColumns>({
       occurrence: this.table,
       layer: this.layer,
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
     });
 
     // Use type assertion to allow assignment to readonly properties on new instance
@@ -620,7 +621,7 @@ export class RecordBuilder<
 
     // biome-ignore lint/suspicious/noExplicitAny: Mutation of readonly properties for builder pattern
     (builder as any).navigation = {
-      recordId: this.recordId,
+      recordLocator: this.recordLocator,
       relation: relationName,
       relationEntityId,
       sourceTableName,
@@ -649,6 +650,21 @@ export class RecordBuilder<
       logger: this.logger,
       includeSpecialColumns: finalIncludeSpecialColumns,
     });
+  }
+
+  private buildRecordResourcePath(useEntityIds: boolean): string {
+    if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
+      const sourceSegment = useEntityIds
+        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
+        : this.navigateSourceTableName;
+      const relationSegment = useEntityIds
+        ? (this.navigateRelationEntityId ?? this.navigateRelation)
+        : this.navigateRelation;
+      return `/${buildRecordPath(`${sourceSegment}/${relationSegment}`, this.recordLocator)}`;
+    }
+
+    const tableId = this.getTableId(useEntityIds);
+    return `/${buildRecordPath(tableId, this.recordLocator)}`;
   }
 
   execute<EO extends ExecuteOptions>(
@@ -682,23 +698,9 @@ export class RecordBuilder<
     >
   > {
     const mergedOptions = this.mergeExecuteOptions(options);
-    let url: string;
-
-    // Build the base URL depending on whether this came from a navigated EntitySet
-    if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
-      const sourceSegment = mergedOptions.useEntityIds
-        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
-        : this.navigateSourceTableName;
-      const relationSegment = mergedOptions.useEntityIds
-        ? (this.navigateRelationEntityId ?? this.navigateRelation)
-        : this.navigateRelation;
-      // From navigated EntitySet: /sourceTable/relation('recordId')
-      url = `/${this.config.databaseName}/${sourceSegment}/${relationSegment}('${this.recordId}')`;
-    } else {
-      // Normal record: /tableName('recordId') - use FMTID if configured
-      const tableId = this.getTableId(mergedOptions.useEntityIds);
-      url = `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
-    }
+    let url = `/${this.config.databaseName}${this.buildRecordResourcePath(
+      mergedOptions.useEntityIds ?? this.config.useEntityIds,
+    )}`;
 
     if (this.operation === "getSingleField" && this.operationColumn) {
       url += `/${this.operationColumn.getFieldIdentifier(mergedOptions.useEntityIds)}`;
@@ -758,23 +760,7 @@ export class RecordBuilder<
 
   // biome-ignore lint/suspicious/noExplicitAny: Request body can be any JSON-serializable value
   getRequestConfig(): { method: string; url: string; body?: any } {
-    let url: string;
-
-    // Build the base URL depending on whether this came from a navigated EntitySet
-    if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
-      const sourceSegment = this.config.useEntityIds
-        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
-        : this.navigateSourceTableName;
-      const relationSegment = this.config.useEntityIds
-        ? (this.navigateRelationEntityId ?? this.navigateRelation)
-        : this.navigateRelation;
-      // From navigated EntitySet: /sourceTable/relation('recordId')
-      url = `/${this.config.databaseName}/${sourceSegment}/${relationSegment}('${this.recordId}')`;
-    } else {
-      // For batch operations, use database-level setting (no per-request override available here)
-      const tableId = this.getTableId(this.config.useEntityIds);
-      url = `/${this.config.databaseName}/${tableId}('${this.recordId}')`;
-    }
+    let url = `/${this.config.databaseName}${this.buildRecordResourcePath(this.config.useEntityIds)}`;
 
     if (this.operation === "getSingleField" && this.operationColumn) {
       // Use the column's getFieldIdentifier to support entity IDs
@@ -799,22 +785,7 @@ export class RecordBuilder<
    */
   getQueryString(options?: { useEntityIds?: boolean }): string {
     const useEntityIds = options?.useEntityIds ?? this.config.useEntityIds;
-    let path: string;
-
-    // Build the path depending on navigation context
-    if (this.isNavigateFromEntitySet && this.navigateSourceTableName && this.navigateRelation) {
-      const sourceSegment = useEntityIds
-        ? (this.navigateSourceTableEntityId ?? this.navigateSourceTableName)
-        : this.navigateSourceTableName;
-      const relationSegment = useEntityIds
-        ? (this.navigateRelationEntityId ?? this.navigateRelation)
-        : this.navigateRelation;
-      path = `/${sourceSegment}/${relationSegment}('${this.recordId}')`;
-    } else {
-      // Use getTableId to respect entity ID settings (same as getRequestConfig)
-      const tableId = this.getTableId(useEntityIds);
-      path = `/${tableId}('${this.recordId}')`;
-    }
+    const path = this.buildRecordResourcePath(useEntityIds);
 
     if (this.operation === "getSingleField" && this.operationColumn) {
       return `${path}/${this.operationColumn.getFieldIdentifier(useEntityIds)}`;

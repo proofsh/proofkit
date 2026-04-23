@@ -1,5 +1,6 @@
 import {
   buildMutationUrl,
+  buildRecordLocatorSegment,
   extractAffectedRows,
   parseRowIdFromLocationHeader,
   stripTablePathPrefix,
@@ -14,11 +15,28 @@ describe("mutation helpers", () => {
       tableId: "users",
       tableName: "users",
       mode: "byId",
-      recordId: "abc-123",
+      recordLocator: "abc-123",
       builderName: "TestBuilder",
     });
 
     expect(url).toBe("/test_db/users('abc-123')");
+  });
+
+  it("builds byId mutation URLs with ROWID locator", () => {
+    const url = buildMutationUrl({
+      databaseName: "test_db",
+      tableId: "users",
+      tableName: "users",
+      mode: "byId",
+      recordLocator: { ROWID: 2 },
+      builderName: "TestBuilder",
+    });
+
+    expect(url).toBe("/test_db/users(ROWID=2)");
+  });
+
+  it("escapes string record locators for OData", () => {
+    expect(buildRecordLocatorSegment("abc'def")).toBe("('abc''def')");
   });
 
   it("builds byFilter mutation URLs and rewrites table prefix", () => {

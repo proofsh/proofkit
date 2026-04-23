@@ -165,6 +165,13 @@ describe("RecordBuilder Select/Expand", () => {
       expect(queryString).not.toContain("$select=");
     });
 
+    it("should support ROWID locators in get()", () => {
+      const queryString = db.from(contacts).get({ ROWID: 2 }).getQueryString();
+
+      expect(queryString).toBe("/contacts(ROWID=2)");
+      expect(queryString).not.toContain("$select=");
+    });
+
     it("should override defaultSelect when explicit select() is called", () => {
       const queryString = db
         .from(contactsWithSchemaSelect)

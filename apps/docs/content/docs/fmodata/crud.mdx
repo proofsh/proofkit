@@ -64,6 +64,13 @@ if (result.data) {
   console.log(`Updated ${result.data.updatedCount} record(s)`);
 }
 
+// Update by ROWID
+const byRowId = await db
+  .from(users)
+  .update({ username: "newname" })
+  .byRowId(2)
+  .execute();
+
 // Update by filter (using ORM API)
 import { lt, and, eq } from "@proofkit/fmodata";
 
@@ -85,6 +92,10 @@ const result = await db
 All fields are optional for updates (except read-only fields which are automatically excluded). TypeScript will enforce that you can only update fields that aren't marked as read-only.
 </Callout>
 
+<Callout type="info">
+For webhook hydrate flows, use `db.from(table).get({ ROWID })` when you only have FileMaker `ROWID` metadata.
+</Callout>
+
 ## Delete
 
 Delete records by ID or filter:
@@ -96,6 +107,9 @@ const result = await db.from(users).delete().byId("user-123").execute();
 if (result.data) {
   console.log(`Deleted ${result.data.deletedCount} record(s)`);
 }
+
+// Delete by ROWID
+const byRowId = await db.from(users).delete().byRowId(2).execute();
 
 // Delete by filter (using ORM API)
 import { eq, and, lt } from "@proofkit/fmodata";

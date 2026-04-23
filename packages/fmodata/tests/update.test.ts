@@ -153,6 +153,14 @@ describe("insert and update methods", () => {
       expect(result).toBeInstanceOf(ExecutableUpdateBuilder);
     });
 
+    it("should return ExecutableUpdateBuilder after byRowId()", () => {
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
+
+      const result = db.from(users).update({ username: "newname" }).byRowId(2);
+      expect(result).toBeInstanceOf(ExecutableUpdateBuilder);
+    });
+
     it("should return ExecutableUpdateBuilder after where()", () => {
       const mock = new MockFMServerConnection();
       const db = mock.database("test_db");
@@ -186,6 +194,18 @@ describe("insert and update methods", () => {
 
       // Type check: execute should return Result<{ updatedCount: number }>
       expectTypeOf(updateBuilder.execute).returns.resolves.toEqualTypeOf<Result<{ updatedCount: number }>>();
+    });
+
+    it("should generate correct URL for update by ROWID", () => {
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
+
+      const updateBuilder = db.from(users).update({ username: "newname" }).byRowId(2);
+      const config = updateBuilder.getRequestConfig();
+
+      expect(config.method).toBe("PATCH");
+      expect(config.url).toBe("/test_db/users(ROWID=2)");
+      expect(config.body).toBe(JSON.stringify({ username: "newname" }));
     });
 
     it("should execute update by ID and return count", async () => {

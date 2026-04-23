@@ -133,6 +133,9 @@ if (result.data) {
 // Get single record by ID
 const one = await db.from(contacts).get("abc-123").execute();
 
+// Get single record by FileMaker ROWID
+const byRowId = await db.from(contacts).get({ ROWID: 2 }).execute();
+
 // single() -- error if != 1 result; maybeSingle() -- null if 0, error if > 1
 const exact = await db
   .from(contacts)
@@ -175,6 +178,13 @@ const updated = await db
   .byId("abc-123")
   .execute();
 
+// Update by ROWID
+const updatedByRowId = await db
+  .from(contacts)
+  .update({ phone: "+1-555-0100" })
+  .byRowId(2)
+  .execute();
+
 // Update by filter
 const bulk = await db
   .from(contacts)
@@ -184,6 +194,9 @@ const bulk = await db
 
 // Delete by ID
 const deleted = await db.from(contacts).delete().byId("abc-123").execute();
+
+// Delete by ROWID
+const deletedByRowId = await db.from(contacts).delete().byRowId(2).execute();
 
 // Delete by filter
 const bulkDel = await db
@@ -231,6 +244,13 @@ Define `navigationPaths` on table occurrences, then use `navigate()` or `expand(
 const orders = await db
   .from(contacts)
   .get("abc-123")
+  .navigate(invoices)
+  .execute();
+
+// Navigate starting from a ROWID-located record
+const ordersByRowId = await db
+  .from(contacts)
+  .get({ ROWID: 2 })
   .navigate(invoices)
   .execute();
 

@@ -10,8 +10,34 @@ const PAREN_VALUE_REGEX = /\(['"]?([^'"]+)['"]?\)/;
 
 type MutationMode = "byId" | "byFilter";
 
+export interface RowIdRecordLocator {
+  ROWID: number;
+}
+
+export type RecordLocator = string | number | RowIdRecordLocator;
+
 export interface FilterQueryBuilder {
   getQueryString(options?: { useEntityIds?: boolean }): string;
+}
+
+function isRowIdRecordLocator(recordLocator: RecordLocator): recordLocator is RowIdRecordLocator {
+  return typeof recordLocator === "object" && recordLocator !== null && "ROWID" in recordLocator;
+}
+
+function escapeODataStringLiteral(value: string): string {
+  return value.replaceAll("'", "''");
+}
+
+export function buildRecordLocatorSegment(recordLocator: RecordLocator): string {
+  if (isRowIdRecordLocator(recordLocator)) {
+    return `(ROWID=${recordLocator.ROWID})`;
+  }
+
+  return `('${escapeODataStringLiteral(String(recordLocator))}')`;
+}
+
+export function buildRecordPath(pathPrefix: string, recordLocator: RecordLocator): string {
+  return `${pathPrefix}${buildRecordLocatorSegment(recordLocator)}`;
 }
 
 export function mergeMutationExecuteOptions(
@@ -65,18 +91,18 @@ export function buildMutationUrl(config: {
   tableId: string;
   tableName: string;
   mode: MutationMode;
-  recordId?: string | number;
+  recordLocator?: RecordLocator;
   queryBuilder?: FilterQueryBuilder;
   useEntityIds?: boolean;
   builderName: string;
 }): string {
-  const { databaseName, tableId, tableName, mode, recordId, queryBuilder, useEntityIds, builderName } = config;
+  const { databaseName, tableId, tableName, mode, recordLocator, queryBuilder, useEntityIds, builderName } = config;
 
   if (mode === "byId") {
-    if (recordId === undefined || recordId === null || recordId === "") {
-      throw new BuilderInvariantError(builderName, "recordId is required for byId mode");
+    if (recordLocator === undefined || recordLocator === null || recordLocator === "") {
+      throw new BuilderInvariantError(builderName, "recordLocator is required for byId mode");
     }
-    return `/${databaseName}/${tableId}('${recordId}')`;
+    return `/${databaseName}/${buildRecordPath(tableId, recordLocator)}`;
   }
 
   if (!queryBuilder) {

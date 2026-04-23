@@ -49,6 +49,14 @@ describe("delete method", () => {
       expect(result).toBeInstanceOf(ExecutableDeleteBuilder);
     });
 
+    it("should return ExecutableDeleteBuilder after byRowId()", () => {
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
+
+      const result = db.from(usersTO).delete().byRowId(2);
+      expect(result).toBeInstanceOf(ExecutableDeleteBuilder);
+    });
+
     it("should return ExecutableDeleteBuilder after where()", () => {
       const mock = new MockFMServerConnection();
       const db = mock.database("test_db");
@@ -88,6 +96,17 @@ describe("delete method", () => {
       const db = mock.database("test_db");
 
       db.from(usersTO).delete().byId("user-123");
+    });
+
+    it("should generate correct URL for delete by ROWID", () => {
+      const mock = new MockFMServerConnection();
+      const db = mock.database("test_db");
+
+      const deleteBuilder = db.from(usersTO).delete().byRowId(2);
+      const config = deleteBuilder.getRequestConfig();
+
+      expect(config.method).toBe("DELETE");
+      expect(config.url).toBe("/test_db/users(ROWID=2)");
     });
 
     it("should execute delete by ID and return count", async () => {

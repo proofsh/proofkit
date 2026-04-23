@@ -282,6 +282,16 @@ if (result.data) {
 }
 ```
 
+Get a specific record by `ROWID`:
+
+```typescript
+const result = await db.from(users).get({ ROWID: 2 }).execute();
+
+if (result.data) {
+  console.log(result.data.username);
+}
+```
+
 Get a single field value:
 
 ```typescript
@@ -558,6 +568,13 @@ if (result.data) {
   console.log(`Updated ${result.data.updatedCount} record(s)`);
 }
 
+// Update by ROWID
+const byRowId = await db
+  .from(users)
+  .update({ username: "newname" })
+  .byRowId(2)
+  .execute();
+
 // Update by filter (using new ORM API)
 import { lt, and, eq } from "@proofkit/fmodata";
 
@@ -593,6 +610,9 @@ const result = await db.from(users).delete().byId("user-123").execute();
 if (result.data) {
   console.log(`Deleted ${result.data.deletedCount} record(s)`);
 }
+
+// Delete by ROWID
+const byRowId = await db.from(users).delete().byRowId(2).execute();
 
 // Delete by filter (using new ORM API)
 import { eq, and, lt } from "@proofkit/fmodata";
@@ -1496,6 +1516,15 @@ const result = await db.from(users).list().execute({
 const result = await db.from(users).list().execute({
   includeSpecialColumns: false,
 });
+```
+
+Use `ROWID` to hydrate a single record when you only have webhook metadata:
+
+```typescript
+const result = await db
+  .from(users)
+  .get({ ROWID: 2 })
+  .execute();
 ```
 
 **Important:** Special columns are only included when no `$select` query is applied (per OData specification). When using `.select()`, special columns are excluded even if `includeSpecialColumns` is enabled.
