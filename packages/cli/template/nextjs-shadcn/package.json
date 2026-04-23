@@ -7,8 +7,8 @@
     "build": "next build --turbopack",
     "proofkit": "proofkit",
     "start": "next start",
-    "typegen": "npx @proofkit/typegen",
-    "typegen:ui": "npx @proofkit/typegen ui",
+    "typegen": "typegen",
+    "typegen:ui": "typegen ui",
     "lint": "ultracite check .",
     "format": "ultracite fix ."
   },
@@ -27,6 +27,7 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@proofkit/typegen": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
     "@types/react": "^19",

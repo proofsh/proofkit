@@ -184,8 +184,10 @@ describe("Init Non-Interactive Failure Paths", () => {
 
     const packageJson = JSON.parse(readFileSync(join(testDir, projectName, "package.json"), "utf-8")) as {
       scripts?: Record<string, string>;
+      devDependencies?: Record<string, string>;
     };
-    expect(packageJson.scripts?.typegen).toBe("npx @proofkit/typegen");
+    expect(packageJson.scripts?.typegen).toBe("typegen");
+    expect(packageJson.devDependencies?.["@proofkit/typegen"]).toBe("beta");
     expect(output).not.toMatch(typegenCommandPattern);
   });
 });

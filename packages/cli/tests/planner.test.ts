@@ -15,6 +15,7 @@ describe("planInit", () => {
     expect(plan.packageJson.name).toBe("demo-app");
     expect(plan.settings.appType).toBe("browser");
     expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe("beta");
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
     expect(plan.tasks.runInstall).toBe(true);
     expect(plan.tasks.initializeGit).toBe(true);
     expect(plan.tasks.bootstrapFileMaker).toBe(false);
@@ -54,6 +55,7 @@ describe("planInit", () => {
 
     expect(plan.packageJson.dependencies["@proofkit/fmdapi"]).toBe("beta");
     expect(plan.packageJson.dependencies.zod).toBe("^4");
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
   });
 
   it("plans filemaker bootstrap and initial codegen when inputs are explicit", () => {

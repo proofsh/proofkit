@@ -67,6 +67,9 @@ describe("integration scaffold generation", () => {
       scaffoldPackage: "@proofkit/cli",
     });
     expect(packageJson.devDependencies["@proofkit/cli"]).toBe("beta");
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
+    expect(packageJson.scripts.typegen).toBe("typegen");
+    expect(packageJson.scripts["typegen:ui"]).toBe("typegen ui");
     expect(typeof packageJson.proofkitMetadata?.initVersion).toBe("string");
     expect(packageJson.proofkitMetadata?.initVersion).not.toBe("");
     expect(proofkitJson).toMatchObject({
@@ -261,8 +264,9 @@ describe("integration scaffold generation", () => {
     await Effect.runPromise(layer(executeInitPlan(plan)));
 
     const projectDir = path.join(cwd, "filemaker-app");
-    const { proofkitJson, envFile, typegenConfig } = await readScaffoldArtifacts(projectDir);
+    const { packageJson, proofkitJson, envFile, typegenConfig } = await readScaffoldArtifacts(projectDir);
 
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
     expect(proofkitJson.dataSources).toEqual([
       {
         type: "fm",

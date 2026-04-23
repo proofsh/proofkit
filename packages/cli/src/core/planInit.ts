@@ -56,6 +56,7 @@ export function planInit(
   };
 
   if (request.appType === "browser") {
+    packageJson.devDependencies["@proofkit/typegen"] = releaseTag;
     Object.assign(packageJson.dependencies, sharedUiDependencies);
     packageJson.dependencies["@tailwindcss/postcss"] = "^4.1.10";
     packageJson.dependencies["next-themes"] = "^0.4.6";
