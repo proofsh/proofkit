@@ -33,12 +33,16 @@ const connection = new FMServerConnection({
   auth: { username: "admin", password: "secret" },
   // OR with OttoFMS API key:
   // auth: { apiKey: "your-otto-api-key" },
+  // OR with Claris ID for FileMaker Cloud:
+  // auth: { clarisId: { username: "you@claris-id.com", password: "secret" } },
   fetchClientOptions: {
     retries: 2,
     timeout: 30000,
   },
 });
 ```
+
+For FileMaker Cloud, use a Claris ID account, not an external IdP account. MFA-backed Claris ID accounts are not supported.
 
 ### 2. Create a database reference
 

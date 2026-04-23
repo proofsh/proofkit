@@ -106,20 +106,20 @@ describe("Per-request useEntityIds override", () => {
     });
     const db = mock.database("TestDB", { useEntityIds: true });
 
-    // Insert with entity IDs enabled — verify via URL (uses FMTID)
-    // Note: The insert builder sets its own Prefer header ("return=representation")
-    // which overwrites the entity-ids Prefer value. Entity ID usage is verified via URL.
+    // Insert with entity IDs enabled — verify via URL and merged Prefer header
     await db.from(localContactsTO).insert({ name: "Test" }).execute();
 
     const call0 = mock.spy?.calls[0];
     expect(call0?.url).toContain("FMTID:100");
+    expect(call0?.headers?.prefer).toBe("fmodata.entity-ids, return=representation");
 
-    // Insert with entity IDs disabled — URL should use table name
+    // Insert with entity IDs disabled — URL should use table name, Prefer keeps return preference only
     await db.from(localContactsTO).insert({ name: "Test" }).execute({ useEntityIds: false });
 
     const call1 = mock.spy?.calls[1];
     expect(call1?.url).toContain("/contacts");
     expect(call1?.url).not.toContain("FMTID:");
+    expect(call1?.headers?.prefer).toBe("return=representation");
   });
 
   it("should work with update operations", async () => {

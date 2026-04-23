@@ -29,6 +29,12 @@ export function useEnvVarIndicator(index: number) {
   if (envNamesAuth && typeof envNamesAuth === "object") {
     if ("apiKey" in envNamesAuth && envNamesAuth.apiKey && envNamesAuth.apiKey.trim() !== "") {
       authEnvName = envNamesAuth.apiKey;
+    } else if (
+      "clarisIdUsername" in envNamesAuth &&
+      envNamesAuth.clarisIdUsername &&
+      envNamesAuth.clarisIdUsername.trim() !== ""
+    ) {
+      authEnvName = envNamesAuth.clarisIdUsername;
     } else if ("username" in envNamesAuth && envNamesAuth.username && envNamesAuth.username.trim() !== "") {
       authEnvName = envNamesAuth.username;
     }
@@ -47,6 +53,12 @@ export function useEnvVarIndicator(index: number) {
     (envNamesAuth &&
       typeof envNamesAuth === "object" &&
       (("apiKey" in envNamesAuth && envNamesAuth.apiKey && envNamesAuth.apiKey.trim() !== "") ||
+        ("clarisIdUsername" in envNamesAuth &&
+          envNamesAuth.clarisIdUsername &&
+          envNamesAuth.clarisIdUsername.trim() !== "") ||
+        ("clarisIdPassword" in envNamesAuth &&
+          envNamesAuth.clarisIdPassword &&
+          envNamesAuth.clarisIdPassword.trim() !== "") ||
         ("username" in envNamesAuth && envNamesAuth.username && envNamesAuth.username.trim() !== "") ||
         ("password" in envNamesAuth && envNamesAuth.password && envNamesAuth.password.trim() !== "")));
 

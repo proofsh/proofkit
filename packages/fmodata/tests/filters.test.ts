@@ -165,10 +165,9 @@ describe("Filter Tests", () => {
     expect(query2.getQueryString()).toContain(`$filter="id" eq 'John'`);
   });
 
-  it("should quote uppercase ID in filters", () => {
-    const query = db.from(files).list().where(eq(files.ID, "abc"));
-
-    expect(query.getQueryString()).toContain(`$filter="ID" eq 'abc'`);
+  it("should quote uppercase ID fields in filters", () => {
+    const query = db.from(files).list().where(eq(files.ID, "123"));
+    expect(query.getQueryString()).toContain(`$filter="ID" eq '123'`);
   });
 
   it("should support complex nested filters", () => {

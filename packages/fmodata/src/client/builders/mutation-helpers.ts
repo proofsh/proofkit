@@ -17,11 +17,35 @@ export interface FilterQueryBuilder {
 export function mergeMutationExecuteOptions(
   options: (RequestInit & FFetchOptions & ExecuteOptions) | undefined,
   databaseUseEntityIds: boolean,
-): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
+  databaseIncludeSpecialColumns: boolean,
+): RequestInit & FFetchOptions & { useEntityIds?: boolean; includeSpecialColumns?: boolean } {
   return {
     ...options,
     useEntityIds: options?.useEntityIds ?? databaseUseEntityIds,
+    includeSpecialColumns: options?.includeSpecialColumns ?? databaseIncludeSpecialColumns,
   };
+}
+
+export function mergePreferHeaderValues(...values: Array<string | undefined>): string | undefined {
+  const merged: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    if (!value) {
+      continue;
+    }
+
+    for (const part of value.split(",")) {
+      const normalized = part.trim();
+      if (!normalized || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      merged.push(normalized);
+    }
+  }
+
+  return merged.length > 0 ? merged.join(", ") : undefined;
 }
 
 export function resolveMutationTableId(

@@ -61,6 +61,7 @@
   },
   "dependencies": {
     "@fetchkit/ffetch": "^4.2.0",
+    "amazon-cognito-identity-js": "^6.3.16",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "dotenv": "^16.6.1",

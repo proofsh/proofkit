@@ -251,19 +251,25 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
   }
 
   // Overload: when returnFullRecord is false
-  insert(data: InsertDataFromFMTable<Occ>, options: { returnFullRecord: false }): InsertBuilder<Occ, "minimal">;
+  insert(
+    data: InsertDataFromFMTable<Occ>,
+    options: { returnFullRecord: false },
+  ): InsertBuilder<Occ, "minimal", DatabaseIncludeSpecialColumns>;
 
   // Overload: when returnFullRecord is true or omitted (default)
-  insert(data: InsertDataFromFMTable<Occ>, options?: { returnFullRecord?: true }): InsertBuilder<Occ, "representation">;
+  insert(
+    data: InsertDataFromFMTable<Occ>,
+    options?: { returnFullRecord?: true },
+  ): InsertBuilder<Occ, "representation", DatabaseIncludeSpecialColumns>;
 
   // Implementation
   insert(
     data: InsertDataFromFMTable<Occ>,
     options?: { returnFullRecord?: boolean },
-  ): InsertBuilder<Occ, "minimal" | "representation"> {
+  ): InsertBuilder<Occ, "minimal" | "representation", DatabaseIncludeSpecialColumns> {
     const returnPreference = options?.returnFullRecord === false ? "minimal" : "representation";
 
-    return new InsertBuilder<Occ, typeof returnPreference>({
+    return new InsertBuilder<Occ, typeof returnPreference, DatabaseIncludeSpecialColumns>({
       occurrence: this.occurrence,
       layer: this.layer,
       // biome-ignore lint/suspicious/noExplicitAny: Input type is validated/transformed at runtime
@@ -274,19 +280,25 @@ export class EntitySet<Occ extends FMTable<any, any>, DatabaseIncludeSpecialColu
   }
 
   // Overload: when returnFullRecord is explicitly true
-  update(data: UpdateDataFromFMTable<Occ>, options: { returnFullRecord: true }): UpdateBuilder<Occ, "representation">;
+  update(
+    data: UpdateDataFromFMTable<Occ>,
+    options: { returnFullRecord: true },
+  ): UpdateBuilder<Occ, "representation", DatabaseIncludeSpecialColumns>;
 
   // Overload: when returnFullRecord is false or omitted (default)
-  update(data: UpdateDataFromFMTable<Occ>, options?: { returnFullRecord?: false }): UpdateBuilder<Occ, "minimal">;
+  update(
+    data: UpdateDataFromFMTable<Occ>,
+    options?: { returnFullRecord?: false },
+  ): UpdateBuilder<Occ, "minimal", DatabaseIncludeSpecialColumns>;
 
   // Implementation
   update(
     data: UpdateDataFromFMTable<Occ>,
     options?: { returnFullRecord?: boolean },
-  ): UpdateBuilder<Occ, "minimal" | "representation"> {
+  ): UpdateBuilder<Occ, "minimal" | "representation", DatabaseIncludeSpecialColumns> {
     const returnPreference = options?.returnFullRecord === true ? "representation" : "minimal";
 
-    return new UpdateBuilder<Occ, typeof returnPreference>({
+    return new UpdateBuilder<Occ, typeof returnPreference, DatabaseIncludeSpecialColumns>({
       occurrence: this.occurrence,
       layer: this.layer,
       // biome-ignore lint/suspicious/noExplicitAny: Input type is validated/transformed at runtime
