@@ -63,6 +63,22 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
     envNamesAuth.apiKey.trim() !== ""
       ? envNamesAuth.apiKey
       : defaultEnvNames.apiKey;
+  const clarisIdUsernameEnvName =
+    envNamesAuth &&
+    typeof envNamesAuth === "object" &&
+    "clarisIdUsername" in envNamesAuth &&
+    envNamesAuth.clarisIdUsername &&
+    envNamesAuth.clarisIdUsername.trim() !== ""
+      ? envNamesAuth.clarisIdUsername
+      : defaultEnvNames.clarisIdUsername;
+  const clarisIdPasswordEnvName =
+    envNamesAuth &&
+    typeof envNamesAuth === "object" &&
+    "clarisIdPassword" in envNamesAuth &&
+    envNamesAuth.clarisIdPassword &&
+    envNamesAuth.clarisIdPassword.trim() !== ""
+      ? envNamesAuth.clarisIdPassword
+      : defaultEnvNames.clarisIdPassword;
   const usernameEnvName =
     envNamesAuth &&
     typeof envNamesAuth === "object" &&
@@ -80,16 +96,28 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
       ? envNamesAuth.password
       : defaultEnvNames.password;
 
-  // Resolve all three auth env values
+  // Resolve all auth env values
   const { data: apiKeyValue, isLoading: apiKeyLoading } = useEnvValue(apiKeyEnvName);
+  const { data: clarisIdUsernameValue, isLoading: clarisIdUsernameLoading } = useEnvValue(clarisIdUsernameEnvName);
+  const { data: clarisIdPasswordValue, isLoading: clarisIdPasswordLoading } = useEnvValue(clarisIdPasswordEnvName);
   const { data: usernameValue, isLoading: usernameLoading } = useEnvValue(usernameEnvName);
   const { data: passwordValue, isLoading: passwordLoading } = useEnvValue(passwordEnvName);
 
   // Determine which authentication method will be used
-  // Default to API key if it resolves to a value, otherwise use username/password if both resolve
-  let activeAuthMethod: "apiKey" | "username" | null = null;
+  // Precedence matches server-side auth resolution
+  let activeAuthMethod: "apiKey" | "clarisId" | "username" | null = null;
   if (!apiKeyLoading && apiKeyValue !== undefined && apiKeyValue !== null && apiKeyValue !== "") {
     activeAuthMethod = "apiKey";
+  } else if (
+    !(clarisIdUsernameLoading || clarisIdPasswordLoading) &&
+    clarisIdUsernameValue !== undefined &&
+    clarisIdUsernameValue !== null &&
+    clarisIdUsernameValue !== "" &&
+    clarisIdPasswordValue !== undefined &&
+    clarisIdPasswordValue !== null &&
+    clarisIdPasswordValue !== ""
+  ) {
+    activeAuthMethod = "clarisId";
   } else if (
     !(usernameLoading || passwordLoading) &&
     usernameValue !== undefined &&
@@ -115,6 +143,14 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
   // Check if any values resolve to undefined/null/empty (only check after loading completes)
   // For auth, check that at least one complete auth method is configured (either API key OR username+password)
   const hasApiKeyAuth = !apiKeyLoading && apiKeyValue !== undefined && apiKeyValue !== null && apiKeyValue !== "";
+  const hasClarisIdAuth =
+    !(clarisIdUsernameLoading || clarisIdPasswordLoading) &&
+    clarisIdUsernameValue !== undefined &&
+    clarisIdUsernameValue !== null &&
+    clarisIdUsernameValue !== "" &&
+    clarisIdPasswordValue !== undefined &&
+    clarisIdPasswordValue !== null &&
+    clarisIdPasswordValue !== "";
   const hasUsernamePasswordAuth =
     !(usernameLoading || passwordLoading) &&
     usernameValue !== undefined &&
@@ -123,12 +159,19 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
     passwordValue !== undefined &&
     passwordValue !== null &&
     passwordValue !== "";
-  const hasAuth = hasApiKeyAuth || hasUsernamePasswordAuth;
+  const hasAuth = hasApiKeyAuth || hasClarisIdAuth || hasUsernamePasswordAuth;
 
   const hasUndefinedValues =
     (!serverLoading && (serverValue === undefined || serverValue === null || serverValue === "")) ||
     (!dbLoading && (dbValue === undefined || dbValue === null || dbValue === "")) ||
-    !(apiKeyLoading || usernameLoading || passwordLoading || hasAuth);
+    !(
+      apiKeyLoading ||
+      clarisIdUsernameLoading ||
+      clarisIdPasswordLoading ||
+      usernameLoading ||
+      passwordLoading ||
+      hasAuth
+    );
 
   // Initialize auth fields if not already set
   useEffect(() => {
@@ -136,6 +179,8 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
     if (!currentAuth) {
       setValue(`config.${index}.envNames.auth` as const, {
         apiKey: "",
+        clarisIdUsername: "",
+        clarisIdPassword: "",
         username: "",
         password: "",
       });
@@ -143,11 +188,20 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
       // Ensure all fields exist
       setValue(`config.${index}.envNames.auth` as const, {
         apiKey: currentAuth.apiKey || "",
+        clarisIdUsername: currentAuth.clarisIdUsername || "",
+        clarisIdPassword: currentAuth.clarisIdPassword || "",
         username: currentAuth.username || "",
         password: currentAuth.password || "",
       });
     }
   }, [setValue, getValues, index]);
+
+  let authTypeLabel = "Username/Password";
+  if (testData?.authType === "apiKey") {
+    authTypeLabel = "API Key";
+  } else if (testData?.authType === "clarisId") {
+    authTypeLabel = "Claris ID";
+  }
 
   return (
     <Dialog onOpenChange={setDialogOpenState} open={dialogOpen}>
@@ -208,6 +262,30 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
                   />
 
                   {/* OR Divider */}
+                  <div className="flex items-center gap-3">
+                    <Separator className="flex-1" />
+                    <span className="font-medium text-muted-foreground text-sm">OR</span>
+                    <Separator className="flex-1" />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <EnvVarField
+                      defaultValue={defaultEnvNames.clarisIdUsername}
+                      dimField={activeAuthMethod !== "clarisId"}
+                      fieldName={`config.${index}.envNames.auth.clarisIdUsername` as const}
+                      label="Claris ID Username"
+                      placeholder={defaultEnvNames.clarisIdUsername}
+                    />
+
+                    <EnvVarField
+                      defaultValue={defaultEnvNames.clarisIdPassword}
+                      dimField={activeAuthMethod !== "clarisId"}
+                      fieldName={`config.${index}.envNames.auth.clarisIdPassword` as const}
+                      label="Claris ID Password"
+                      placeholder={defaultEnvNames.clarisIdPassword}
+                    />
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <Separator className="flex-1" />
                     <span className="font-medium text-muted-foreground text-sm">OR</span>
@@ -306,8 +384,7 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
                         <span className="font-medium">Database:</span> {testData.db}
                       </div>
                       <div>
-                        <span className="font-medium">Auth Type:</span>{" "}
-                        {testData.authType === "apiKey" ? "API Key" : "Username/Password"}
+                        <span className="font-medium">Auth Type:</span> {authTypeLabel}
                       </div>
                     </div>
                   </div>
@@ -339,6 +416,9 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
                               )}
                               {errorDetails.details.missing.password && (
                                 <li>Password ({errorDetails.suspectedField === "auth" && "⚠️"})</li>
+                              )}
+                              {errorDetails.details.missing.clarisIdPassword && (
+                                <li>Claris ID Password ({errorDetails.suspectedField === "auth" && "⚠️"})</li>
                               )}
                             </ul>
                           </div>

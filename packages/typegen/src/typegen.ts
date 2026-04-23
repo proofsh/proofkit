@@ -262,6 +262,10 @@ const generateTypedClientsSingle = async (
     server = validationResult.server;
     db = validationResult.db;
     const validatedAuth = validationResult.auth;
+    if ("clarisId" in validatedAuth) {
+      console.log(chalk.red("ERROR: Claris ID auth is not supported for fmdapi type generation."));
+      return;
+    }
     auth = "apiKey" in validatedAuth ? { apiKey: validatedAuth.apiKey as OttoAPIKey } : validatedAuth;
   }
 

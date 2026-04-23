@@ -1,7 +1,23 @@
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-export type Auth = { username: string; password: string } | { apiKey: string };
+export interface BasicAuth {
+  username: string;
+  password: string;
+}
+
+export interface ApiKeyAuth {
+  apiKey: string;
+}
+
+export interface ClarisIdAuth {
+  clarisId: {
+    username: string;
+    password: string;
+  };
+}
+
+export type Auth = BasicAuth | ApiKeyAuth | ClarisIdAuth;
 
 export interface CountedListResult<T> {
   records: T[];

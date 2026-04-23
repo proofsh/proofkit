@@ -43,13 +43,31 @@ type FmdapiConfig = Extract<SingleConfig, { type: "fmdapi" }>;
 
 type FmodataConfig = Extract<SingleConfig, { type: "fmodata" }>;
 
+interface ApiKeyAuth {
+  apiKey: OttoAPIKey;
+}
+
+interface UsernameAuth {
+  username: string;
+  password: string;
+}
+
+interface ClarisIdAuth {
+  clarisId: {
+    username: string;
+    password: string;
+  };
+}
+
+type SupportedAuth = ApiKeyAuth | UsernameAuth | ClarisIdAuth;
+
 type EnvVarsResult =
   | CreateClientError
   | {
       server: string;
       db: string;
-      authType: "apiKey" | "username";
-      auth: { apiKey: OttoAPIKey } | { username: string; password: string };
+      authType: "apiKey" | "username" | "clarisId";
+      auth: SupportedAuth;
     };
 
 export interface OdataClientResult {
@@ -61,7 +79,7 @@ export interface OdataClientResult {
   };
   server: string;
   dbName: string;
-  authType: "apiKey" | "username";
+  authType: "apiKey" | "username" | "clarisId";
 }
 
 export interface OdataClientError {
@@ -73,7 +91,10 @@ export interface OdataClientError {
   message?: string;
 }
 
-function getEnvVarsFromConfig(envNames: SingleConfig["envNames"]): EnvVarsResult {
+function getEnvVarsFromConfig(
+  envNames: SingleConfig["envNames"],
+  options?: { allowClarisId?: boolean },
+): EnvVarsResult {
   const getEnvName = (customName: string | undefined, defaultName: string) =>
     customName && customName.trim() !== "" ? customName : defaultName;
 
@@ -84,6 +105,14 @@ function getEnvVarsFromConfig(envNames: SingleConfig["envNames"]): EnvVarsResult
     envNames?.auth && "apiKey" in envNames.auth
       ? getEnvName(envNames.auth.apiKey, defaultEnvNames.apiKey)
       : defaultEnvNames.apiKey;
+  const clarisIdUsernameEnvName =
+    envNames?.auth && "clarisIdUsername" in envNames.auth
+      ? getEnvName(envNames.auth.clarisIdUsername, defaultEnvNames.clarisIdUsername)
+      : defaultEnvNames.clarisIdUsername;
+  const clarisIdPasswordEnvName =
+    envNames?.auth && "clarisIdPassword" in envNames.auth
+      ? getEnvName(envNames.auth.clarisIdPassword, defaultEnvNames.clarisIdPassword)
+      : defaultEnvNames.clarisIdPassword;
   const usernameEnvName =
     envNames?.auth && "username" in envNames.auth
       ? getEnvName(envNames.auth.username, defaultEnvNames.username)
@@ -94,23 +123,31 @@ function getEnvVarsFromConfig(envNames: SingleConfig["envNames"]): EnvVarsResult
       : defaultEnvNames.password;
 
   const apiKey = process.env[apiKeyEnvName];
+  const clarisIdUsername = process.env[clarisIdUsernameEnvName];
+  const clarisIdPassword = process.env[clarisIdPasswordEnvName];
   const username = process.env[usernameEnvName];
   const password = process.env[passwordEnvName];
+  const hasClarisIdAuth = !!(options?.allowClarisId && clarisIdUsername);
+  const hasAnyAuth = !!(apiKey || hasClarisIdAuth || username);
 
-  if (!(server && db && (apiKey || username))) {
+  if (!(server && db && hasAnyAuth)) {
     const missingDetails: {
       server?: boolean;
       db?: boolean;
       auth?: boolean;
       password?: boolean;
+      clarisIdPassword?: boolean;
     } = {
       server: !server,
       db: !db,
-      auth: !(apiKey || username),
+      auth: !hasAnyAuth,
     };
 
     if (server && db && username && !password) {
       missingDetails.password = true;
+    }
+    if (server && db && options?.allowClarisId && clarisIdUsername && !clarisIdPassword) {
+      missingDetails.clarisIdPassword = true;
     }
 
     return {
@@ -127,7 +164,7 @@ function getEnvVarsFromConfig(envNames: SingleConfig["envNames"]): EnvVarsResult
         if (!db) {
           return "db";
         }
-        if (!(apiKey || username)) {
+        if (!hasAnyAuth) {
           return "auth";
         }
         return undefined;
@@ -141,6 +178,21 @@ function getEnvVarsFromConfig(envNames: SingleConfig["envNames"]): EnvVarsResult
         }
         return "Authentication credentials environment variable is missing";
       })(),
+    };
+  }
+
+  if (options?.allowClarisId && clarisIdUsername && !clarisIdPassword) {
+    return {
+      error: "Password is required when using Claris ID authentication",
+      statusCode: 400,
+      kind: "missing_env",
+      details: {
+        missing: {
+          clarisIdPassword: true,
+        },
+      },
+      suspectedField: "auth",
+      message: "Claris ID password environment variable is missing",
     };
   }
 
@@ -159,11 +211,29 @@ function getEnvVarsFromConfig(envNames: SingleConfig["envNames"]): EnvVarsResult
     };
   }
 
+  let authType: "apiKey" | "username" | "clarisId";
+  let auth: SupportedAuth;
+  if (apiKey) {
+    authType = "apiKey";
+    auth = { apiKey: apiKey as OttoAPIKey };
+  } else if (hasClarisIdAuth) {
+    authType = "clarisId";
+    auth = {
+      clarisId: {
+        username: clarisIdUsername ?? "",
+        password: clarisIdPassword ?? "",
+      },
+    };
+  } else {
+    authType = "username";
+    auth = { username: username ?? "", password: password ?? "" };
+  }
+
   return {
     server,
     db,
-    authType: apiKey ? "apiKey" : "username",
-    auth: apiKey ? { apiKey: apiKey as OttoAPIKey } : { username: username ?? "", password: password ?? "" },
+    authType,
+    auth,
   };
 }
 
@@ -201,7 +271,7 @@ async function loadFmodataDeps() {
 export async function createOdataClientFromConfig(
   config: FmodataConfig,
 ): Promise<OdataClientResult | OdataClientError> {
-  const result = getEnvVarsFromConfig(config.envNames);
+  const result = getEnvVarsFromConfig(config.envNames, { allowClarisId: true });
   if ("error" in result) {
     return result;
   }
@@ -312,9 +382,21 @@ export async function createClientFromConfig(
     return result;
   }
 
-  const { server, db, authType, auth } = result;
+  const { server, db, auth } = result;
 
   try {
+    if ("clarisId" in auth) {
+      return {
+        error: "Claris ID auth is not supported for fmdapi adapters",
+        statusCode: 400,
+        kind: "adapter_error",
+        suspectedField: "auth",
+        message: "Claris ID auth is not supported for fmdapi adapters",
+      };
+    }
+
+    const resolvedAuthType: "apiKey" | "username" = "apiKey" in auth ? "apiKey" : "username";
+
     const client =
       "apiKey" in auth
         ? DataApi({
@@ -335,7 +417,7 @@ export async function createClientFromConfig(
       client: client as CreateClientResult["client"],
       server,
       db,
-      authType,
+      authType: resolvedAuthType,
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Failed to create adapter";

@@ -33,6 +33,8 @@ export const envNamesBase = z
         apiKey: z.string().optional(),
         username: z.string().optional(),
         password: z.string().optional(),
+        clarisIdUsername: z.string().optional(),
+        clarisIdPassword: z.string().optional(),
       })
       .optional(),
     fmMcp: z
@@ -64,6 +66,8 @@ const envNames = envNamesBase
             apiKey: val.auth.apiKey === "" ? undefined : val.auth.apiKey,
             username: val.auth.username === "" ? undefined : val.auth.username,
             password: val.auth.password === "" ? undefined : val.auth.password,
+            clarisIdUsername: val.auth.clarisIdUsername === "" ? undefined : val.auth.clarisIdUsername,
+            clarisIdPassword: val.auth.clarisIdPassword === "" ? undefined : val.auth.clarisIdPassword,
           }
         : undefined,
       fmMcp: val.fmMcp

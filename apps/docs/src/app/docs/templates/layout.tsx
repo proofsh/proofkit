@@ -86,12 +86,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
           <div className="mt-2 flex items-center justify-center text-muted-foreground text-xs">
             <p>
               Made with ❤️ by{" "}
-              <a
-                className="underline"
-                href="http://proof.sh"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
+              <a className="underline" href="http://proof.sh" rel="noopener noreferrer" target="_blank">
                 Proof
               </a>
             </p>

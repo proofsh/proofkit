@@ -16,12 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <div className="mt-2 flex items-center justify-center text-muted-foreground text-xs">
             <p>
               Made with ❤️ by{" "}
-              <a
-                className="underline"
-                href="http://proof.sh"
-                rel="noopener"
-                target="_blank"
-              >
+              <a className="underline" href="http://proof.sh" rel="noopener" target="_blank">
                 Proof
               </a>
             </p>

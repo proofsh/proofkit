@@ -38,6 +38,17 @@ describe("buildConnection", () => {
     expect(db).toBeDefined();
   });
 
+  it("builds a connection from env vars with Claris ID auth", () => {
+    process.env[ENV_NAMES.server] = "https://example.com";
+    process.env[ENV_NAMES.db] = "MyDB.fmp12";
+    process.env[ENV_NAMES.clarisIdUsername] = "claris-user";
+    process.env[ENV_NAMES.clarisIdPassword] = "claris-pass";
+
+    const { connection, db } = buildConnection({});
+    expect(connection).toBeDefined();
+    expect(db).toBeDefined();
+  });
+
   it("CLI options override env vars", () => {
     process.env[ENV_NAMES.server] = "https://env-server.com";
     process.env[ENV_NAMES.db] = "EnvDB.fmp12";
@@ -86,11 +97,32 @@ describe("buildConnection", () => {
     expect(() => buildConnection({})).toThrow(PASSWORD_RE);
   });
 
+  it("throws when Claris ID username is set but password is missing", () => {
+    process.env[ENV_NAMES.server] = "https://example.com";
+    process.env[ENV_NAMES.db] = "MyDB.fmp12";
+    process.env[ENV_NAMES.clarisIdUsername] = "claris-user";
+    delete process.env[ENV_NAMES.clarisIdPassword];
+
+    expect(() => buildConnection({})).toThrow(PASSWORD_RE);
+  });
+
   it("prefers api key over username auth when both are set", () => {
     const { db } = buildConnection({
       server: "https://example.com",
       database: "MyDB.fmp12",
       apiKey: "api-key",
+      username: "admin",
+      password: "secret",
+    });
+    expect(db).toBeDefined();
+  });
+
+  it("prefers Claris ID over username auth when both are set", () => {
+    const { db } = buildConnection({
+      server: "https://example.com",
+      database: "MyDB.fmp12",
+      clarisIdUsername: "claris-user",
+      clarisIdPassword: "claris-pass",
       username: "admin",
       password: "secret",
     });

@@ -26,51 +26,34 @@ export default function HomePage() {
       <div className="mx-auto flex w-full max-w-screen-lg flex-col items-center justify-center">
         <div className="relative flex h-[500px] w-full flex-col items-center justify-center overflow-hidden rounded-lg bg-background">
           <InteractiveGridPattern
-            className={cn(
-              "absolute inset-0 [mask-image:radial-gradient(400px_circle_at_center,white,transparent)]",
-            )}
+            className={cn("absolute inset-0 [mask-image:radial-gradient(400px_circle_at_center,white,transparent)]")}
             height={40}
             squares={[80, 80]}
             squaresClassName="hover:fill-brand/50"
             style={{ zIndex: 0 }}
             width={40}
           />
-          <Image
-            alt="ProofKit Logo"
-            className="pointer-events-none z-10"
-            src={ProofKitLogo}
-            width={400}
-          />
+          <Image alt="ProofKit Logo" className="pointer-events-none z-10" src={ProofKitLogo} width={400} />
         </div>
 
         <div className="mt-8 w-full space-y-8 text-center">
-          <h1 className="font-bold text-4xl">
-            A collection of tools for FileMaker-aware TypeScript applications
-          </h1>
+          <h1 className="font-bold text-4xl">A collection of tools for FileMaker-aware TypeScript applications</h1>
           <p className="font-medium text-gray-500 text-xl">
-            For new and experienced developers alike, the ProofKit toolset is
-            the best way to build web apps connected to FileMaker data, or rich,
-            interactive interfaces in a FileMaker webviewer.
+            For new and experienced developers alike, the ProofKit toolset is the best way to build web apps connected
+            to FileMaker data, or rich, interactive interfaces in a FileMaker webviewer.
           </p>
 
           <Cards className="px-4 text-left">
             <Card href="/docs/cli" icon={<Terminal />} title="ProofKit CLI">
-              A command line tool to start a new project, or easily apply
-              templates and common patterns with{" "}
-              <span className="underline">no JavaScript experience</span>{" "}
-              required.
+              A command line tool to start a new project, or easily apply templates and common patterns with{" "}
+              <span className="underline">no JavaScript experience</span> required.
             </Card>
             <Card href="/docs/typegen" icon={<Code />} title={"Typegen"}>
-              Automatically generate runtime validators and TypeScript files
-              from your own FileMaker layouts or table occurrences.
+              Automatically generate runtime validators and TypeScript files from your own FileMaker layouts or table
+              occurrences.
             </Card>
-            <Card
-              href="/docs/fmdapi"
-              icon={<WebhookIcon />}
-              title="Filemaker Data API"
-            >
-              A type-safe API for your FileMaker layouts. Easily connect without
-              worrying about token management.
+            <Card href="/docs/fmdapi" icon={<WebhookIcon />} title="Filemaker Data API">
+              A type-safe API for your FileMaker layouts. Easily connect without worrying about token management.
             </Card>
             <Card
               href="/docs/fmodata"
@@ -84,16 +67,11 @@ export default function HomePage() {
                 </span>
               }
             >
-              A strongly-typed OData API client with full TypeScript inference,
-              runtime validation, and a fluent query builder.
+              A strongly-typed OData API client with full TypeScript inference, runtime validation, and a fluent query
+              builder.
             </Card>
-            <Card
-              href="/docs/webviewer"
-              icon={<Globe />}
-              title="FileMaker Webviewer"
-            >
-              Use async functions in WebViewer code to execute and get the
-              result of a FileMaker script.
+            <Card href="/docs/webviewer" icon={<Globe />} title="FileMaker Webviewer">
+              Use async functions in WebViewer code to execute and get the result of a FileMaker script.
             </Card>
             <Card
               href="/docs/better-auth"
@@ -107,8 +85,7 @@ export default function HomePage() {
                 </span>
               }
             >
-              Own your authentication with FileMaker and the extensible
-              Better-Auth framework.
+              Own your authentication with FileMaker and the extensible Better-Auth framework.
             </Card>
           </Cards>
 
@@ -118,8 +95,7 @@ export default function HomePage() {
             <div className="flex flex-col text-left">
               <h2 className="mb-4 font-bold text-3xl">Quick Start</h2>
               <p className="mb-0 text-gray-600 text-lg">
-                Use the ProofKit CLI to launch a full-featured Next.js app in
-                minutes—no prior experience required.
+                Use the ProofKit CLI to launch a full-featured Next.js app in minutes—no prior experience required.
               </p>
             </div>
 
@@ -152,11 +128,9 @@ export default function HomePage() {
                 Built for AI Agents
               </h2>
               <p className="mb-0 text-gray-600 text-lg">
-                Every ProofKit package ships with agent skills — built from
-                decades of combined FileMaker integration experience at Proof —
-                that give AI coding tools like Claude Code and Cursor the
-                context they need to write correct, production-ready FileMaker
-                code from day one.
+                Every ProofKit package ships with agent skills — built from decades of combined FileMaker integration
+                experience at Proof — that give AI coding tools like Claude Code and Cursor the context they need to
+                write correct, production-ready FileMaker code from day one.
               </p>
             </div>
 
@@ -167,9 +141,8 @@ export default function HomePage() {
                   Expert knowledge built in
                 </div>
                 <p className="text-gray-500 text-sm">
-                  Agent skills cover API patterns, edge cases, and common
-                  mistakes so your AI agent avoids the pitfalls that trip up
-                  even experienced developers.
+                  Agent skills cover API patterns, edge cases, and common mistakes so your AI agent avoids the pitfalls
+                  that trip up even experienced developers.
                 </p>
               </div>
               <div className="flex flex-col gap-2 rounded-lg border p-4">
@@ -178,9 +151,8 @@ export default function HomePage() {
                   Type-safe by default
                 </div>
                 <p className="text-gray-500 text-sm">
-                  Schemas generated from your FileMaker field names plus runtime
-                  validators catch bugs early — whether code is written by you
-                  or your AI agent.
+                  Schemas generated from your FileMaker field names plus runtime validators catch bugs early — whether
+                  code is written by you or your AI agent.
                 </p>
               </div>
               <div className="flex flex-col gap-2 rounded-lg border p-4">
@@ -189,9 +161,8 @@ export default function HomePage() {
                   Works with any agent
                 </div>
                 <p className="text-gray-500 text-sm">
-                  Skills are bundled with each package — just install and your
-                  AI coding tool picks them up automatically. Compatible with
-                  Claude Code, Cursor, Windsurf, and more.
+                  Skills are bundled with each package — just install and your AI coding tool picks them up
+                  automatically. Compatible with Claude Code, Cursor, Windsurf, and more.
                 </p>
               </div>
             </div>

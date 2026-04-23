@@ -600,7 +600,7 @@ export function createApiApp(context: ApiContext) {
 
             const { db, connection, server, dbName, authType } = result;
 
-            if (authType === "username") {
+            if (authType === "username" || authType === "clarisId") {
               // Test connection by calling listDatabaseNames() and listTableNames() separately
               // First test: listDatabaseNames() - tests server connection
               try {

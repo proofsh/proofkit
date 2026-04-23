@@ -22,7 +22,7 @@ export async function downloadTableMetadata({
   reduceAnnotations?: boolean;
 }): Promise<string> {
   const envValues = getEnvValues(config.envNames);
-  const validationResult = validateEnvValues(envValues, config.envNames);
+  const validationResult = validateEnvValues(envValues, config.envNames, { allowClarisId: true });
 
   if (!validationResult.success) {
     throw new Error(validationResult.errorMessage);

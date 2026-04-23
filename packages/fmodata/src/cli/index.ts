@@ -21,6 +21,8 @@ program
   .option("--database <name>", `FM database name [env: ${ENV_NAMES.db}]`)
   .option("--username <user>", `FM username [env: ${ENV_NAMES.username}]`)
   .option("--password <pass>", `FM password [env: ${ENV_NAMES.password}]`)
+  .option("--claris-id-username <user>", `Claris ID username [env: ${ENV_NAMES.clarisIdUsername}]`)
+  .option("--claris-id-password <pass>", `Claris ID password [env: ${ENV_NAMES.clarisIdPassword}]`)
   .option("--api-key <key>", `OttoFMS API key [env: ${ENV_NAMES.apiKey}]`)
   .option("--pretty", "Output as table (default: JSON)", false);
 

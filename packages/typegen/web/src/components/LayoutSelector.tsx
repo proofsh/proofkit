@@ -171,6 +171,12 @@ export function LayoutSelector({ configIndex, path }: { configIndex: number; pat
                                           {errorDetails.suspectedField === "auth" && " ⚠️"}
                                         </li>
                                       )}
+                                      {errorDetails.missing.clarisIdPassword && (
+                                        <li>
+                                          Claris ID Password
+                                          {errorDetails.suspectedField === "auth" && " ⚠️"}
+                                        </li>
+                                      )}
                                     </ul>
                                   </div>
                                 )}

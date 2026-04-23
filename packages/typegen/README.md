@@ -25,11 +25,19 @@ const args: BuildSchemaArgs = {
   envNames: {
     server: "FM_SERVER",
     db: "FM_DATABASE",
-    auth: { apiKey: "OTTO_API_KEY", username: undefined, password: undefined },
+    auth: {
+      apiKey: "OTTO_API_KEY",
+      clarisIdUsername: "CLARIS_ID_USERNAME",
+      clarisIdPassword: "CLARIS_ID_PASSWORD",
+      username: undefined,
+      password: undefined,
+    },
   },
 };
 
 buildSchema(file, args);
 ```
+
+For `fmodata` configs targeting FileMaker Cloud, `envNames.auth` also supports `clarisIdUsername` and `clarisIdPassword`. These map to Claris ID credentials used for OData auth. MFA-backed Claris ID accounts are not supported yet.
 
 Check out the full documentation at [proofkit.dev](https://proofkit.dev/docs/typegen).
