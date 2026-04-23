@@ -252,7 +252,12 @@ export class FMServerConnection implements ExecutionContext {
       const headers = new Headers(options?.headers);
       headers.set("Authorization", await this._getAuthorizationHeader(fetchHandler));
       headers.set("Content-Type", "application/json");
-      headers.set("Accept", getAcceptHeader(includeODataAnnotations));
+      // Respect a caller-supplied Accept header (e.g. getMetadata({ format: "xml" })
+      // sets Accept: application/xml). Only fall back to the default JSON Accept
+      // when the caller didn't specify one.
+      if (!headers.has("Accept")) {
+        headers.set("Accept", getAcceptHeader(includeODataAnnotations));
+      }
 
       const mergedPrefer = mergePreferHeaderValues(
         preferValues.length > 0 ? preferValues.join(", ") : undefined,
