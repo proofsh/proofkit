@@ -34,6 +34,16 @@ function compareSemver(left: string, right: string) {
   return 0;
 }
 
+function resolveLayoutNameMatch(layouts: string[], requestedLayoutName: string) {
+  const exactMatch = layouts.find((layout) => layout === requestedLayoutName);
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const normalizedRequestedLayoutName = requestedLayoutName.toLocaleLowerCase();
+  return layouts.find((layout) => layout.toLocaleLowerCase() === normalizedRequestedLayoutName);
+}
+
 function validateLayoutInputs(flags: CliFlags) {
   const hasLayoutName = Boolean(flags.layoutName);
   const hasSchemaName = Boolean(flags.schemaName);
@@ -318,12 +328,17 @@ function resolveHostedFileMakerInputs({
       server: hostedUrl.origin,
     });
 
-    if (layoutName && !layouts.includes(layoutName)) {
-      return yield* Effect.fail(
-        new FileMakerSetupError({
-          message: `Layout "${layoutName}" was not found in ${resolvedFileName}.`,
-        }),
-      );
+    if (layoutName) {
+      const matchedLayoutName = resolveLayoutNameMatch(layouts, layoutName);
+      if (!matchedLayoutName) {
+        return yield* Effect.fail(
+          new FileMakerSetupError({
+            message: `Layout "${layoutName}" was not found in ${resolvedFileName}.`,
+          }),
+        );
+      }
+
+      layoutName = matchedLayoutName;
     }
 
     if (!(nonInteractive || layoutName || schemaName)) {

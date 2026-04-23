@@ -160,6 +160,36 @@ describe("resolveInitRequest", () => {
     });
   });
 
+  it("normalizes a non-interactive layout name to the live FileMaker casing", async () => {
+    const request = await Effect.runPromise(
+      resolveInitRequest("demo", {
+        noGit: true,
+        noInstall: true,
+        force: false,
+        default: false,
+        importAlias: "~/",
+        CI: true,
+        appType: "webviewer",
+        dataSource: "filemaker",
+        server: "https://fm.example.com",
+        fileName: "Contacts.fmp12",
+        dataApiKey: "dk_123",
+        layoutName: "contacts",
+        schemaName: "Contacts",
+      }).pipe(
+        makeTestLayer({
+          cwd: "/tmp",
+          packageManager: "pnpm",
+        }),
+      ),
+    );
+
+    expect(request.fileMaker).toMatchObject({
+      layoutName: "Contacts",
+      schemaName: "Contacts",
+    });
+  });
+
   it("uses local fm http for webviewer setup when available", async () => {
     const consoleTranscript: ConsoleTranscript = {
       info: [],
