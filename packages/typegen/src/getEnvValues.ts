@@ -9,11 +9,18 @@ export interface EnvValues {
   server: string | undefined;
   db: string | undefined;
   apiKey: string | undefined;
+  clarisIdUsername: string | undefined;
+  clarisIdPassword: string | undefined;
   username: string | undefined;
   password: string | undefined;
   fmMcpBaseUrl: string | undefined;
   fmMcpConnectedFileName: string | undefined;
 }
+
+type StandardAuth =
+  | { apiKey: string }
+  | { username: string; password: string }
+  | { clarisId: { username: string; password: string } };
 
 export type EnvValidationResult =
   | {
@@ -21,7 +28,7 @@ export type EnvValidationResult =
       mode: "standard";
       server: string;
       db: string;
-      auth: { apiKey: string } | { username: string; password: string };
+      auth: StandardAuth;
     }
   | {
       success: true;
@@ -34,6 +41,12 @@ export type EnvValidationResult =
       errorMessage: string;
     };
 
+interface EnvValidationOptions {
+  fmMcp?: boolean;
+  allowClarisId?: boolean;
+  fmMcpConfig?: { baseUrl?: string; connectedFileName?: string };
+}
+
 /**
  * Gets environment variable values for FileMaker connection.
  * Supports both fmdapi and fmodata config types.
@@ -42,21 +55,24 @@ export type EnvValidationResult =
  * @returns Object containing all environment variable values
  */
 export function getEnvValues(envNames?: EnvNames): EnvValues {
-  // Helper to get env name, treating empty strings as undefined
   const getEnvName = (customName: string | undefined, defaultName: string) =>
     customName && customName.trim() !== "" ? customName : defaultName;
 
-  // Resolve environment variables
   const server = process.env[getEnvName(envNames?.server, defaultEnvNames.server)];
   const db = process.env[getEnvName(envNames?.db, defaultEnvNames.db)];
 
-  // Always attempt to read all auth methods from environment variables,
-  // regardless of which type is specified in envNames.auth
-  // This matches the pattern in getEnvVarsFromConfig
   const apiKeyEnvName =
     envNames?.auth && "apiKey" in envNames.auth
       ? getEnvName(envNames.auth.apiKey, defaultEnvNames.apiKey)
       : defaultEnvNames.apiKey;
+  const clarisIdUsernameEnvName =
+    envNames?.auth && "clarisIdUsername" in envNames.auth
+      ? getEnvName(envNames.auth.clarisIdUsername, defaultEnvNames.clarisIdUsername)
+      : defaultEnvNames.clarisIdUsername;
+  const clarisIdPasswordEnvName =
+    envNames?.auth && "clarisIdPassword" in envNames.auth
+      ? getEnvName(envNames.auth.clarisIdPassword, defaultEnvNames.clarisIdPassword)
+      : defaultEnvNames.clarisIdPassword;
   const usernameEnvName =
     envNames?.auth && "username" in envNames.auth
       ? getEnvName(envNames.auth.username, defaultEnvNames.username)
@@ -67,10 +83,11 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
       : defaultEnvNames.password;
 
   const apiKey = process.env[apiKeyEnvName];
+  const clarisIdUsername = process.env[clarisIdUsernameEnvName];
+  const clarisIdPassword = process.env[clarisIdPasswordEnvName];
   const username = process.env[usernameEnvName];
   const password = process.env[passwordEnvName];
 
-  // FM MCP env vars
   const fmMcpBaseUrlEnvName =
     envNames?.fmMcp && "baseUrl" in envNames.fmMcp
       ? getEnvName(envNames.fmMcp.baseUrl, defaultEnvNames.fmMcpBaseUrl)
@@ -87,6 +104,8 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
     server,
     db,
     apiKey,
+    clarisIdUsername,
+    clarisIdPassword,
     username,
     password,
     fmMcpBaseUrl,
@@ -97,25 +116,28 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
 /**
  * Validates environment values and returns a result with either success data or error message.
  * Follows the same validation pattern as getEnvVarsFromConfig for consistency.
- *
- * @param envValues - The environment values to validate
- * @param envNames - Optional custom environment variable names (for error messages)
- * @returns Validation result with success flag and either data or error message
  */
 export function validateEnvValues(
   envValues: EnvValues,
   envNames?: EnvNames,
-  options?: { fmMcp?: boolean; fmMcpConfig?: { baseUrl?: string; connectedFileName?: string } },
+  options?: EnvValidationOptions,
 ): EnvValidationResult {
-  const { server, db, apiKey, username, password, fmMcpBaseUrl, fmMcpConnectedFileName } = envValues;
+  const {
+    server,
+    db,
+    apiKey,
+    clarisIdUsername,
+    clarisIdPassword,
+    username,
+    password,
+    fmMcpBaseUrl,
+    fmMcpConnectedFileName,
+  } = envValues;
 
-  // FM MCP mode: resolve baseUrl and connectedFileName with fallback chain
-  // Priority: config value > env var > default/auto-discover
   if (options?.fmMcp) {
     const resolvedBaseUrl = options.fmMcpConfig?.baseUrl || fmMcpBaseUrl || defaultFmMcpBaseUrl;
     const resolvedConnectedFileName = options.fmMcpConfig?.connectedFileName || fmMcpConnectedFileName;
 
-    // connectedFileName will be auto-discovered later if still missing
     return {
       success: true,
       mode: "fmMcp",
@@ -124,33 +146,32 @@ export function validateEnvValues(
     };
   }
 
-  // Helper to get env name, treating empty strings as undefined
   const getEnvName = (customName: string | undefined, defaultName: string) =>
     customName && customName.trim() !== "" ? customName : defaultName;
 
-  // Validate required env vars (server, db, and at least one auth method)
-  if (!(server && db && (apiKey || username))) {
-    // Build missing details
+  const hasClarisIdAuth = !!(options?.allowClarisId && clarisIdUsername);
+  const hasAnyAuth = !!(apiKey || hasClarisIdAuth || username);
+
+  if (!(server && db && hasAnyAuth)) {
     const missingDetails: {
       server?: boolean;
       db?: boolean;
       auth?: boolean;
       password?: boolean;
+      clarisIdPassword?: boolean;
     } = {
       server: !server,
       db: !db,
-      auth: !(apiKey || username),
+      auth: !hasAnyAuth,
     };
 
-    // Only report password as missing if server and db are both present,
-    // and username is set but password is missing. This ensures we don't
-    // incorrectly report password as missing when the actual error is about
-    // missing server or database.
     if (server && db && username && !password) {
       missingDetails.password = true;
     }
+    if (server && db && options?.allowClarisId && clarisIdUsername && !clarisIdPassword) {
+      missingDetails.clarisIdPassword = true;
+    }
 
-    // Build error message with env var names
     const missingVars: string[] = [];
     if (!server) {
       missingVars.push(getEnvName(envNames?.server, defaultEnvNames.server));
@@ -159,11 +180,18 @@ export function validateEnvValues(
       missingVars.push(getEnvName(envNames?.db, defaultEnvNames.db));
     }
 
-    if (!(apiKey || username)) {
-      // Determine the names to display in the error message
+    if (!hasAnyAuth) {
       const apiKeyName = getEnvName(
         envNames?.auth && "apiKey" in envNames.auth ? envNames.auth.apiKey : undefined,
         defaultEnvNames.apiKey,
+      );
+      const clarisIdUsernameName = getEnvName(
+        envNames?.auth && "clarisIdUsername" in envNames.auth ? envNames.auth.clarisIdUsername : undefined,
+        defaultEnvNames.clarisIdUsername,
+      );
+      const clarisIdPasswordName = getEnvName(
+        envNames?.auth && "clarisIdPassword" in envNames.auth ? envNames.auth.clarisIdPassword : undefined,
+        defaultEnvNames.clarisIdPassword,
       );
       const usernameName = getEnvName(
         envNames?.auth && "username" in envNames.auth ? envNames.auth.username : undefined,
@@ -174,7 +202,9 @@ export function validateEnvValues(
         defaultEnvNames.password,
       );
 
-      missingVars.push(`${apiKeyName} (or ${usernameName} and ${passwordName})`);
+      missingVars.push(
+        `${apiKeyName} (or ${clarisIdUsernameName} and ${clarisIdPasswordName}, or ${usernameName} and ${passwordName})`,
+      );
     }
 
     return {
@@ -183,7 +213,18 @@ export function validateEnvValues(
     };
   }
 
-  // Validate password if username is provided
+  if (options?.allowClarisId && clarisIdUsername && !clarisIdPassword) {
+    const clarisIdPasswordName = getEnvName(
+      envNames?.auth && "clarisIdPassword" in envNames.auth ? envNames.auth.clarisIdPassword : undefined,
+      defaultEnvNames.clarisIdPassword,
+    );
+
+    return {
+      success: false,
+      errorMessage: `Password is required when using Claris ID authentication. Missing: ${clarisIdPasswordName}`,
+    };
+  }
+
   if (username && !password) {
     const passwordName = getEnvName(
       envNames?.auth && "password" in envNames.auth ? envNames.auth.password : undefined,
@@ -196,9 +237,19 @@ export function validateEnvValues(
     };
   }
 
-  const auth: { apiKey: string } | { username: string; password: string } = apiKey
-    ? { apiKey }
-    : { username: username ?? "", password: password ?? "" };
+  let auth: StandardAuth;
+  if (apiKey) {
+    auth = { apiKey };
+  } else if (hasClarisIdAuth) {
+    auth = {
+      clarisId: {
+        username: clarisIdUsername ?? "",
+        password: clarisIdPassword ?? "",
+      },
+    };
+  } else {
+    auth = { username: username ?? "", password: password ?? "" };
+  }
 
   return {
     success: true,
@@ -211,16 +262,11 @@ export function validateEnvValues(
 
 /**
  * Validates environment values and logs errors using chalk (for fmdapi compatibility).
- * Returns undefined if validation fails, otherwise returns the validated values.
- *
- * @param envValues - The environment values to validate
- * @param envNames - Optional custom environment variable names (for error messages)
- * @returns Validated values or undefined if validation failed
  */
 export function validateAndLogEnvValues(
   envValues: EnvValues,
   envNames?: EnvNames,
-  options?: { fmMcp?: boolean; fmMcpConfig?: { baseUrl?: string; connectedFileName?: string } },
+  options?: EnvValidationOptions,
 ): EnvValidationResult | undefined {
   const result = validateEnvValues(envValues, envNames, options);
 
@@ -252,7 +298,9 @@ export function validateAndLogEnvValues(
       return undefined;
     }
 
-    const { server, db, apiKey, username, password } = envValues;
+    const { server, db, apiKey, clarisIdUsername, clarisIdPassword, username, password } = envValues;
+    const hasClarisIdAuth = !!(options?.allowClarisId && clarisIdUsername);
+    const hasAnyAuth = !!(apiKey || hasClarisIdAuth || username);
 
     if (!server) {
       console.log(getEnvName(envNames?.server, defaultEnvNames.server));
@@ -261,11 +309,18 @@ export function validateAndLogEnvValues(
       console.log(getEnvName(envNames?.db, defaultEnvNames.db));
     }
 
-    if (!(apiKey || username)) {
-      // Determine the names to display in the error message
+    if (!hasAnyAuth) {
       const apiKeyNameToLog = getEnvName(
         envNames?.auth && "apiKey" in envNames.auth ? envNames.auth.apiKey : undefined,
         defaultEnvNames.apiKey,
+      );
+      const clarisIdUsernameNameToLog = getEnvName(
+        envNames?.auth && "clarisIdUsername" in envNames.auth ? envNames.auth.clarisIdUsername : undefined,
+        defaultEnvNames.clarisIdUsername,
+      );
+      const clarisIdPasswordNameToLog = getEnvName(
+        envNames?.auth && "clarisIdPassword" in envNames.auth ? envNames.auth.clarisIdPassword : undefined,
+        defaultEnvNames.clarisIdPassword,
       );
       const usernameNameToLog = getEnvName(
         envNames?.auth && "username" in envNames.auth ? envNames.auth.username : undefined,
@@ -276,7 +331,16 @@ export function validateAndLogEnvValues(
         defaultEnvNames.password,
       );
 
-      console.log(`${apiKeyNameToLog} (or ${usernameNameToLog} and ${passwordNameToLog})`);
+      console.log(
+        `${apiKeyNameToLog} (or ${clarisIdUsernameNameToLog} and ${clarisIdPasswordNameToLog}, or ${usernameNameToLog} and ${passwordNameToLog})`,
+      );
+    } else if (options?.allowClarisId && clarisIdUsername && !clarisIdPassword) {
+      console.log(
+        getEnvName(
+          envNames?.auth && "clarisIdPassword" in envNames.auth ? envNames.auth.clarisIdPassword : undefined,
+          defaultEnvNames.clarisIdPassword,
+        ),
+      );
     } else if (username && !password) {
       console.log(
         getEnvName(

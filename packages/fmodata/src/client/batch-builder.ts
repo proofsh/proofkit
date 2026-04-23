@@ -20,7 +20,11 @@ import { createClientRuntime } from "./runtime";
  */
 // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any ExecutableBuilder result type
 type ExtractTupleTypes<T extends readonly ExecutableBuilder<any>[]> = {
-  [K in keyof T]: T[K] extends ExecutableBuilder<infer U> ? U : never;
+  [K in keyof T]: T[K] extends {
+    processResponse(response: Response, options?: ExecuteOptions): Promise<Result<infer U>>;
+  }
+    ? U
+    : never;
 };
 
 /**

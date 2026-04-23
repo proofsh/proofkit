@@ -10,6 +10,7 @@ export interface QueryReadBuilderState<TSchema> {
   expandConfigs: ExpandConfig[];
   singleMode: "exact" | "maybe" | false;
   isCountMode: boolean;
+  includeCountMode: boolean;
   fieldMapping?: Record<string, string>;
   systemColumns?: SystemColumnsOption;
   navigation?: NavigationConfig;
@@ -21,6 +22,7 @@ export function createInitialQueryReadBuilderState<TSchema>(): QueryReadBuilderS
     expandConfigs: [],
     singleMode: false,
     isCountMode: false,
+    includeCountMode: false,
   };
 }
 

@@ -7,6 +7,7 @@ export type { ExpandConfig } from "../builders/shared-types";
 
 // Export types
 export type {
+  CountedListResult,
   ExpandedRelations,
   QueryReturnType,
   TypeSafeOrderBy,

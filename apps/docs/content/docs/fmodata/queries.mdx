@@ -160,8 +160,11 @@ const result = await db.from(users).list().top(10).execute();
 // Skip records (pagination)
 const result = await db.from(users).list().top(10).skip(20).execute();
 
-// Count total records
-const result = await db.from(users).list().count().execute();
+// Count total records without fetching rows
+const total = await db.from(users).count().execute();
+
+// Fetch a page of rows and the total count in one request
+const page = await db.from(users).list().top(10).skip(20).count().execute();
 ```
 
 ## Selecting Fields
@@ -244,4 +247,3 @@ const result = await db
   .skip(0)
   .execute();
 ```
-

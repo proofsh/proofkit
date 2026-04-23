@@ -40,6 +40,12 @@ const connection = new FMServerConnection({
     // OttoFMS API key
     apiKey: "your-api-key",
 
+    // or Claris ID for FileMaker Cloud
+    // clarisId: {
+    //   username: "your@claris-id.com",
+    //   password: "password",
+    // },
+
     // or username and password
     // username: "admin",
     // password: "password",
@@ -96,7 +102,7 @@ OData relies entirely on the table occurances in the relationship graph for data
 
 ### Server Connection
 
-The client can authenticate using username/password or API key:
+The client can authenticate using username/password, Otto API key, or Claris ID for FileMaker Cloud:
 
 ```typescript
 // Username and password authentication
@@ -115,7 +121,25 @@ const connection = new FMServerConnection({
     apiKey: "your-api-key",
   },
 });
+
+// Claris ID authentication for FileMaker Cloud
+const connection = new FMServerConnection({
+  serverUrl: "https://your-filemaker-cloud-host.com",
+  auth: {
+    clarisId: {
+      username: "your@claris-id.com",
+      password: "password",
+    },
+  },
+});
 ```
+
+Notes for Claris ID auth:
+
+- Use a Claris ID account, not an external IdP account.
+- Tokens are managed internally and refreshed automatically.
+- Claris ID tokens are valid for about one hour.
+- MFA is not supported.
 
 ### Schema Definitions
 
@@ -394,8 +418,11 @@ const result = await db.from(users).list().top(10).execute();
 // Skip records (pagination)
 const result = await db.from(users).list().top(10).skip(20).execute();
 
-// Count total records
-const result = await db.from(users).list().count().execute();
+// Count total records without fetching rows
+const total = await db.from(users).count().execute();
+
+// Fetch a page of rows and the total count in one request
+const page = await db.from(users).list().top(10).skip(20).count().execute();
 ```
 
 ### Selecting Fields

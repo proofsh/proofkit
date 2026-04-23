@@ -6,7 +6,7 @@ const VALID_FIELD_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9]*$/;
 /**
  * Determines if a field name needs to be quoted in OData queries.
  * Per FileMaker docs: field names with special characters (spaces, underscores, etc.) must be quoted.
- * Also quotes "id" as it's an OData reserved word.
+ * Also quotes "id" case-insensitively as it's an OData reserved word.
  * Entity IDs (FMFID:*, FMTID:*) are not quoted as they're identifiers, not field names.
  *
  * @param fieldName - The field name or identifier to check
@@ -17,8 +17,8 @@ export function needsFieldQuoting(fieldName: string): boolean {
   if (fieldName.startsWith("FMFID:") || fieldName.startsWith("FMTID:")) {
     return false;
   }
-  // Always quote "id" as it's an OData reserved word
-  if (fieldName === "id") {
+  // Always quote "id" case-insensitively as it's an OData reserved word
+  if (fieldName.toLowerCase() === "id") {
     return true;
   }
   // Quote if field name contains spaces, underscores, or other special characters

@@ -48,6 +48,53 @@ describe("Batch Operations - Mock Tests", () => {
   const db = mock.database("test_db");
 
   describe("Mixed success/failure responses", () => {
+    it("should support list().count() and top-level count() in the same batch", async () => {
+      const mockBatchResponse = [
+        "--b_test_boundary",
+        "Content-Type: application/http",
+        "",
+        "HTTP/1.1 200 Ok",
+        "Content-Type: application/json;charset=utf-8",
+        "",
+        JSON.stringify({
+          "@odata.context": "test/$metadata#contacts",
+          "@odata.count": "2",
+          value: [
+            {
+              "@odata.id": "contacts('id-1')",
+              PrimaryKey: "id-1",
+              name: "First",
+              hobby: "Testing",
+            },
+          ],
+        }),
+        "--b_test_boundary",
+        "Content-Type: application/http",
+        "",
+        "HTTP/1.1 200 Ok",
+        "Content-Type: text/plain",
+        "",
+        "5",
+        "--b_test_boundary--",
+      ].join("\r\n");
+
+      const listWithCountQuery = db.from(contactsTO).list().where(eq(contactsTO.hobby, "Testing")).count();
+      const topLevelCountQuery = db.from(contactsTO).count().where(eq(contactsTO.hobby, "Testing"));
+
+      const result = await db.batch([listWithCountQuery, topLevelCountQuery]).execute({
+        fetchHandler: createBatchMockFetch(mockBatchResponse),
+      });
+
+      const [r1, r2] = result.results;
+      expect(r1?.error).toBeUndefined();
+      expect(r1?.data).toEqual({
+        count: 2,
+        records: [{ PrimaryKey: "id-1", hobby: "Testing", name: "First" }],
+      });
+      expect(r2?.error).toBeUndefined();
+      expect(r2?.data).toBe(5);
+    });
+
     it("should handle batch response where first succeeds, second fails (404), and third is truncated", async () => {
       // This mock response simulates a real FileMaker batch response where:
       // 1. First query succeeds with data

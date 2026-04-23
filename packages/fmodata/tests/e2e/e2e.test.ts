@@ -138,7 +138,7 @@ describe("Basic E2E Operations", () => {
     const entitySet = db.from(contacts);
 
     // Get initial count
-    const initialCountResult = await entitySet.list().count().execute();
+    const initialCountResult = await entitySet.count().execute();
     assert(initialCountResult.data, "Expected data to be defined");
     const initialCount = initialCountResult.data;
 
@@ -164,7 +164,7 @@ describe("Basic E2E Operations", () => {
     expect(insertedRecord.name).toBe(uniqueName);
 
     // Get count after insert
-    const newCountResult = await entitySet.list().count().execute();
+    const newCountResult = await entitySet.count().execute();
     assert(newCountResult.data, "Expected data to be defined");
     const newCount = newCountResult.data;
 
@@ -238,7 +238,7 @@ describe("Basic E2E Operations", () => {
     assert(recordId, "Expected PrimaryKey to be defined");
 
     // Get count before delete
-    const beforeCount = await entitySet.list().count().execute();
+    const beforeCount = await entitySet.count().execute();
     assert(beforeCount.data, "Expected count data to be defined");
 
     // Delete the record
@@ -250,7 +250,7 @@ describe("Basic E2E Operations", () => {
     expect(deleteResult.data.deletedCount).toBe(1);
 
     // Verify count decreased
-    const afterCount = await entitySet.list().count().execute();
+    const afterCount = await entitySet.count().execute();
     assert(afterCount.data, "Expected count data to be defined");
     expect(afterCount.data).toBe(beforeCount.data - 1);
   });
@@ -265,7 +265,7 @@ describe("Basic E2E Operations", () => {
     await entitySet.insert({ name: `${marker} - 3` }).execute();
 
     // Get count before delete
-    const beforeCount = await entitySet.list().count().execute();
+    const beforeCount = await entitySet.count().execute();
     assert(beforeCount.data, "Expected count data to be defined");
 
     // Delete all records with the marker
@@ -279,9 +279,21 @@ describe("Basic E2E Operations", () => {
     expect(deleteResult.data.deletedCount).toBeGreaterThanOrEqual(3);
 
     // Verify count decreased
-    const afterCount = await entitySet.list().count().execute();
+    const afterCount = await entitySet.count().execute();
     assert(afterCount.data, "Expected count data to be defined");
     expect(afterCount.data).toBeLessThanOrEqual(beforeCount.data - deleteResult.data.deletedCount);
+  });
+
+  it("should return records and count from list().count()", async () => {
+    const entitySet = db.from(contacts);
+
+    const result = await entitySet.list().top(2).count().execute();
+
+    expect(result.error).toBeUndefined();
+    assert(result.data, "Expected data to be defined");
+    expect(Array.isArray(result.data.records)).toBe(true);
+    expect(result.data.records.length).toBeLessThanOrEqual(2);
+    expect(result.data.count).toBeGreaterThanOrEqual(result.data.records.length);
   });
 
   it("should properly type and validate expanded properties", async () => {

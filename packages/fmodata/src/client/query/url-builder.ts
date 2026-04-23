@@ -53,76 +53,21 @@ export class QueryUrlBuilder {
       navigation?: NavigationConfig;
     },
   ): string {
-    const effectiveUseEntityIds = options.useEntityIds ?? this.useEntityIds;
-    const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), effectiveUseEntityIds);
-
-    const navigation = options.navigation;
-    if (navigation?.recordLocator !== undefined && navigation?.relation) {
-      return this.buildRecordNavigation(queryString, tableId, navigation, effectiveUseEntityIds);
-    }
-    if (navigation?.relation) {
-      return this.buildEntitySetNavigation(queryString, tableId, navigation, effectiveUseEntityIds);
-    }
-    if (options.isCount) {
-      return `/${this.databaseName}/${tableId}/$count${queryString}`;
-    }
-    return `/${this.databaseName}/${tableId}${queryString}`;
-  }
-
-  /**
-   * Builds URL for record navigation: /database/sourceTable('recordId')/relation
-   * or /database/sourceTable/baseRelation('recordId')/relation for chained navigations
-   */
-  private buildRecordNavigation(
-    queryString: string,
-    _tableId: string,
-    navigation: NavigationConfig,
-    useEntityIds: boolean,
-  ): string {
-    const sourceTable = useEntityIds
-      ? (navigation.sourceTableEntityId ?? navigation.sourceTableName)
-      : navigation.sourceTableName;
-    const baseRelation = useEntityIds
-      ? (navigation.baseRelationEntityId ?? navigation.baseRelation)
-      : navigation.baseRelation;
-    const relation = useEntityIds ? (navigation.relationEntityId ?? navigation.relation) : navigation.relation;
-    const { recordLocator } = navigation;
-    if (recordLocator === undefined) {
-      throw new Error("recordLocator is required for record navigation");
-    }
-    const base = baseRelation
-      ? buildRecordPath(`${sourceTable}/${baseRelation}`, recordLocator)
-      : buildRecordPath(sourceTable, recordLocator);
-    return `/${this.databaseName}/${base}/${relation}${queryString}`;
-  }
-
-  /**
-   * Builds URL for entity set navigation: /database/sourceTable/relation
-   * or /database/basePath/relation for chained navigations
-   */
-  private buildEntitySetNavigation(
-    queryString: string,
-    _tableId: string,
-    navigation: NavigationConfig,
-    useEntityIds: boolean,
-  ): string {
-    const sourceTable = useEntityIds
-      ? (navigation.sourceTableEntityId ?? navigation.sourceTableName)
-      : navigation.sourceTableName;
-    const basePath = useEntityIds ? (navigation.basePathEntityId ?? navigation.basePath) : navigation.basePath;
-    const relation = useEntityIds ? (navigation.relationEntityId ?? navigation.relation) : navigation.relation;
-    const base = basePath || sourceTable;
-    return `/${this.databaseName}/${base}/${relation}${queryString}`;
+    return `/${this.databaseName}${this.buildPath(queryString, options)}`;
   }
 
   /**
    * Builds a query string path (without database prefix) for getQueryString().
    * Used when the full URL is not needed.
    */
-  buildPath(queryString: string, options?: { useEntityIds?: boolean; navigation?: NavigationConfig }): string {
+  buildPath(
+    queryString: string,
+    options?: { isCount?: boolean; useEntityIds?: boolean; navigation?: NavigationConfig },
+  ): string {
     const effectiveUseEntityIds = options?.useEntityIds ?? this.useEntityIds;
     const navigation = options?.navigation;
     const tableId = resolveTableId(this.occurrence, getTableName(this.occurrence), effectiveUseEntityIds);
+    const suffix = options?.isCount ? "/$count" : "";
 
     if (navigation?.recordLocator !== undefined && navigation?.relation) {
       const sourceTable = effectiveUseEntityIds
@@ -141,7 +86,7 @@ export class QueryUrlBuilder {
       const base = baseRelation
         ? buildRecordPath(`${sourceTable}/${baseRelation}`, recordLocator)
         : buildRecordPath(sourceTable, recordLocator);
-      return queryString ? `/${base}/${relation}${queryString}` : `/${base}/${relation}`;
+      return queryString ? `/${base}/${relation}${suffix}${queryString}` : `/${base}/${relation}${suffix}`;
     }
     if (navigation?.relation) {
       const sourceTable = effectiveUseEntityIds
@@ -154,9 +99,9 @@ export class QueryUrlBuilder {
         ? (navigation.relationEntityId ?? navigation.relation)
         : navigation.relation;
       const base = basePath || sourceTable;
-      return queryString ? `/${base}/${relation}${queryString}` : `/${base}/${relation}`;
+      return queryString ? `/${base}/${relation}${suffix}${queryString}` : `/${base}/${relation}${suffix}`;
     }
-    return queryString ? `/${tableId}${queryString}` : `/${tableId}`;
+    return queryString ? `/${tableId}${suffix}${queryString}` : `/${tableId}${suffix}`;
   }
 
   /**

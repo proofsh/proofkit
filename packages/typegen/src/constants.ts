@@ -27,6 +27,8 @@ export const defaultEnvNames = {
   ottoPort: "OTTO_PORT",
   username: "FM_USERNAME",
   password: "FM_PASSWORD",
+  clarisIdUsername: "CLARIS_ID_USERNAME",
+  clarisIdPassword: "CLARIS_ID_PASSWORD",
   server: "FM_SERVER",
   db: "FM_DATABASE",
   fmMcpBaseUrl: "FM_MCP_BASE_URL",

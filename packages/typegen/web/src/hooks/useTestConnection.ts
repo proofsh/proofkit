@@ -24,7 +24,7 @@ export interface TestConnectionResult {
   ok: boolean;
   server?: string;
   db?: string;
-  authType?: "apiKey" | "username";
+  authType?: "apiKey" | "username" | "clarisId";
   error?: string;
   statusCode?: number;
   details?: {
@@ -33,6 +33,7 @@ export interface TestConnectionResult {
       db?: boolean;
       auth?: boolean;
       password?: boolean;
+      clarisIdPassword?: boolean;
     };
   };
   kind?: "missing_env" | "adapter_error" | "connection_error" | "unknown";

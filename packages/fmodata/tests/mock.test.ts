@@ -13,7 +13,7 @@
  * 3. The mock fetch will automatically match the request URL to the stored response
  */
 
-import { eq } from "@proofkit/fmodata";
+import { eq, isResponseStructureError } from "@proofkit/fmodata";
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { assert, describe, expect, expectTypeOf, it } from "vitest";
 import { mockResponses } from "./fixtures/responses";
@@ -69,6 +69,100 @@ describe("Mock Fetch Tests", () => {
       const firstRecord = result.data[0];
       expect(firstRecord).toHaveProperty("@id");
       expect(firstRecord).toHaveProperty("@editLink");
+    });
+
+    it("should return records and count from list().count()", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: {
+          "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+          "@odata.count": "42",
+          value: [
+            {
+              "@id": "contacts('1')",
+              "@editLink": "contacts('1')",
+              PrimaryKey: "1",
+              name: "Alice",
+            },
+          ],
+        },
+        status: 200,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
+      const result = await db
+        .from(contacts)
+        .list()
+        .select({ contactName: contacts.name, contactId: contacts.PrimaryKey })
+        .count()
+        .execute();
+
+      expect(result.error).toBeUndefined();
+      expect(result.data).toEqual({
+        count: 42,
+        records: [{ contactId: "1", contactName: "Alice" }],
+      });
+    });
+
+    it("should return a number from top-level count()", async () => {
+      const mock = new MockFMServerConnection({ enableSpy: true });
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts/$count",
+        response: "17",
+        status: 200,
+        headers: { "content-type": "text/plain" },
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
+      const result = await db.from(contacts).count().where(eq(contacts.name, "Alice")).execute();
+
+      expect(result.error).toBeUndefined();
+      expect(result.data).toBe(17);
+      expect(mock.spy?.calls.at(-1)?.url).toContain("/contacts/$count");
+    });
+
+    it("should error when list().count() response is missing @odata.count", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: {
+          "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+          value: [{ PrimaryKey: "1", name: "Alice" }],
+        },
+        status: 200,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
+      const result = await db.from(contacts).list().count().execute();
+
+      expect(result.data).toBeUndefined();
+      expect(isResponseStructureError(result.error)).toBe(true);
+    });
+
+    it("should preserve list validation errors before building counted results", async () => {
+      const mock = new MockFMServerConnection();
+      mock.addRoute({
+        urlPattern: "/fmdapi_test.fmp12/contacts",
+        response: {
+          "@context": "https://api.example.com/fmi/odata/v4/fmdapi_test.fmp12/$metadata#contacts",
+          "@odata.count": "1",
+        },
+        status: 200,
+      });
+      const db = mock.database("fmdapi_test.fmp12");
+
+      const result = await db.from(contacts).list().count().execute();
+
+      expect(result.data).toBeUndefined();
+      expect(isResponseStructureError(result.error)).toBe(true);
+    });
+
+    it("should reject single() after list().count()", () => {
+      const mock = new MockFMServerConnection();
+      const db = mock.database("fmdapi_test.fmp12");
+
+      expect(() => (db.from(contacts).list().count() as any).single()).toThrow();
     });
 
     it("should execute a list query with $select using mocked response", async () => {
