@@ -45,6 +45,14 @@ const contacts = fmTableOccurrence("contacts", {
   "special%char": textField(),
   "special&char": textField(),
 });
+const files = fmTableOccurrence(
+  "FILES",
+  {
+    ID: textField().primaryKey(),
+    s3key: textField(),
+  },
+  { defaultSelect: "all" },
+);
 
 describe("OData Query String Generation", () => {
   const client = new MockFMServerConnection();
@@ -142,6 +150,12 @@ describe("OData Query String Generation", () => {
       expect(selectPart).toBeDefined();
 
       expect(selectPart?.split(",")).toContain("name");
+    });
+
+    it("should quote uppercase ID in $select", () => {
+      const queryString = db.from(files).list().select({ ID: files.ID }).getQueryString();
+
+      expect(queryString).toContain('$select="ID"');
     });
   });
 

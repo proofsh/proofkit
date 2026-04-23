@@ -46,6 +46,14 @@ import { contacts, users, usersTOWithIds } from "./utils/test-setup";
 describe("Filter Tests", () => {
   const client = new MockFMServerConnection();
   const db = client.database("fmdapi_test.fmp12");
+  const files = fmTableOccurrence(
+    "FILES",
+    {
+      ID: textField().primaryKey(),
+      s3key: textField(),
+    },
+    { defaultSelect: "all" },
+  );
 
   it("should enforce correct operator types for each field type", () => {
     // ✅ String operators
@@ -158,14 +166,6 @@ describe("Filter Tests", () => {
   });
 
   it("should quote uppercase ID fields in filters", () => {
-    const files = fmTableOccurrence(
-      "FILES",
-      {
-        ID: textField().primaryKey(),
-        s3key: textField(),
-      },
-      { defaultSelect: "all" },
-    );
     const query = db.from(files).list().where(eq(files.ID, "123"));
     expect(query.getQueryString()).toContain(`$filter="ID" eq '123'`);
   });
