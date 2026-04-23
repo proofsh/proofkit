@@ -130,6 +130,22 @@ describe("Validation Tests", () => {
     expect(queryString).not.toContain("$expand");
   });
 
+  it("should quote uppercase ID fields in automatic selects", () => {
+    const files = fmTableOccurrence("FILES", {
+      ID: textField().primaryKey().notNull(),
+      s3key: textField().notNull(),
+    });
+    const mock = new MockFMServerConnection();
+    const db = mock.database("fmdapi_test.fmp12");
+    const query = db.from(files).list();
+
+    const queryString = query.getQueryString();
+
+    expect(queryString).toContain("$select=");
+    expect(queryString).toContain(`"ID"`);
+    expect(queryString).toContain("s3key");
+  });
+
   it("should skip validation if requested", async () => {
     const mock = new MockFMServerConnection();
     mock.addRoute({

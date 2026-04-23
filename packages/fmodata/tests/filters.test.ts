@@ -157,6 +157,19 @@ describe("Filter Tests", () => {
     expect(query2.getQueryString()).toContain(`$filter="id" eq 'John'`);
   });
 
+  it("should quote uppercase ID fields in filters", () => {
+    const files = fmTableOccurrence(
+      "FILES",
+      {
+        ID: textField().primaryKey(),
+        s3key: textField(),
+      },
+      { defaultSelect: "all" },
+    );
+    const query = db.from(files).list().where(eq(files.ID, "123"));
+    expect(query.getQueryString()).toContain(`$filter="ID" eq '123'`);
+  });
+
   it("should support complex nested filters", () => {
     const query = db
       .from(users)
