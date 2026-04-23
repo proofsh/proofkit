@@ -43,7 +43,7 @@ export function verifySmokeProjectBuilds(projectDir: string): void {
 
     console.log("Installing dependencies...");
     // Run pnpm install while ignoring workspace settings
-    execSync("pnpm install --prefer-offline --ignore-workspace", {
+    execSync("pnpm install --prefer-offline --ignore-workspace --no-frozen-lockfile", {
       cwd: projectDir,
       stdio: "inherit",
       encoding: "utf-8",
