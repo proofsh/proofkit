@@ -1,5 +1,22 @@
 # @proofkit/fmodata
 
+## 0.1.0-beta.39
+
+### Minor Changes
+
+- 2f0f8f3: Add Claris ID auth support for `fmodata` FileMaker Cloud connections, including CLI and typegen env/config support.
+- 7906ee8: Add `ROWID` record locator support to `fmodata` single-record APIs.
+  - Allow `db.from(table).get({ ROWID: 2 })`
+  - Add `update(data).byRowId(2)`
+  - Add `delete().byRowId(2)`
+
+- ac7c9f4: Split the fmodata count API into 2 flows. `db.from(table).count()` now runs a count-only query against the `/$count` endpoint, while `db.from(table).list().count()` keeps the list query and returns `{ records, count }` from a single request. This improves pagination ergonomics and avoids forcing two requests when rows and total count are both needed.
+
+### Patch Changes
+
+- 3d8cd82: Fix `insert()` and `update(..., { returnFullRecord: true })` to preserve merged `Prefer` headers for `fmodata.include-specialcolumns` and `fmodata.entity-ids`, and return special columns in typed full-record mutation responses.
+- c0ab6fd: Quote reserved `ID` field names case-insensitively in OData selects and filters.
+
 ## 0.1.0-beta.38
 
 ### Patch Changes

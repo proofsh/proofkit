@@ -1,5 +1,20 @@
 # @proofkit/typegen
 
+## 1.1.0-beta.24
+
+### Minor Changes
+
+- 2f0f8f3: Add Claris ID auth support for `fmodata` FileMaker Cloud connections, including CLI and typegen env/config support.
+
+### Patch Changes
+
+- Updated dependencies [2f0f8f3]
+- Updated dependencies [3d8cd82]
+- Updated dependencies [7906ee8]
+- Updated dependencies [c0ab6fd]
+- Updated dependencies [ac7c9f4]
+  - @proofkit/fmodata@0.1.0-beta.39
+
 ## 1.1.0-beta.23
 
 ### Patch Changes

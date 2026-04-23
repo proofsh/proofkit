@@ -8,7 +8,7 @@ description: >
   migration workflow, troubleshooting "filemaker is not supported" errors.
 type: core
 library: proofkit
-library_version: "0.4.0-beta.14"
+library_version: "0.4.0-beta.15"
 requires:
   - fmodata-client
 sources:

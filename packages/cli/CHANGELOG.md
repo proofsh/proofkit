@@ -1,5 +1,14 @@
 # @proofgeist/kit
 
+## 2.0.0-beta.30
+
+### Patch Changes
+
+- 63d309b: Fix browser FileMaker scaffolds to install `@proofkit/typegen` and run the local `typegen` bin during initial codegen.
+- d8fba3f: Normalize non-interactive FileMaker layout names against live layout casing so hosted init and release smoke tests do not fail on case-only layout drift.
+- Updated dependencies [2f0f8f3]
+  - @proofkit/typegen@1.1.0-beta.24
+
 ## 2.0.0-beta.29
 
 ### Patch Changes
