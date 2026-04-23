@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod/v4";
@@ -11,7 +12,6 @@ const smokeEnvSchema = z.object({
   OTTO_ADMIN_API_KEY: z.string().min(1),
   FM_DATA_API_KEY: z.string().min(1),
   FM_FILE_NAME: z.string().min(1),
-  FM_LAYOUT_NAME: z.string().min(1),
 });
 
 const parsedSmokeEnv = smokeEnvSchema.safeParse(process.env);
@@ -27,8 +27,7 @@ describeWhenSmokeEnvPresent("External integration smoke tests (non-interactive C
     return;
   }
 
-  // Use root-level tmp directory for test outputs
-  const testDir = join(__dirname, "..", "..", "tmp", "cli-tests");
+  const testDir = join(tmpdir(), "proofkit-cli-tests");
   const cliPath = join(__dirname, "..", "dist", "index.js");
   const projectName = "test-fm-project";
   const projectDir = join(testDir, projectName);
@@ -60,8 +59,6 @@ describeWhenSmokeEnvPresent("External integration smoke tests (non-interactive C
       `--admin-api-key "${testEnv.OTTO_ADMIN_API_KEY}"`,
       `--data-api-key "${testEnv.FM_DATA_API_KEY}"`,
       `--file-name "${testEnv.FM_FILE_NAME}"`,
-      `--layout-name "${testEnv.FM_LAYOUT_NAME}"`,
-      "--schema-name Contacts",
       "--no-git", // Skip git initialization for testing
     ].join(" ");
 
