@@ -5,14 +5,22 @@ import { BuilderInvariantError } from "../errors";
 import type { FMTable, InferSchemaOutputFromFMTable } from "../orm/table";
 import { getBaseTableConfig, getTableName } from "../orm/table";
 import type { FMODataLayer, ODataConfig } from "../services";
-import { transformFieldNamesToIds } from "../transform";
-import type { ExecutableBuilder, ExecuteMethodOptions, ExecuteOptions, Result } from "../types";
+import { transformFieldNamesToIds, transformResponseFields } from "../transform";
+import type {
+  ConditionallyWithSpecialColumns,
+  ExecutableBuilder,
+  ExecuteMethodOptions,
+  ExecuteOptions,
+  NormalizeIncludeSpecialColumns,
+  Result,
+} from "../types";
 import { getAcceptHeader } from "../types";
-import { validateAndTransformInput } from "../validation";
+import { validateAndTransformInput, validateSingleResponse } from "../validation";
 import {
   buildMutationUrl,
   extractAffectedRows,
   mergeMutationExecuteOptions,
+  mergePreferHeaderValues,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
 import { parseErrorResponse } from "./error-parser";
@@ -27,6 +35,7 @@ export class UpdateBuilder<
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
   Occ extends FMTable<any, any>,
   ReturnPreference extends "minimal" | "representation" = "minimal",
+  DatabaseIncludeSpecialColumns extends boolean = false,
 > {
   private readonly table: Occ;
   private readonly data: Partial<InferSchemaOutputFromFMTable<Occ>>;
@@ -52,8 +61,8 @@ export class UpdateBuilder<
    * Update a single record by ID
    * Returns updated count by default, or full record if returnFullRecord was set to true
    */
-  byId(id: string | number): ExecutableUpdateBuilder<Occ, true, ReturnPreference> {
-    return new ExecutableUpdateBuilder<Occ, true, ReturnPreference>({
+  byId(id: string | number): ExecutableUpdateBuilder<Occ, true, ReturnPreference, DatabaseIncludeSpecialColumns> {
+    return new ExecutableUpdateBuilder<Occ, true, ReturnPreference, DatabaseIncludeSpecialColumns>({
       occurrence: this.table,
       layer: this.layer,
       data: this.data,
@@ -68,7 +77,9 @@ export class UpdateBuilder<
    * Returns updated count by default, or full record if returnFullRecord was set to true
    * @param fn Callback that receives a QueryBuilder for building the filter
    */
-  where(fn: (q: QueryBuilder<Occ>) => QueryBuilder<Occ>): ExecutableUpdateBuilder<Occ, true, ReturnPreference> {
+  where(
+    fn: (q: QueryBuilder<Occ>) => QueryBuilder<Occ>,
+  ): ExecutableUpdateBuilder<Occ, true, ReturnPreference, DatabaseIncludeSpecialColumns> {
     // Create a QueryBuilder for the user to configure
     const queryBuilder = new QueryBuilder<Occ>({
       occurrence: this.table,
@@ -78,7 +89,7 @@ export class UpdateBuilder<
     // Let the user configure it
     const configuredBuilder = fn(queryBuilder);
 
-    return new ExecutableUpdateBuilder<Occ, true, ReturnPreference>({
+    return new ExecutableUpdateBuilder<Occ, true, ReturnPreference, DatabaseIncludeSpecialColumns>({
       occurrence: this.table,
       layer: this.layer,
       data: this.data,
@@ -99,8 +110,13 @@ export class ExecutableUpdateBuilder<
   Occ extends FMTable<any, any>,
   _IsByFilter extends boolean,
   ReturnPreference extends "minimal" | "representation" = "minimal",
+  DatabaseIncludeSpecialColumns extends boolean = false,
 > implements
-    ExecutableBuilder<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
+    ExecutableBuilder<
+      ReturnPreference extends "minimal"
+        ? { updatedCount: number }
+        : ConditionallyWithSpecialColumns<InferSchemaOutputFromFMTable<Occ>, DatabaseIncludeSpecialColumns, false>
+    >
 {
   private readonly table: Occ;
   private readonly data: Partial<InferSchemaOutputFromFMTable<Occ>>;
@@ -131,15 +147,28 @@ export class ExecutableUpdateBuilder<
     this.config = runtime.config;
   }
 
-  execute(
-    options?: ExecuteMethodOptions<ExecuteOptions>,
+  execute<EO extends ExecuteOptions>(
+    options?: ExecuteMethodOptions<EO>,
   ): Promise<
-    Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
+    Result<
+      ReturnPreference extends "minimal"
+        ? { updatedCount: number }
+        : ConditionallyWithSpecialColumns<
+            InferSchemaOutputFromFMTable<Occ>,
+            NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
+            false
+          >
+    >
   > {
-    const mergedOptions = mergeMutationExecuteOptions(options, this.config.useEntityIds);
+    const mergedOptions = mergeMutationExecuteOptions(
+      options,
+      this.config.useEntityIds,
+      this.config.includeSpecialColumns,
+    );
     // biome-ignore lint/suspicious/noExplicitAny: Execute options include dynamic fetch fields
     const { method: _method, body: _body, headers: callerHeaders, ...requestOptions } = mergedOptions as any;
     const shouldUseIds = mergedOptions.useEntityIds ?? this.config.useEntityIds;
+    const includeSpecialColumns = mergedOptions.includeSpecialColumns ?? this.config.includeSpecialColumns;
     const tableId = resolveMutationTableId(this.table, shouldUseIds, "ExecutableUpdateBuilder");
     const url = buildMutationUrl({
       databaseName: this.config.databaseName,
@@ -152,9 +181,18 @@ export class ExecutableUpdateBuilder<
       builderName: "ExecutableUpdateBuilder",
     });
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (this.returnPreference === "representation") {
-      headers.Prefer = "return=representation";
+    const requestHeaders = new Headers(callerHeaders || {});
+    const preferHeader = mergePreferHeaderValues(
+      this.returnPreference === "representation" ? "return=representation" : undefined,
+      shouldUseIds ? "fmodata.entity-ids" : undefined,
+      includeSpecialColumns ? "fmodata.include-specialcolumns" : undefined,
+      requestHeaders.get("Prefer") ?? undefined,
+    );
+    requestHeaders.set("Content-Type", "application/json");
+    if (preferHeader) {
+      requestHeaders.set("Prefer", preferHeader);
+    } else {
+      requestHeaders.delete("Prefer");
     }
 
     const pipeline = Effect.gen(this, function* () {
@@ -176,11 +214,6 @@ export class ExecutableUpdateBuilder<
         this.table && shouldUseIds ? transformFieldNamesToIds(validatedData, this.table) : validatedData;
 
       // Step 3: Make PATCH request via DI
-      const requestHeaders = new Headers(callerHeaders);
-      for (const [key, value] of Object.entries(headers)) {
-        requestHeaders.set(key, value);
-      }
-
       const response = yield* requestFromService(url, {
         ...requestOptions,
         method: "PATCH",
@@ -200,7 +233,15 @@ export class ExecutableUpdateBuilder<
     return runLayerResult(this.layer, pipeline, "fmodata.update", {
       "fmodata.table": getTableName(this.table),
     }) as Promise<
-      Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
+      Result<
+        ReturnPreference extends "minimal"
+          ? { updatedCount: number }
+          : ConditionallyWithSpecialColumns<
+              InferSchemaOutputFromFMTable<Occ>,
+              NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
+              false
+            >
+      >
     >;
   }
 
@@ -233,23 +274,53 @@ export class ExecutableUpdateBuilder<
   toRequest(baseUrl: string, options?: ExecuteOptions): Request {
     const config = this.getRequestConfig();
     const fullUrl = `${baseUrl}${config.url}`;
+    const preferHeader = mergePreferHeaderValues(
+      this.returnPreference === "representation" ? "return=representation" : undefined,
+      (options?.useEntityIds ?? this.config.useEntityIds) ? "fmodata.entity-ids" : undefined,
+      (options?.includeSpecialColumns ?? this.config.includeSpecialColumns)
+        ? "fmodata.include-specialcolumns"
+        : undefined,
+    );
 
     return new Request(fullUrl, {
       method: config.method,
       headers: {
         "Content-Type": "application/json",
         Accept: getAcceptHeader(options?.includeODataAnnotations),
+        ...(preferHeader ? { Prefer: preferHeader } : {}),
       },
       body: config.body,
     });
   }
 
-  async processResponse(
+  async processResponse<EO extends ExecuteOptions | undefined = undefined>(
     response: Response,
-    _options?: ExecuteOptions,
+    options?: EO,
   ): Promise<
-    Result<ReturnPreference extends "minimal" ? { updatedCount: number } : InferSchemaOutputFromFMTable<Occ>>
+    Result<
+      ReturnPreference extends "minimal"
+        ? { updatedCount: number }
+        : ConditionallyWithSpecialColumns<
+            InferSchemaOutputFromFMTable<Occ>,
+            NormalizeIncludeSpecialColumns<
+              EO extends ExecuteOptions ? EO["includeSpecialColumns"] : undefined,
+              DatabaseIncludeSpecialColumns
+            >,
+            false
+          >
+    >
   > {
+    type UpdateResponse = ReturnPreference extends "minimal"
+      ? { updatedCount: number }
+      : ConditionallyWithSpecialColumns<
+          InferSchemaOutputFromFMTable<Occ>,
+          NormalizeIncludeSpecialColumns<
+            EO extends ExecuteOptions ? EO["includeSpecialColumns"] : undefined,
+            DatabaseIncludeSpecialColumns
+          >,
+          false
+        >;
+
     // Check for error responses (important for batch operations)
     if (!response.ok) {
       const tableName = getTableName(this.table);
@@ -262,9 +333,7 @@ export class ExecutableUpdateBuilder<
     if (!text || text.trim() === "") {
       const updatedCount = extractAffectedRows(undefined, response.headers, 1, "updatedCount");
       return {
-        data: { updatedCount } as ReturnPreference extends "minimal"
-          ? { updatedCount: number }
-          : InferSchemaOutputFromFMTable<Occ>,
+        data: { updatedCount } as unknown as UpdateResponse,
         error: undefined,
       };
     }
@@ -294,11 +363,39 @@ export class ExecutableUpdateBuilder<
 
     // Handle based on return preference
     if (this.returnPreference === "representation") {
-      // Return the full updated record
+      const shouldUseIds = options?.useEntityIds ?? this.config.useEntityIds;
+      const includeSpecialColumns = options?.includeSpecialColumns ?? this.config.includeSpecialColumns;
+
+      let transformedResponse = rawResponse;
+      if (this.table && shouldUseIds) {
+        transformedResponse = transformResponseFields(rawResponse, this.table, undefined);
+      }
+
+      const validation = await validateSingleResponse<InferSchemaOutputFromFMTable<Occ>>(
+        transformedResponse,
+        getBaseTableConfig(this.table).schema,
+        undefined,
+        undefined,
+        "exact",
+        includeSpecialColumns,
+      );
+
+      if (!validation.valid) {
+        return { data: undefined, error: validation.error };
+      }
+
+      if (validation.data === null) {
+        return {
+          data: undefined,
+          error: new BuilderInvariantError(
+            "ExecutableUpdateBuilder.processResponse",
+            "update operation returned null response",
+          ),
+        };
+      }
+
       return {
-        data: rawResponse as ReturnPreference extends "minimal"
-          ? { updatedCount: number }
-          : InferSchemaOutputFromFMTable<Occ>,
+        data: validation.data as unknown as UpdateResponse,
         error: undefined,
       };
     }
@@ -306,9 +403,7 @@ export class ExecutableUpdateBuilder<
     const updatedCount = extractAffectedRows(rawResponse, response.headers, 0, "updatedCount");
 
     return {
-      data: { updatedCount } as ReturnPreference extends "minimal"
-        ? { updatedCount: number }
-        : InferSchemaOutputFromFMTable<Occ>,
+      data: { updatedCount } as unknown as UpdateResponse,
       error: undefined,
     };
   }

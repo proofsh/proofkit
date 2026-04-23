@@ -1,4 +1,5 @@
 import type { Column } from "../../orm/column";
+import type { CountedListResult } from "../../types";
 
 /**
  * Type-safe orderBy type that provides better DX than odata-query's default.
@@ -74,6 +75,8 @@ export interface SystemColumnsOption {
   ROWMODID?: boolean;
 }
 
+export type { CountedListResult } from "../../types";
+
 /**
  * Extract system columns type from SystemColumnsOption.
  * Returns an object type with ROWID and/or ROWMODID properties when set to true.
@@ -93,28 +96,38 @@ export type QueryReturnType<
   SingleMode extends "exact" | "maybe" | false,
   IsCount extends boolean,
   Expands extends ExpandedRelations,
+  IncludeCount extends boolean,
   SystemCols extends SystemColumnsOption | undefined = undefined,
 > = IsCount extends true
   ? number
-  : // Use tuple wrapping [Selected] extends [...] to prevent distribution over unions
-    // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
-    [Selected] extends [Record<string, Column<any, any, any, any>>]
-    ? SingleMode extends "exact"
-      ? MapSelectToReturnType<Selected, T> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
-      : SingleMode extends "maybe"
-        ?
-            | (MapSelectToReturnType<Selected, T> &
-                ResolveExpandedRelations<Expands> &
-                SystemColumnsFromOption<SystemCols>)
-            | null
-        : (MapSelectToReturnType<Selected, T> &
-            ResolveExpandedRelations<Expands> &
-            SystemColumnsFromOption<SystemCols>)[]
-    : // Use tuple wrapping to prevent distribution over union of keys
-      [Selected] extends [keyof T]
+  : IncludeCount extends true
+    ? CountedListResult<
+        // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+        [Selected] extends [Record<string, Column<any, any, any, any>>]
+          ? MapSelectToReturnType<Selected, T> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
+          : [Selected] extends [keyof T]
+            ? Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
+            : never
+      >
+    : // Use tuple wrapping [Selected] extends [...] to prevent distribution over unions
+      // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+      [Selected] extends [Record<string, Column<any, any, any, any>>]
       ? SingleMode extends "exact"
-        ? Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
+        ? MapSelectToReturnType<Selected, T> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
         : SingleMode extends "maybe"
-          ? (Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>) | null
-          : (Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>)[]
-      : never;
+          ?
+              | (MapSelectToReturnType<Selected, T> &
+                  ResolveExpandedRelations<Expands> &
+                  SystemColumnsFromOption<SystemCols>)
+              | null
+          : (MapSelectToReturnType<Selected, T> &
+              ResolveExpandedRelations<Expands> &
+              SystemColumnsFromOption<SystemCols>)[]
+      : // Use tuple wrapping to prevent distribution over union of keys
+        [Selected] extends [keyof T]
+        ? SingleMode extends "exact"
+          ? Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
+          : SingleMode extends "maybe"
+            ? (Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>) | null
+            : (Pick<T, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>)[]
+        : never;

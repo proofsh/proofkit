@@ -9,9 +9,11 @@ import type { FMODataLayer, ODataConfig } from "../services";
 import { transformFieldNamesToIds, transformResponseFields } from "../transform";
 import type {
   ConditionallyWithODataAnnotations,
+  ConditionallyWithSpecialColumns,
   ExecutableBuilder,
   ExecuteMethodOptions,
   ExecuteOptions,
+  NormalizeIncludeSpecialColumns,
   Result,
 } from "../types";
 import { getAcceptHeader } from "../types";
@@ -19,6 +21,7 @@ import { validateAndTransformInput, validateSingleResponse } from "../validation
 import {
   getLocationHeader,
   mergeMutationExecuteOptions,
+  mergePreferHeaderValues,
   parseRowIdFromLocationHeader,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
@@ -36,9 +39,16 @@ export class InsertBuilder<
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
   Occ extends FMTable<any, any> | undefined = undefined,
   ReturnPreference extends "minimal" | "representation" = "representation",
+  DatabaseIncludeSpecialColumns extends boolean = false,
 > implements
     ExecutableBuilder<
-      ReturnPreference extends "minimal" ? { ROWID: number } : InferSchemaOutputFromFMTable<NonNullable<Occ>>
+      ReturnPreference extends "minimal"
+        ? { ROWID: number }
+        : ConditionallyWithSpecialColumns<
+            InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+            DatabaseIncludeSpecialColumns,
+            false
+          >
     >
 {
   private readonly table?: Occ;
@@ -67,8 +77,8 @@ export class InsertBuilder<
    */
   private mergeExecuteOptions(
     options?: RequestInit & FFetchOptions & ExecuteOptions,
-  ): RequestInit & FFetchOptions & { useEntityIds?: boolean } {
-    return mergeMutationExecuteOptions(options, this.config.useEntityIds);
+  ): RequestInit & FFetchOptions & { useEntityIds?: boolean; includeSpecialColumns?: boolean } {
+    return mergeMutationExecuteOptions(options, this.config.useEntityIds, this.config.includeSpecialColumns);
   }
 
   /**
@@ -117,7 +127,11 @@ export class InsertBuilder<
       ReturnPreference extends "minimal"
         ? { ROWID: number }
         : ConditionallyWithODataAnnotations<
-            InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+            ConditionallyWithSpecialColumns<
+              InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+              NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
+              false
+            >,
             EO["includeODataAnnotations"] extends true ? true : false
           >
     >
@@ -128,8 +142,21 @@ export class InsertBuilder<
     const { method: _method, headers: callerHeaders, body: _body, ...requestOptions } = mergedOptions as any;
     const tableId = this.getTableId(mergedOptions.useEntityIds);
     const url = `/${this.config.databaseName}/${tableId}`;
-    const shouldUseIds = mergedOptions.useEntityIds ?? false;
-    const preferHeader = this.returnPreference === "minimal" ? "return=minimal" : "return=representation";
+    const shouldUseIds = mergedOptions.useEntityIds ?? this.config.useEntityIds;
+    const includeSpecialColumns = mergedOptions.includeSpecialColumns ?? this.config.includeSpecialColumns;
+    const canonicalHeaders = new Headers(callerHeaders || {});
+    const preferHeader = mergePreferHeaderValues(
+      this.returnPreference === "minimal" ? "return=minimal" : "return=representation",
+      shouldUseIds ? "fmodata.entity-ids" : undefined,
+      includeSpecialColumns ? "fmodata.include-specialcolumns" : undefined,
+      canonicalHeaders.get("Prefer") ?? undefined,
+    );
+    canonicalHeaders.set("Content-Type", "application/json");
+    if (preferHeader) {
+      canonicalHeaders.set("Prefer", preferHeader);
+    } else {
+      canonicalHeaders.delete("Prefer");
+    }
 
     const pipeline = Effect.gen(this, function* () {
       // Step 1: Validate input
@@ -154,11 +181,7 @@ export class InsertBuilder<
       const responseData = yield* requestFromService<any>(url, {
         ...requestOptions,
         method: "POST",
-        headers: {
-          ...(callerHeaders || {}),
-          "Content-Type": "application/json",
-          Prefer: preferHeader,
-        },
+        headers: canonicalHeaders,
         body: JSON.stringify(transformedData),
       });
 
@@ -191,6 +214,7 @@ export class InsertBuilder<
           undefined,
           undefined,
           "exact",
+          includeSpecialColumns,
         ),
       );
 
@@ -216,7 +240,11 @@ export class InsertBuilder<
         ReturnPreference extends "minimal"
           ? { ROWID: number }
           : ConditionallyWithODataAnnotations<
-              InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+              ConditionallyWithSpecialColumns<
+                InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+                NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
+                false
+              >,
               EO["includeODataAnnotations"] extends true ? true : false
             >
       >
@@ -241,26 +269,41 @@ export class InsertBuilder<
   toRequest(baseUrl: string, options?: ExecuteOptions): Request {
     const config = this.getRequestConfig();
     const fullUrl = `${baseUrl}${config.url}`;
-
-    // Set Prefer header based on return preference
-    const preferHeader = this.returnPreference === "minimal" ? "return=minimal" : "return=representation";
+    const preferHeader = mergePreferHeaderValues(
+      this.returnPreference === "minimal" ? "return=minimal" : "return=representation",
+      (options?.useEntityIds ?? this.config.useEntityIds) ? "fmodata.entity-ids" : undefined,
+      (options?.includeSpecialColumns ?? this.config.includeSpecialColumns)
+        ? "fmodata.include-specialcolumns"
+        : undefined,
+    );
 
     return new Request(fullUrl, {
       method: config.method,
       headers: {
         "Content-Type": "application/json",
         Accept: getAcceptHeader(options?.includeODataAnnotations),
-        Prefer: preferHeader,
+        ...(preferHeader ? { Prefer: preferHeader } : {}),
       },
       body: config.body,
     });
   }
 
-  async processResponse(
+  async processResponse<EO extends ExecuteOptions | undefined = undefined>(
     response: Response,
-    options?: ExecuteOptions,
+    options?: EO,
   ): Promise<
-    Result<ReturnPreference extends "minimal" ? { ROWID: number } : InferSchemaOutputFromFMTable<NonNullable<Occ>>>
+    Result<
+      ReturnPreference extends "minimal"
+        ? { ROWID: number }
+        : ConditionallyWithSpecialColumns<
+            InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+            NormalizeIncludeSpecialColumns<
+              EO extends ExecuteOptions ? EO["includeSpecialColumns"] : undefined,
+              DatabaseIncludeSpecialColumns
+            >,
+            false
+          >
+    >
   > {
     // Check for error responses (important for batch operations)
     if (!response.ok) {
@@ -345,6 +388,7 @@ export class InsertBuilder<
 
     // Transform response field IDs back to names if using entity IDs
     const shouldUseIds = options?.useEntityIds ?? this.config.useEntityIds;
+    const includeSpecialColumns = options?.includeSpecialColumns ?? this.config.includeSpecialColumns;
 
     let transformedResponse = rawResponse;
     if (this.table && shouldUseIds) {
@@ -376,6 +420,7 @@ export class InsertBuilder<
       undefined, // No selected fields for insert
       undefined, // No expand configs
       "exact", // Expect exactly one record
+      includeSpecialColumns,
     );
 
     if (!validation.valid) {

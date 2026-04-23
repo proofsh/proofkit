@@ -82,6 +82,94 @@ export type RecordReturnType<
       ? Pick<Schema, Selected> & ResolveExpandedRelations<Expands> & SystemColumnsFromOption<SystemCols>
       : never;
 
+type RecordBuilderHasSelect<
+  // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
+  Occ extends FMTable<any, any>,
+  IsSingleField extends boolean,
+  Selected,
+> = IsSingleField extends true
+  ? false
+  : // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+    Selected extends Record<string, Column<any, any, any>>
+    ? true
+    : Selected extends keyof InferSchemaOutputFromFMTable<NonNullable<Occ>>
+      ? false
+      : true;
+
+type ExecutableRecordBuilderReturn<
+  // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
+  Occ extends FMTable<any, any>,
+  IsSingleField extends boolean,
+  // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+  FieldColumn extends Column<any, any, any, any> | undefined,
+  Selected extends
+    | keyof InferSchemaOutputFromFMTable<NonNullable<Occ>>
+    // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+    | Record<string, Column<any, any, ExtractTableName<NonNullable<Occ>>>>,
+  Expands extends ExpandedRelations,
+  SystemCols extends SystemColumnsOption | undefined,
+> =
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        RecordReturnType<
+          InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+          IsSingleField,
+          FieldColumn,
+          Selected,
+          Expands,
+          SystemCols
+        >,
+        true,
+        RecordBuilderHasSelect<Occ, IsSingleField, Selected>
+      >,
+      true
+    >
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        RecordReturnType<
+          InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+          IsSingleField,
+          FieldColumn,
+          Selected,
+          Expands,
+          SystemCols
+        >,
+        true,
+        RecordBuilderHasSelect<Occ, IsSingleField, Selected>
+      >,
+      false
+    >
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        RecordReturnType<
+          InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+          IsSingleField,
+          FieldColumn,
+          Selected,
+          Expands,
+          SystemCols
+        >,
+        false,
+        RecordBuilderHasSelect<Occ, IsSingleField, Selected>
+      >,
+      true
+    >
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        RecordReturnType<
+          InferSchemaOutputFromFMTable<NonNullable<Occ>>,
+          IsSingleField,
+          FieldColumn,
+          Selected,
+          Expands,
+          SystemCols
+        >,
+        false,
+        RecordBuilderHasSelect<Occ, IsSingleField, Selected>
+      >,
+      false
+    >;
+
 export class RecordBuilder<
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration, default allows untyped tables
   Occ extends FMTable<any, any> = FMTable<any, any>,
@@ -98,16 +186,7 @@ export class RecordBuilder<
   DatabaseIncludeSpecialColumns extends boolean = false,
   SystemCols extends SystemColumnsOption | undefined = undefined,
 > implements
-    ExecutableBuilder<
-      RecordReturnType<
-        InferSchemaOutputFromFMTable<NonNullable<Occ>>,
-        IsSingleField,
-        FieldColumn,
-        Selected,
-        Expands,
-        SystemCols
-      >
-    >
+    ExecutableBuilder<ExecutableRecordBuilderReturn<Occ, IsSingleField, FieldColumn, Selected, Expands, SystemCols>>
 {
   private readonly table: Occ;
   private readonly recordId: string | number;
@@ -406,9 +485,9 @@ export class RecordBuilder<
   >(
     targetTable: ValidExpandTarget<Occ, TargetTable>,
     callback?: (
-      builder: QueryBuilder<TargetTable, keyof InferSchemaOutputFromFMTable<TargetTable>, false, false, {}>,
+      builder: QueryBuilder<TargetTable, keyof InferSchemaOutputFromFMTable<TargetTable>, false, false, {}, false>,
       // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryBuilder configuration
-    ) => QueryBuilder<TargetTable, TSelected, any, any, TNestedExpands>,
+    ) => QueryBuilder<TargetTable, TSelected, any, any, TNestedExpands, any, any>,
   ): RecordBuilder<
     Occ,
     false,
@@ -451,14 +530,21 @@ export class RecordBuilder<
 
     // Use ExpandBuilder.processExpand to handle the expand logic
     const expandBuilder = new ExpandBuilder(this.config.useEntityIds, this.logger);
-    type TargetBuilder = QueryBuilder<TargetTable, keyof InferSchemaOutputFromFMTable<TargetTable>, false, false, {}>;
+    type TargetBuilder = QueryBuilder<
+      TargetTable,
+      keyof InferSchemaOutputFromFMTable<TargetTable>,
+      false,
+      false,
+      {},
+      false
+    >;
     const expandConfig = expandBuilder.processExpand<TargetTable, TargetBuilder>(
       targetTable,
       this.table ?? undefined,
       callback as ((builder: TargetBuilder) => TargetBuilder) | undefined,
       () =>
         // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryBuilder configuration
-        new QueryBuilder<TargetTable, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
+        new QueryBuilder<TargetTable, any, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
           occurrence: targetTable,
           layer: this.layer,
         }),
@@ -480,6 +566,7 @@ export class RecordBuilder<
     false,
     false,
     {},
+    false,
     DatabaseIncludeSpecialColumns,
     undefined
   > {
@@ -498,7 +585,7 @@ export class RecordBuilder<
 
     // Create QueryBuilder with target table
     // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryBuilder configuration
-    const builder = new QueryBuilder<TargetTable, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
+    const builder = new QueryBuilder<TargetTable, any, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
       occurrence: targetTable,
       layer: this.layer,
     });

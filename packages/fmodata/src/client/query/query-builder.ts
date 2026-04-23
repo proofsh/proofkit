@@ -46,7 +46,7 @@ import { type NavigationConfig, QueryUrlBuilder } from "./url-builder";
 
 export type { ExpandedRelations } from "../builders/index";
 // Re-export types for backward compatibility
-export type { QueryReturnType, SystemColumnsOption, TypeSafeOrderBy } from "./types";
+export type { CountedListResult, QueryReturnType, SystemColumnsOption, TypeSafeOrderBy } from "./types";
 
 /**
  * Default maximum number of records to return in a list query.
@@ -65,6 +65,85 @@ function normalizeQueryBuildError(error: unknown): FMODataErrorType {
   return new BuilderInvariantError("QueryBuilder.execute", String(error));
 }
 
+type QueryBuilderHasSelect<
+  // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
+  Occ extends FMTable<any, any>,
+  Selected,
+  // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+> = Selected extends Record<string, Column<any, any, any>>
+  ? true
+  : Selected extends keyof InferSchemaOutputFromFMTable<Occ>
+    ? false
+    : true;
+
+type BaseQueryBuilderReturn<
+  // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
+  Occ extends FMTable<any, any>,
+  Selected extends
+    | keyof InferSchemaOutputFromFMTable<Occ>
+    // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+    | Record<string, Column<any, any, ExtractTableName<Occ>>>,
+  SingleMode extends "exact" | "maybe" | false,
+  IsCount extends boolean,
+  Expands extends ExpandedRelations,
+  IncludeCount extends boolean,
+  SystemCols extends SystemColumnsOption | undefined,
+> = QueryReturnType<
+  InferSchemaOutputFromFMTable<Occ>,
+  Selected,
+  SingleMode,
+  IsCount,
+  Expands,
+  IncludeCount,
+  SystemCols
+>;
+
+type ExecutableQueryBuilderReturn<
+  // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
+  Occ extends FMTable<any, any>,
+  Selected extends
+    | keyof InferSchemaOutputFromFMTable<Occ>
+    // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
+    | Record<string, Column<any, any, ExtractTableName<Occ>>>,
+  SingleMode extends "exact" | "maybe" | false,
+  IsCount extends boolean,
+  Expands extends ExpandedRelations,
+  IncludeCount extends boolean,
+  SystemCols extends SystemColumnsOption | undefined,
+> =
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        BaseQueryBuilderReturn<Occ, Selected, SingleMode, IsCount, Expands, IncludeCount, SystemCols>,
+        true,
+        QueryBuilderHasSelect<Occ, Selected>
+      >,
+      true
+    >
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        BaseQueryBuilderReturn<Occ, Selected, SingleMode, IsCount, Expands, IncludeCount, SystemCols>,
+        true,
+        QueryBuilderHasSelect<Occ, Selected>
+      >,
+      false
+    >
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        BaseQueryBuilderReturn<Occ, Selected, SingleMode, IsCount, Expands, IncludeCount, SystemCols>,
+        false,
+        QueryBuilderHasSelect<Occ, Selected>
+      >,
+      true
+    >
+  | ConditionallyWithODataAnnotations<
+      ConditionallyWithSpecialColumns<
+        BaseQueryBuilderReturn<Occ, Selected, SingleMode, IsCount, Expands, IncludeCount, SystemCols>,
+        false,
+        QueryBuilderHasSelect<Occ, Selected>
+      >,
+      false
+    >;
+
 export class QueryBuilder<
   // biome-ignore lint/suspicious/noExplicitAny: Accepts any FMTable configuration
   Occ extends FMTable<any, any>,
@@ -76,11 +155,12 @@ export class QueryBuilder<
   IsCount extends boolean = false,
   // biome-ignore lint/complexity/noBannedTypes: Empty object type represents no expands by default
   Expands extends ExpandedRelations = {},
+  IncludeCount extends boolean = false,
   DatabaseIncludeSpecialColumns extends boolean = false,
   SystemCols extends SystemColumnsOption | undefined = undefined,
 > implements
     ExecutableBuilder<
-      QueryReturnType<InferSchemaOutputFromFMTable<Occ>, Selected, SingleMode, IsCount, Expands, SystemCols>
+      ExecutableQueryBuilderReturn<Occ, Selected, SingleMode, IsCount, Expands, IncludeCount, SystemCols>
     >
 {
   private readState = createInitialQueryReadBuilderState<InferSchemaOutputFromFMTable<Occ>>();
@@ -129,6 +209,16 @@ export class QueryBuilder<
   private set isCountMode(isCountMode: IsCount) {
     this.readState = cloneQueryReadBuilderState(this.readState, {
       isCountMode,
+    });
+  }
+
+  private get includeCountMode(): IncludeCount {
+    return this.readState.includeCountMode as IncludeCount;
+  }
+
+  private set includeCountMode(includeCountMode: IncludeCount) {
+    this.readState = cloneQueryReadBuilderState(this.readState, {
+      includeCountMode,
     });
   }
 
@@ -217,21 +307,33 @@ export class QueryBuilder<
       | Record<string, Column<any, any, ExtractTableName<Occ>>> = Selected,
     NewSingle extends "exact" | "maybe" | false = SingleMode,
     NewCount extends boolean = IsCount,
+    NewIncludeCount extends boolean = IncludeCount,
     NewSystemCols extends SystemColumnsOption | undefined = SystemCols,
   >(changes: {
     selectedFields?: NewSelected;
     singleMode?: NewSingle;
     isCountMode?: NewCount;
+    includeCountMode?: NewIncludeCount;
     queryOptions?: Partial<QueryOptions<InferSchemaOutputFromFMTable<Occ>>>;
     fieldMapping?: Record<string, string>;
     systemColumns?: NewSystemCols;
-  }): QueryBuilder<Occ, NewSelected, NewSingle, NewCount, Expands, DatabaseIncludeSpecialColumns, NewSystemCols> {
+  }): QueryBuilder<
+    Occ,
+    NewSelected,
+    NewSingle,
+    NewCount,
+    Expands,
+    NewIncludeCount,
+    DatabaseIncludeSpecialColumns,
+    NewSystemCols
+  > {
     const newBuilder = new QueryBuilder<
       Occ,
       NewSelected,
       NewSingle,
       NewCount,
       Expands,
+      NewIncludeCount,
       DatabaseIncludeSpecialColumns,
       NewSystemCols
     >({
@@ -245,6 +347,8 @@ export class QueryBuilder<
       singleMode: (changes.singleMode ?? this.readState.singleMode) as any,
       // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
       isCountMode: (changes.isCountMode ?? this.readState.isCountMode) as any,
+      // biome-ignore lint/suspicious/noExplicitAny: Type assertion for generic type parameter
+      includeCountMode: (changes.includeCountMode ?? this.readState.includeCountMode) as any,
       fieldMapping: "fieldMapping" in changes ? changes.fieldMapping : this.readState.fieldMapping,
       systemColumns: changes.systemColumns !== undefined ? changes.systemColumns : this.readState.systemColumns,
       navigation: this.readState.navigation,
@@ -287,6 +391,7 @@ export class QueryBuilder<
     SingleMode,
     IsCount,
     Expands,
+    IncludeCount,
     DatabaseIncludeSpecialColumns,
     undefined
   >;
@@ -298,7 +403,7 @@ export class QueryBuilder<
   >(
     fields: TSelect,
     systemColumns?: TSystemCols,
-  ): QueryBuilder<Occ, TSelect, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, TSystemCols>;
+  ): QueryBuilder<Occ, TSelect, SingleMode, IsCount, Expands, IncludeCount, DatabaseIncludeSpecialColumns, TSystemCols>;
   // biome-ignore lint/suspicious/noExplicitAny: Implementation signature hidden from callers
   select(fields: any, systemColumns?: any): any {
     if (fields === "all") {
@@ -348,7 +453,16 @@ export class QueryBuilder<
    */
   where(
     expression: FilterExpression | string,
-  ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  ): QueryBuilder<
+    Occ,
+    Selected,
+    SingleMode,
+    IsCount,
+    Expands,
+    IncludeCount,
+    DatabaseIncludeSpecialColumns,
+    SystemCols
+  > {
     // Handle raw string filters (escape hatch)
     if (typeof expression === "string") {
       this.setFilterExpression(undefined);
@@ -400,7 +514,16 @@ export class QueryBuilder<
           // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
           ...Array<Column<any, any, ExtractTableName<Occ>> | OrderByExpression<ExtractTableName<Occ>>>,
         ]
-  ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  ): QueryBuilder<
+    Occ,
+    Selected,
+    SingleMode,
+    IsCount,
+    Expands,
+    IncludeCount,
+    DatabaseIncludeSpecialColumns,
+    SystemCols
+  > {
     const tableName = getTableName(this.occurrence);
 
     // Handle variadic arguments (multiple fields)
@@ -520,14 +643,32 @@ export class QueryBuilder<
 
   top(
     count: number,
-  ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  ): QueryBuilder<
+    Occ,
+    Selected,
+    SingleMode,
+    IsCount,
+    Expands,
+    IncludeCount,
+    DatabaseIncludeSpecialColumns,
+    SystemCols
+  > {
     this.patchQueryOptions({ top: count });
     return this;
   }
 
   skip(
     count: number,
-  ): QueryBuilder<Occ, Selected, SingleMode, IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  ): QueryBuilder<
+    Occ,
+    Selected,
+    SingleMode,
+    IsCount,
+    Expands,
+    IncludeCount,
+    DatabaseIncludeSpecialColumns,
+    SystemCols
+  > {
     this.patchQueryOptions({ skip: count });
     return this;
   }
@@ -548,9 +689,9 @@ export class QueryBuilder<
     targetTable: ValidExpandTarget<Occ, TargetTable>,
     callback?: (
       // biome-ignore lint/complexity/noBannedTypes: Empty object type represents no expands in initial builder
-      builder: QueryBuilder<TargetTable, keyof InferSchemaOutputFromFMTable<TargetTable>, false, false, {}>,
+      builder: QueryBuilder<TargetTable, keyof InferSchemaOutputFromFMTable<TargetTable>, false, false, {}, false>,
       // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryBuilder configuration
-    ) => QueryBuilder<TargetTable, TSelected, any, any, TNestedExpands>,
+    ) => QueryBuilder<TargetTable, TSelected, any, any, TNestedExpands, any, any>,
   ): QueryBuilder<
     Occ,
     Selected,
@@ -563,6 +704,7 @@ export class QueryBuilder<
         nested: TNestedExpands;
       };
     },
+    IncludeCount,
     DatabaseIncludeSpecialColumns,
     SystemCols
   > {
@@ -574,6 +716,7 @@ export class QueryBuilder<
       false,
       // biome-ignore lint/complexity/noBannedTypes: Empty object type represents no expands in new builder
       {},
+      false,
       DatabaseIncludeSpecialColumns
     >;
     const expandConfig = this.expandBuilder.processExpand<TargetTable, TargetBuilder>(
@@ -582,7 +725,7 @@ export class QueryBuilder<
       callback as ((builder: TargetBuilder) => TargetBuilder) | undefined,
       () =>
         // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any QueryBuilder configuration
-        new QueryBuilder<TargetTable, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
+        new QueryBuilder<TargetTable, any, any, any, any, any, DatabaseIncludeSpecialColumns, undefined>({
           occurrence: targetTable,
           layer: this.layer,
         }),
@@ -595,17 +738,38 @@ export class QueryBuilder<
     return this as any;
   }
 
-  single(): QueryBuilder<Occ, Selected, "exact", IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  single(
+    this: QueryBuilder<Occ, Selected, false, IsCount, Expands, false, DatabaseIncludeSpecialColumns, SystemCols>,
+  ): QueryBuilder<Occ, Selected, "exact", IsCount, Expands, false, DatabaseIncludeSpecialColumns, SystemCols> {
+    if (this.readState.includeCountMode) {
+      throw new BuilderInvariantError("QueryBuilder.single", "count-enabled list queries cannot use single()");
+    }
     return this.cloneWithChanges({ singleMode: "exact" as const });
   }
 
-  maybeSingle(): QueryBuilder<Occ, Selected, "maybe", IsCount, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  maybeSingle(
+    this: QueryBuilder<Occ, Selected, false, IsCount, Expands, false, DatabaseIncludeSpecialColumns, SystemCols>,
+  ): QueryBuilder<Occ, Selected, "maybe", IsCount, Expands, false, DatabaseIncludeSpecialColumns, SystemCols> {
+    if (this.readState.includeCountMode) {
+      throw new BuilderInvariantError(
+        "QueryBuilder.maybeSingle",
+        "count-enabled list queries cannot use maybeSingle()",
+      );
+    }
     return this.cloneWithChanges({ singleMode: "maybe" as const });
   }
 
-  count(): QueryBuilder<Occ, Selected, SingleMode, true, Expands, DatabaseIncludeSpecialColumns, SystemCols> {
+  count(
+    this: QueryBuilder<Occ, Selected, false, IsCount, Expands, false, DatabaseIncludeSpecialColumns, SystemCols>,
+  ): QueryBuilder<Occ, Selected, false, IsCount, Expands, true, DatabaseIncludeSpecialColumns, SystemCols> {
+    if (this.readState.singleMode !== false) {
+      throw new BuilderInvariantError(
+        "QueryBuilder.count",
+        "single() and maybeSingle() cannot be combined with count()",
+      );
+    }
     return this.cloneWithChanges({
-      isCountMode: true as const,
+      includeCountMode: true as const,
       queryOptions: { count: true },
     });
   }
@@ -663,7 +827,15 @@ export class QueryBuilder<
     Result<
       ConditionallyWithODataAnnotations<
         ConditionallyWithSpecialColumns<
-          QueryReturnType<InferSchemaOutputFromFMTable<Occ>, Selected, SingleMode, IsCount, Expands, SystemCols>,
+          QueryReturnType<
+            InferSchemaOutputFromFMTable<Occ>,
+            Selected,
+            SingleMode,
+            IsCount,
+            Expands,
+            IncludeCount,
+            SystemCols
+          >,
           // Use the merged value: if explicitly provided in options, use that; otherwise use database default
           NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
           // Check if select was applied: if Selected is Record (object select) or a subset of keys, select was applied
@@ -680,7 +852,15 @@ export class QueryBuilder<
   > {
     type ExecuteResponse = ConditionallyWithODataAnnotations<
       ConditionallyWithSpecialColumns<
-        QueryReturnType<InferSchemaOutputFromFMTable<Occ>, Selected, SingleMode, IsCount, Expands, SystemCols>,
+        QueryReturnType<
+          InferSchemaOutputFromFMTable<Occ>,
+          Selected,
+          SingleMode,
+          IsCount,
+          Expands,
+          IncludeCount,
+          SystemCols
+        >,
         NormalizeIncludeSpecialColumns<EO["includeSpecialColumns"], DatabaseIncludeSpecialColumns>,
         // biome-ignore lint/suspicious/noExplicitAny: Generic constraint accepting any Column configuration
         Selected extends Record<string, Column<any, any, any>>
@@ -759,6 +939,7 @@ export class QueryBuilder<
               skipValidation: options?.skipValidation,
               useEntityIds: mergedOptions.useEntityIds,
               includeSpecialColumns: mergedOptions.includeSpecialColumns,
+              includeCount: this.readState.includeCountMode,
               fieldMapping: this.readState.fieldMapping,
               logger: this.logger,
             }),
@@ -810,7 +991,17 @@ export class QueryBuilder<
     response: Response,
     options?: ExecuteOptions,
   ): Promise<
-    Result<QueryReturnType<InferSchemaOutputFromFMTable<Occ>, Selected, SingleMode, IsCount, Expands, SystemCols>>
+    Result<
+      QueryReturnType<
+        InferSchemaOutputFromFMTable<Occ>,
+        Selected,
+        SingleMode,
+        IsCount,
+        Expands,
+        IncludeCount,
+        SystemCols
+      >
+    >
   > {
     // Check for error responses (important for batch operations)
     if (!response.ok) {
@@ -885,6 +1076,7 @@ export class QueryBuilder<
       skipValidation: options?.skipValidation,
       useEntityIds: mergedOptions.useEntityIds,
       includeSpecialColumns: mergedOptions.includeSpecialColumns,
+      includeCount: this.readState.includeCountMode,
       fieldMapping: this.readState.fieldMapping,
       logger: this.logger,
     });

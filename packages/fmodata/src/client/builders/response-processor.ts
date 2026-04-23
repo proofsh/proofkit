@@ -1,9 +1,9 @@
-import { RecordCountMismatchError } from "../../errors";
+import { RecordCountMismatchError, ResponseStructureError } from "../../errors";
 import type { InternalLogger } from "../../logger";
 import type { FMTable } from "../../orm/table";
 import { getBaseTableConfig } from "../../orm/table";
 import { transformResponseFields } from "../../transform";
-import type { Result } from "../../types";
+import type { CountedListResult, Result } from "../../types";
 import type { ExpandValidationConfig } from "../../validation";
 import { validateListResponse, validateSingleResponse } from "../../validation";
 import { ExpandBuilder } from "./expand-builder";
@@ -227,6 +227,7 @@ export async function processQueryResponse<T>(
     skipValidation?: boolean;
     useEntityIds?: boolean;
     includeSpecialColumns?: boolean;
+    includeCount?: boolean;
     // Mapping from field names to output keys (for renamed fields in select)
     fieldMapping?: Record<string, string>;
     logger: InternalLogger;
@@ -241,6 +242,7 @@ export async function processQueryResponse<T>(
     skipValidation,
     useEntityIds,
     includeSpecialColumns,
+    includeCount,
     fieldMapping,
     logger,
   } = config;
@@ -272,6 +274,45 @@ export async function processQueryResponse<T>(
     processedResponse = {
       ...processedResponse,
       data: renameFieldsInResponse(processedResponse.data, fieldMapping),
+    };
+  }
+
+  if (includeCount) {
+    if (processedResponse.error) {
+      return {
+        data: undefined,
+        error: processedResponse.error,
+      };
+    }
+
+    if (singleMode !== false) {
+      return {
+        data: undefined,
+        error: new ResponseStructureError("list response for count-enabled query", response),
+      };
+    }
+
+    const rawCount = response?.["@odata.count"];
+    let parsedCount = Number.NaN;
+    if (typeof rawCount === "number") {
+      parsedCount = rawCount;
+    } else if (typeof rawCount === "string" && rawCount.trim() !== "") {
+      parsedCount = Number(rawCount);
+    }
+
+    if (!Number.isFinite(parsedCount)) {
+      return {
+        data: undefined,
+        error: new ResponseStructureError("response with valid @odata.count", response),
+      };
+    }
+
+    return {
+      data: {
+        records: processedResponse.data as T[],
+        count: parsedCount,
+      } as CountedListResult<T>,
+      error: undefined,
     };
   }
 

@@ -12,6 +12,7 @@ Quick reference for all available methods and operators in `@proofkit/fmodata`.
 | Method | Description | Example |
 |--------|-------------|---------|
 | `list()` | Retrieve multiple records | `db.from(users).list().execute()` |
+| `count()` | Count records without fetching rows | `db.from(users).count().where(eq(users.active, true)).execute()` |
 | `get(id)` | Get a single record by ID | `db.from(users).get("user-123").execute()` |
 | `getSingleField(column)` | Get a single field value | `db.from(users).get("user-123").getSingleField(users.email).execute()` |
 | `single()` | Ensure exactly one record | `db.from(users).list().where(eq(...)).single().execute()` |
@@ -34,7 +35,7 @@ Quick reference for all available methods and operators in `@proofkit/fmodata`.
 | `orderBy(...columns)` | Sort results | `db.from(users).list().orderBy(asc(users.name)).execute()` |
 | `top(n)` | Limit results | `db.from(users).list().top(10).execute()` |
 | `skip(n)` | Skip records (pagination) | `db.from(users).list().top(10).skip(20).execute()` |
-| `count()` | Get total count | `db.from(users).list().count().execute()` |
+| `count()` | Include total count with a list query | `db.from(users).list().top(10).skip(20).count().execute()` |
 | `expand(table, builder?)` | Expand related records | `db.from(contacts).list().expand(users).execute()` |
 | `navigate(table)` | Navigate to related table | `db.from(contacts).get("id").navigate(users).execute()` |
 

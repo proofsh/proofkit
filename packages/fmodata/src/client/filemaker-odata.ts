@@ -15,6 +15,7 @@ import { createLogger, type InternalLogger, type Logger } from "../logger";
 import { type FMODataLayer, HttpClient, ODataConfig, ODataLogger } from "../services";
 import type { Auth, ExecutionContext, Result } from "../types";
 import { getAcceptHeader } from "../types";
+import { mergePreferHeaderValues } from "./builders/mutation-helpers";
 import { ClarisIdAuthManager } from "./claris-id";
 import { Database } from "./database";
 import { safeJsonParse } from "./sanitize-json";
@@ -243,18 +244,28 @@ export class FMServerConnection implements ExecutionContext {
       preferValues.push("fmodata.include-specialcolumns");
     }
 
-    const buildHeaders = async () => ({
-      Authorization: await this._getAuthorizationHeader(fetchHandler),
-      "Content-Type": "application/json",
-      Accept: getAcceptHeader(includeODataAnnotations),
-      ...(preferValues.length > 0 ? { Prefer: preferValues.join(", ") } : {}),
-      ...(options?.headers || {}),
-    });
-
     // TEMPORARY WORKAROUND: Hopefully this feature will be fixed in the ffetch library
     // Extract fetchHandler and headers separately, only for tests where we're overriding the fetch handler per-request
     const fetchHandler = options?.fetchHandler ?? this._fetchClientOptions?.fetchHandler;
     const { headers: _headers, fetchHandler: _fetchHandler, ...restOptions } = options || {};
+    const buildHeaders = async () => {
+      const headers = new Headers(options?.headers);
+      headers.set("Authorization", await this._getAuthorizationHeader(fetchHandler));
+      headers.set("Content-Type", "application/json");
+      headers.set("Accept", getAcceptHeader(includeODataAnnotations));
+
+      const mergedPrefer = mergePreferHeaderValues(
+        preferValues.length > 0 ? preferValues.join(", ") : undefined,
+        headers.get("Prefer") ?? undefined,
+      );
+      if (mergedPrefer) {
+        headers.set("Prefer", mergedPrefer);
+      } else {
+        headers.delete("Prefer");
+      }
+
+      return headers;
+    };
 
     // If fetchHandler is provided, create a temporary client with it
     // Otherwise use the existing client
@@ -264,7 +275,7 @@ export class FMServerConnection implements ExecutionContext {
     const fetchEffect = Effect.tryPromise({
       try: async () => {
         const headers = await buildHeaders();
-        const { Authorization, ...loggableHeaders } = headers;
+        const { authorization: _authorization, ...loggableHeaders } = Object.fromEntries(headers.entries());
         logger.debug("Request headers:", loggableHeaders);
 
         const finalOptions = {

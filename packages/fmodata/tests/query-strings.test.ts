@@ -208,6 +208,14 @@ describe("OData Query String Generation", () => {
     });
   });
 
+  describe("$count", () => {
+    it("should include /$count for navigated top-level count queries", () => {
+      const queryString = db.from(users).navigate(contacts).count().where(eq(contacts.name, "Alice")).getQueryString();
+
+      expect(queryString).toBe(`/users/contacts/$count?$filter=name eq 'Alice'`);
+    });
+  });
+
   describe("$orderby", () => {
     it("should generate $orderby for ascending order", () => {
       const queryString = db.from(users).list().orderBy(asc(users.name)).getQueryString();
@@ -296,16 +304,31 @@ describe("OData Query String Generation", () => {
   });
 
   describe("$count", () => {
-    it("should generate query with $count parameter", () => {
+    it("should generate query with $count parameter for list count", () => {
       const queryString = db.from(users).list().count().getQueryString();
 
       expect(queryString).toContain("$count");
+      expect(queryString).toContain("/users?");
     });
 
-    it("should generate $count with other query parameters", () => {
+    it("should generate $count with other query parameters for list count", () => {
       const queryString = db.from(users).list().where("status eq 'active'").count().getQueryString();
 
       expect(queryString).toContain("$count");
+      expect(queryString).toContain("$filter");
+    });
+
+    it("should generate top-level count path", () => {
+      const queryString = db.from(users).count().getQueryString();
+
+      expect(queryString).toContain("/users/$count");
+      expect(queryString).not.toContain("?$count=true");
+    });
+
+    it("should generate top-level count path with filter", () => {
+      const queryString = db.from(users).count().where("status eq 'active'").getQueryString();
+
+      expect(queryString).toContain("/users/$count");
       expect(queryString).toContain("$filter");
     });
   });

@@ -3,9 +3,4 @@ version = 1
 name = "proofkit"
 
 [setup]
-script = ""
-
-[[actions]]
-name = "Run"
-icon = "run"
-command = "pnpm i"
+script = "pnpm i"

@@ -31,7 +31,7 @@ import {
 import { MockFMServerConnection } from "@proofkit/fmodata/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod/v4";
-import { contacts, users } from "./utils/test-setup";
+import { contacts, type hobbyEnum, users } from "./utils/test-setup";
 
 describe("fmodata", () => {
   describe("API ergonomics", () => {
@@ -44,6 +44,17 @@ describe("fmodata", () => {
 
       expect(listBuilder).toBeDefined();
       expect(listBuilder.getQueryString).toBeDefined();
+    });
+
+    it("should support top-level count() with filters", () => {
+      const table = db.from(contacts);
+      const countBuilder = table.count().where(eq(contacts.name, "Alice"));
+
+      expect(countBuilder).toBeDefined();
+      expect(countBuilder.getQueryString).toBeDefined();
+      expectTypeOf(countBuilder.execute).returns.resolves.toMatchTypeOf<{
+        data: number | undefined;
+      }>();
     });
 
     it("should support get() for single record retrieval", () => {
@@ -76,6 +87,29 @@ describe("fmodata", () => {
 
       expect(singleSelectBuilder).toBeDefined();
       expect(singleSelectBuilder.getQueryString).toBeDefined();
+    });
+
+    it("should infer wrapper type for list().count()", () => {
+      const table = db.from(contacts);
+      const countedBuilder = table.list().select({ name: contacts.name, hobby: contacts.hobby }).count();
+
+      expect(countedBuilder).toBeDefined();
+      expectTypeOf(countedBuilder.execute).returns.resolves.toMatchTypeOf<{
+        data:
+          | {
+              count: number;
+              records: { name: string | null; hobby: z.infer<typeof hobbyEnum> | null }[];
+            }
+          | undefined;
+      }>();
+
+      const _typeChecks = () => {
+        // @ts-expect-error - count-enabled list queries cannot become single queries
+        table.list().count().single();
+        // @ts-expect-error - count-enabled list queries cannot become maybeSingle queries
+        table.list().count().maybeSingle();
+      };
+      _typeChecks;
     });
 
     it("should generate query strings correctly", () => {

@@ -10,7 +10,7 @@ export {
   RetryLimitError,
   TimeoutError,
 } from "@fetchkit/ffetch";
-
+export type { CountBuilder } from "./client/count-builder";
 // Type-only exports - for type annotations only, not direct instantiation
 export type { Database } from "./client/database";
 export type { EntitySet } from "./client/entity-set";
@@ -118,6 +118,7 @@ export {
 export type {
   BatchItemResult,
   BatchResult,
+  CountedListResult,
   ExecuteMethodOptions,
   ExecuteOptions,
   FetchHandler,
