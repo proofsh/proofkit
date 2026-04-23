@@ -9,7 +9,7 @@ description: >
   service overload during testing.
 type: core
 library: proofkit
-library_version: "0.1.0-beta.39"
+library_version: "0.1.0-beta.40"
 requires:
   - fmodata-client
 sources:

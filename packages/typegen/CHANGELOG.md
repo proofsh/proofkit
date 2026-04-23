@@ -1,5 +1,13 @@
 # @proofkit/typegen
 
+## 1.1.0-beta.25
+
+### Patch Changes
+
+- c031d74: Improve `parseMetadata` error messages: when the OData metadata response is missing `<edmx:Edmx>`, surface a response excerpt and recognize common failure modes (empty body, JSON error payload, HTML login redirect) instead of throwing the opaque "No Edmx element found in XML".
+- Updated dependencies [638f432]
+  - @proofkit/fmodata@0.1.0-beta.40
+
 ## 1.1.0-beta.24
 
 ### Minor Changes
