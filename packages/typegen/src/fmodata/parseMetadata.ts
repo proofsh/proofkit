@@ -51,6 +51,36 @@ function ensureArray<T>(value: T | T[] | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
+const RESPONSE_EXCERPT_LIMIT = 500;
+
+/**
+ * Builds a diagnostic error message when the metadata response is missing the
+ * expected `edmx:Edmx` root. Tries to recognize common failure modes (empty
+ * body, JSON error payload, HTML login page) and always includes a short
+ * excerpt of what was actually received so the cause is debuggable.
+ */
+function describeNonEdmxResponse(xmlString: string): string {
+  const trimmed = xmlString.trim();
+  if (trimmed.length === 0) {
+    return "OData metadata response was empty. Verify the server URL, database name, and credentials.";
+  }
+
+  const excerpt = trimmed.slice(0, RESPONSE_EXCERPT_LIMIT);
+  const truncated = trimmed.length > RESPONSE_EXCERPT_LIMIT ? "…" : "";
+  const contextSuffix = ` First ${Math.min(trimmed.length, RESPONSE_EXCERPT_LIMIT)} chars of response:\n${excerpt}${truncated}`;
+
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return `OData metadata endpoint returned JSON instead of XML. This usually means the server (or the fmodata client) responded to the request as JSON. Check that the request was made with Accept: application/xml.${contextSuffix}`;
+  }
+
+  const lower = trimmed.slice(0, 200).toLowerCase();
+  if (lower.startsWith("<!doctype html") || lower.startsWith("<html")) {
+    return `OData metadata endpoint returned an HTML page instead of XML. The server may be redirecting to a login or error page.${contextSuffix}`;
+  }
+
+  return `No Edmx element found in OData metadata XML.${contextSuffix}`;
+}
+
 /**
  * Parses OData metadata XML content and extracts entity types, entity sets, and namespace.
  *
@@ -62,6 +92,11 @@ export function parseMetadata(xmlContent: string): ParsedMetadata {
   const entitySets = new Map<string, EntitySet>();
   let namespace = "";
 
+  // Defensive: callers sometimes hand us non-string payloads (e.g. an object
+  // resulting from a JSON-typed response misrouted as XML). Stringify so the
+  // diagnostic excerpt below is meaningful instead of "[object Object]".
+  const xmlString = typeof xmlContent === "string" ? xmlContent : JSON.stringify(xmlContent);
+
   // Parse XML using fast-xml-parser
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -71,12 +106,12 @@ export function parseMetadata(xmlContent: string): ParsedMetadata {
     trimValues: true,
   });
 
-  const parsed = parser.parse(xmlContent);
+  const parsed = parser.parse(xmlString);
 
   // Navigate to Schema element
   const edmx = parsed["edmx:Edmx"] || parsed.Edmx;
   if (!edmx) {
-    throw new Error("No Edmx element found in XML");
+    throw new Error(describeNonEdmxResponse(xmlString));
   }
 
   const dataServices = edmx["edmx:DataServices"] || edmx.DataServices;
