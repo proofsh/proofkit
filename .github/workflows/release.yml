@@ -107,6 +107,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build CLI
+        run: pnpm --filter @proofkit/cli build
+
       - name: Run CLI External Integration Smoke Tests
         run: pnpm exec varlock run -- pnpm --filter @proofkit/cli test:smoke
 
