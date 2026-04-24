@@ -153,9 +153,10 @@ export class WebhookManager {
 
     const pipeline = Effect.gen(this, function* () {
       return yield* requestFromService<WebhookAddResponse>(`/${this.config.databaseName}/Webhook.Add`, {
+        ...options,
         method: "POST",
         body: JSON.stringify(requestBody),
-        ...options,
+        databaseNameNormalizationMode: "ensureExtension",
       });
     });
 
@@ -174,8 +175,9 @@ export class WebhookManager {
   async remove(webhookId: number, options?: ExecuteMethodOptions): Promise<void> {
     const pipeline = Effect.gen(this, function* () {
       return yield* requestFromService(`/${this.config.databaseName}/Webhook.Delete(${webhookId})`, {
-        method: "POST",
         ...options,
+        method: "POST",
+        databaseNameNormalizationMode: "ensureExtension",
       });
     });
 
@@ -212,7 +214,10 @@ export class WebhookManager {
    */
   list(options?: ExecuteMethodOptions): Promise<WebhookListResponse> {
     const pipeline = Effect.gen(this, function* () {
-      return yield* requestFromService<WebhookListResponse>(`/${this.config.databaseName}/Webhook.GetAll`, options);
+      return yield* requestFromService<WebhookListResponse>(`/${this.config.databaseName}/Webhook.GetAll`, {
+        ...options,
+        databaseNameNormalizationMode: "ensureExtension",
+      });
     });
 
     return runLayerOrThrow(this.layer, pipeline, "fmodata.webhook.list");

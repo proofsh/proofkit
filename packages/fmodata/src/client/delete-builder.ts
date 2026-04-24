@@ -12,6 +12,7 @@ import {
   type RecordLocator,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
+import { normalizeDatabasePath } from "./database-name";
 import { parseErrorResponse } from "./error-parser";
 import { QueryBuilder } from "./query-builder";
 import { createClientRuntime } from "./runtime";
@@ -172,7 +173,9 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
 
   toRequest(baseUrl: string, options?: ExecuteOptions): Request {
     const config = this.getRequestConfig();
-    const fullUrl = `${baseUrl}${config.url}`;
+    const fullUrl = `${baseUrl}${normalizeDatabasePath(config.url, {
+      normalizeDatabaseName: options?.normalizeDatabaseName ?? this.config.normalizeDatabaseName,
+    })}`;
 
     return new Request(fullUrl, {
       method: config.method,

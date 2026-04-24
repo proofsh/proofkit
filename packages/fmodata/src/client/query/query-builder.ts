@@ -984,7 +984,10 @@ export class QueryBuilder<
 
   toRequest(baseUrl: string, options?: ExecuteOptions): Request {
     const config = this.getRequestConfig();
-    return createODataRequest(baseUrl, config, options);
+    return createODataRequest(baseUrl, config, {
+      ...options,
+      normalizeDatabaseName: options?.normalizeDatabaseName ?? this.config.normalizeDatabaseName,
+    });
   }
 
   async processResponse(

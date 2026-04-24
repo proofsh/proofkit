@@ -18,6 +18,7 @@ const logger = {
 const baseConfig = {
   baseUrl: "https://example.com",
   databaseName: "test_db",
+  normalizeDatabaseName: true,
   useEntityIds: false,
   includeSpecialColumns: false,
 };

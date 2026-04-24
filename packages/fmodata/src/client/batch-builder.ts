@@ -12,6 +12,7 @@ import type {
   Result,
 } from "../types";
 import { formatBatchRequestFromNative, type ParsedBatchResponse, parseBatchResponse } from "./batch-request";
+import { normalizeDatabasePath } from "./database-name";
 import { createClientRuntime } from "./runtime";
 
 /**
@@ -116,7 +117,9 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
   }
 
   toRequest(baseUrl: string, _options?: ExecuteOptions): Request {
-    const fullUrl = `${baseUrl}/${this.config.databaseName}/$batch`;
+    const fullUrl = `${baseUrl}${normalizeDatabasePath(`/${this.config.databaseName}/$batch`, {
+      normalizeDatabaseName: _options?.normalizeDatabaseName ?? this.config.normalizeDatabaseName,
+    })}`;
     return new Request(fullUrl, {
       method: "POST",
       headers: {
