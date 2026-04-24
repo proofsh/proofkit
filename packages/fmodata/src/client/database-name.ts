@@ -41,8 +41,16 @@ export function normalizeDatabasePath(
     return path;
   }
 
+  let normalizedInput = databaseSegment;
+
+  try {
+    normalizedInput = decodeURIComponent(databaseSegment);
+  } catch {
+    normalizedInput = databaseSegment;
+  }
+
   const normalizedDatabaseSegment = normalizeDatabaseSegment(
-    decodeURIComponent(databaseSegment),
+    normalizedInput,
     options.normalizeDatabaseName,
     options.mode,
   );
