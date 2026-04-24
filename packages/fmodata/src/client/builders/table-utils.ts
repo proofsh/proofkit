@@ -3,6 +3,7 @@ import type { FMTable } from "../../orm/table";
 import { getTableId as getTableIdHelper, getTableName, isUsingEntityIds } from "../../orm/table";
 import type { ExecuteOptions } from "../../types";
 import { getAcceptHeader } from "../../types";
+import { normalizeDatabasePath } from "../database-name";
 
 /**
  * Resolves table identifier based on entity ID settings.
@@ -65,9 +66,11 @@ export function mergeExecuteOptions(
 export function createODataRequest(
   baseUrl: string,
   config: { method: string; url: string },
-  options?: { includeODataAnnotations?: boolean },
+  options?: { includeODataAnnotations?: boolean; normalizeDatabaseName?: boolean },
 ): Request {
-  const fullUrl = `${baseUrl}${config.url}`;
+  const fullUrl = `${baseUrl}${normalizeDatabasePath(config.url, {
+    normalizeDatabaseName: options?.normalizeDatabaseName ?? true,
+  })}`;
 
   return new Request(fullUrl, {
     method: config.method,

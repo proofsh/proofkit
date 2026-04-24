@@ -6,11 +6,10 @@ import { FMTable } from "../orm/table";
 import { createDatabaseLayer, type FMODataLayer } from "../services";
 import type { ExecutableBuilder, ExecutionContext, Metadata, Result } from "../types";
 import { BatchBuilder } from "./batch-builder";
+import { stripFmp12Extension } from "./database-name";
 import { EntitySet } from "./entity-set";
 import { SchemaManager } from "./schema-manager";
 import { WebhookManager } from "./webhook-builder";
-
-const FMP12_EXT_REGEX = /\.fmp12$/i;
 
 interface MetadataArgs {
   format?: "xml" | "json";
@@ -29,6 +28,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
   readonly schema: SchemaManager;
   readonly webhook: WebhookManager;
   private readonly databaseName: string;
+  private readonly _normalizeDatabaseName: boolean;
   private readonly _useEntityIds: boolean;
   private readonly _includeSpecialColumns: IncludeSpecialColumns;
   /** @internal Database-scoped Effect Layer for dependency injection */
@@ -38,6 +38,11 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     databaseName: string,
     context: ExecutionContext,
     config?: {
+      /**
+       * Whether to normalize the database name in requests.
+       * Defaults to true.
+       */
+      normalizeDatabaseName?: boolean;
       /**
        * Whether to use entity IDs instead of field names in the actual requests to the server
        * Defaults to true if all occurrences use entity IDs, false otherwise
@@ -52,6 +57,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     },
   ) {
     this.databaseName = databaseName;
+    this._normalizeDatabaseName = config?.normalizeDatabaseName ?? true;
     this._useEntityIds = config?.useEntityIds ?? false;
     this._includeSpecialColumns = (config?.includeSpecialColumns ?? false) as IncludeSpecialColumns;
 
@@ -60,6 +66,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     if (baseLayer) {
       this._layer = createDatabaseLayer(baseLayer, {
         databaseName: this.databaseName,
+        normalizeDatabaseName: this._normalizeDatabaseName,
         useEntityIds: this._useEntityIds,
         includeSpecialColumns: this._includeSpecialColumns,
       });
@@ -87,6 +94,13 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
    */
   get _getUseEntityIds(): boolean {
     return this._useEntityIds;
+  }
+
+  /**
+   * @internal Used by EntitySet to access database configuration
+   */
+  get _getNormalizeDatabaseName(): boolean {
+    return this._normalizeDatabaseName;
   }
 
   /**
@@ -122,6 +136,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
       useEntityIds !== this._useEntityIds
         ? createDatabaseLayer(this._layer, {
             databaseName: this.databaseName,
+            normalizeDatabaseName: this._normalizeDatabaseName,
             useEntityIds,
             includeSpecialColumns: this._includeSpecialColumns,
           })
@@ -169,7 +184,7 @@ export class Database<IncludeSpecialColumns extends boolean = false> {
     }
 
     const metadataMap = data as Record<string, Metadata>;
-    const metadata = metadataMap[this.databaseName] ?? metadataMap[this.databaseName.replace(FMP12_EXT_REGEX, "")];
+    const metadata = metadataMap[this.databaseName] ?? metadataMap[stripFmp12Extension(this.databaseName)];
     if (!metadata) {
       throw new MetadataNotFoundError(this.databaseName);
     }

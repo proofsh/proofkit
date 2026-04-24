@@ -136,5 +136,7 @@ Learn more about the [@proofkit/typegen](/docs/typegen) tool.
       .execute();
     ```
 
+    `connection.database()` also accepts `normalizeDatabaseName` (default `true`). Standard OData requests strip a trailing `.fmp12`, while webhook create/list/remove requests ensure `.fmp12` is present.
+
   </Step>
 </Steps>

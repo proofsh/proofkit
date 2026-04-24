@@ -25,6 +25,7 @@ import {
   parseRowIdFromLocationHeader,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
+import { normalizeDatabasePath } from "./database-name";
 import { parseErrorResponse } from "./error-parser";
 import { createClientRuntime } from "./runtime";
 import { safeJsonParse } from "./sanitize-json";
@@ -268,7 +269,9 @@ export class InsertBuilder<
 
   toRequest(baseUrl: string, options?: ExecuteOptions): Request {
     const config = this.getRequestConfig();
-    const fullUrl = `${baseUrl}${config.url}`;
+    const fullUrl = `${baseUrl}${normalizeDatabasePath(config.url, {
+      normalizeDatabaseName: options?.normalizeDatabaseName ?? this.config.normalizeDatabaseName,
+    })}`;
     const preferHeader = mergePreferHeaderValues(
       this.returnPreference === "minimal" ? "return=minimal" : "return=representation",
       (options?.useEntityIds ?? this.config.useEntityIds) ? "fmodata.entity-ids" : undefined,

@@ -24,6 +24,7 @@ import {
   type RecordLocator,
   resolveMutationTableId,
 } from "./builders/mutation-helpers";
+import { normalizeDatabasePath } from "./database-name";
 import { parseErrorResponse } from "./error-parser";
 import { QueryBuilder } from "./query-builder";
 import { createClientRuntime } from "./runtime";
@@ -288,7 +289,9 @@ export class ExecutableUpdateBuilder<
 
   toRequest(baseUrl: string, options?: ExecuteOptions): Request {
     const config = this.getRequestConfig();
-    const fullUrl = `${baseUrl}${config.url}`;
+    const fullUrl = `${baseUrl}${normalizeDatabasePath(config.url, {
+      normalizeDatabaseName: options?.normalizeDatabaseName ?? this.config.normalizeDatabaseName,
+    })}`;
     const preferHeader = mergePreferHeaderValues(
       this.returnPreference === "representation" ? "return=representation" : undefined,
       (options?.useEntityIds ?? this.config.useEntityIds) ? "fmodata.entity-ids" : undefined,

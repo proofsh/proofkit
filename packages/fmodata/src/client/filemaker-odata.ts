@@ -18,6 +18,7 @@ import { getAcceptHeader } from "../types";
 import { mergePreferHeaderValues } from "./builders/mutation-helpers";
 import { ClarisIdAuthManager } from "./claris-id";
 import { Database } from "./database";
+import { type DatabaseNameNormalizationMode, normalizeDatabasePath } from "./database-name";
 import { safeJsonParse } from "./sanitize-json";
 
 const TRAILING_SLASH_REGEX = /\/+$/;
@@ -26,10 +27,12 @@ export class FMServerConnection implements ExecutionContext {
   private readonly fetchClient: ReturnType<typeof createClient>;
   private readonly serverUrl: string;
   private readonly auth: Auth;
+  private readonly normalizeDatabaseName = true;
   private useEntityIds = false;
   private includeSpecialColumns = false;
   private readonly logger: InternalLogger;
   private readonly clarisIdAuthManager: ClarisIdAuthManager | null;
+  private hasWarnedAboutOttoDatabaseNormalization = false;
   /** @internal Stored so credential-override flows can inherit non-auth config. */
   readonly _fetchClientOptions: FFetchOptions | undefined;
   constructor(config: {
@@ -133,13 +136,20 @@ export class FMServerConnection implements ExecutionContext {
     const httpLayer = Layer.succeed(HttpClient, {
       request: <T>(
         url: string,
-        options?: RequestInit & FFetchOptions & { useEntityIds?: boolean; includeSpecialColumns?: boolean },
+        options?: RequestInit &
+          FFetchOptions & {
+            normalizeDatabaseName?: boolean;
+            databaseNameNormalizationMode?: DatabaseNameNormalizationMode;
+            useEntityIds?: boolean;
+            includeSpecialColumns?: boolean;
+          },
       ) => this._makeRequestEffect<T>(url, options),
     });
 
     const configLayer = Layer.succeed(ODataConfig, {
       baseUrl: this._getBaseUrl(),
       databaseName: "",
+      normalizeDatabaseName: this.normalizeDatabaseName,
       useEntityIds: this.useEntityIds,
       includeSpecialColumns: this.includeSpecialColumns,
     });
@@ -219,13 +229,26 @@ export class FMServerConnection implements ExecutionContext {
     url: string,
     options?: RequestInit &
       FFetchOptions & {
+        normalizeDatabaseName?: boolean;
+        databaseNameNormalizationMode?: DatabaseNameNormalizationMode;
         useEntityIds?: boolean;
         includeSpecialColumns?: boolean;
       },
   ): Effect.Effect<T, FMODataErrorType> {
     const logger = this._getLogger();
     const baseUrl = `${this.serverUrl}${"apiKey" in this.auth ? "/otto" : ""}/fmi/odata/v4`;
-    const fullUrl = baseUrl + url;
+    const normalizeDatabaseName = options?.normalizeDatabaseName ?? this.normalizeDatabaseName;
+    if ("apiKey" in this.auth && normalizeDatabaseName === false && !this.hasWarnedAboutOttoDatabaseNormalization) {
+      logger.warn(
+        "normalizeDatabaseName=false cannot disable filename normalization with Otto auth; FileMaker Server normalizes it automatically.",
+      );
+      this.hasWarnedAboutOttoDatabaseNormalization = true;
+    }
+    const normalizedUrl = normalizeDatabasePath(url, {
+      normalizeDatabaseName,
+      mode: options?.databaseNameNormalizationMode,
+    });
+    const fullUrl = baseUrl + normalizedUrl;
 
     // Use per-request override if provided, otherwise use the database-level setting
     const useEntityIds = options?.useEntityIds ?? this.useEntityIds;
@@ -358,7 +381,7 @@ export class FMServerConnection implements ExecutionContext {
 
     // Apply retry policy and tracing span
     return withSpan(requestEffect, "fmodata.request", {
-      "fmodata.url": url,
+      "fmodata.url": normalizedUrl,
       "fmodata.method": method,
     });
   }
@@ -370,6 +393,8 @@ export class FMServerConnection implements ExecutionContext {
     url: string,
     options?: RequestInit &
       FFetchOptions & {
+        normalizeDatabaseName?: boolean;
+        databaseNameNormalizationMode?: DatabaseNameNormalizationMode;
         useEntityIds?: boolean;
         includeSpecialColumns?: boolean;
       },
@@ -380,6 +405,7 @@ export class FMServerConnection implements ExecutionContext {
   database<IncludeSpecialColumns extends boolean = false>(
     name: string,
     config?: {
+      normalizeDatabaseName?: boolean;
       useEntityIds?: boolean;
       includeSpecialColumns?: IncludeSpecialColumns;
     },

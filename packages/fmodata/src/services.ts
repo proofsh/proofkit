@@ -13,6 +13,7 @@
 
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Context, Effect, Layer } from "effect";
+import type { DatabaseNameNormalizationMode } from "./client/database-name";
 import type { FMODataErrorType } from "./errors";
 import { MissingLayerServiceError } from "./errors";
 import type { InternalLogger } from "./logger";
@@ -24,6 +25,8 @@ export interface HttpClient {
     url: string,
     options?: RequestInit &
       FFetchOptions & {
+        normalizeDatabaseName?: boolean;
+        databaseNameNormalizationMode?: DatabaseNameNormalizationMode;
         useEntityIds?: boolean;
         includeSpecialColumns?: boolean;
         includeODataAnnotations?: boolean;
@@ -39,6 +42,7 @@ export const HttpClient = Context.GenericTag<HttpClient>("@proofkit/fmodata/Http
 export interface ODataConfig {
   readonly baseUrl: string;
   readonly databaseName: string;
+  readonly normalizeDatabaseName: boolean;
   readonly useEntityIds: boolean;
   readonly includeSpecialColumns: boolean;
 }
@@ -84,6 +88,7 @@ export function createDatabaseLayer(
   baseLayer: FMODataLayer,
   overrides: {
     databaseName: string;
+    normalizeDatabaseName: boolean;
     useEntityIds: boolean;
     includeSpecialColumns: boolean;
   },
@@ -94,6 +99,7 @@ export function createDatabaseLayer(
   const dbConfigLayer = Layer.succeed(ODataConfig, {
     baseUrl: baseConfig.baseUrl,
     databaseName: overrides.databaseName,
+    normalizeDatabaseName: overrides.normalizeDatabaseName,
     useEntityIds: overrides.useEntityIds,
     includeSpecialColumns: overrides.includeSpecialColumns,
   });

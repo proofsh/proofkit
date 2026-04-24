@@ -20,6 +20,7 @@
 
 import type { Database } from "./client/database";
 import { FMServerConnection } from "./client/filemaker-odata";
+import type { Logger } from "./logger";
 
 // --- MockRoute type ---
 
@@ -47,6 +48,10 @@ export interface RequestSpy {
   clear(): void;
   /** Get calls matching a URL pattern */
   forUrl(pattern: string | RegExp): ReadonlyArray<{ url: string; method: string; body?: string }>;
+}
+
+function getLegacyCompatiblePattern(pattern: string): string {
+  return pattern.replace(/\.fmp12(?=\/|$)/gi, "");
 }
 
 /**
@@ -122,7 +127,10 @@ function createRouterFetch(
 
     // Find matching route (first-match-wins)
     const route = routes.find((r) => {
-      const urlMatch = typeof r.urlPattern === "string" ? url.includes(r.urlPattern) : r.urlPattern.test(url);
+      const urlMatch =
+        typeof r.urlPattern === "string"
+          ? url.includes(r.urlPattern) || url.includes(getLegacyCompatiblePattern(r.urlPattern))
+          : r.urlPattern.test(url);
       const methodMatch = !r.method || r.method.toUpperCase() === method.toUpperCase();
       return urlMatch && methodMatch;
     });
@@ -223,6 +231,7 @@ export class MockFMServerConnection {
     routes?: MockRoute[];
     baseUrl?: string;
     enableSpy?: boolean;
+    logger?: Logger;
   }) {
     this.routes = config?.routes ? [...config.routes] : [];
     this._spy = config?.enableSpy ? { calls: [] } : undefined;
@@ -230,6 +239,7 @@ export class MockFMServerConnection {
     this.connection = new FMServerConnection({
       serverUrl: config?.baseUrl ?? "https://test.example.com",
       auth: { apiKey: "test-api-key" },
+      logger: config?.logger,
       fetchClientOptions: {
         retries: 0,
         fetchHandler: createRouterFetch(this.routes, this._spy),
@@ -272,7 +282,11 @@ export class MockFMServerConnection {
         spy.calls.length = 0;
       },
       forUrl(pattern: string | RegExp) {
-        return spy.calls.filter((c) => (typeof pattern === "string" ? c.url.includes(pattern) : pattern.test(c.url)));
+        return spy.calls.filter((c) =>
+          typeof pattern === "string"
+            ? c.url.includes(pattern) || c.url.includes(getLegacyCompatiblePattern(pattern))
+            : pattern.test(c.url),
+        );
       },
     };
   }
@@ -283,6 +297,7 @@ export class MockFMServerConnection {
   database<IncludeSpecialColumns extends boolean = false>(
     name: string,
     config?: {
+      normalizeDatabaseName?: boolean;
       useEntityIds?: boolean;
       includeSpecialColumns?: IncludeSpecialColumns;
     },

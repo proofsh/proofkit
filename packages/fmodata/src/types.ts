@@ -181,6 +181,11 @@ export interface ExecuteOptions {
   includeODataAnnotations?: boolean;
   skipValidation?: boolean;
   /**
+   * Overrides the default behavior of the database to normalize the database name in THIS REQUEST ONLY.
+   * Defaults to true at the database level.
+   */
+  normalizeDatabaseName?: boolean;
+  /**
    * Overrides the default behavior of the database to use entity IDs (rather than field names) in THIS REQUEST ONLY
    */
   useEntityIds?: boolean;

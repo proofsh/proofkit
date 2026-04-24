@@ -10,6 +10,7 @@
 
 import type { FFetchOptions } from "@fetchkit/ffetch";
 import { Effect, Schedule } from "effect";
+import type { DatabaseNameNormalizationMode } from "./client/database-name";
 import type { FMODataErrorType } from "./errors";
 import { BuilderInvariantError, isFMODataError, isTransientError } from "./errors";
 import type {
@@ -18,7 +19,7 @@ import type {
   ODataConfig as ODataConfigService,
   ODataLogger as ODataLoggerService,
 } from "./services";
-import { HttpClient } from "./services";
+import { HttpClient, ODataConfig } from "./services";
 import type { Result, RetryPolicy } from "./types";
 
 type FMODataServices = HttpClientService | ODataConfigService | ODataLoggerService;
@@ -42,13 +43,23 @@ export function requestFromService<T>(
   url: string,
   options?: RequestInit &
     FFetchOptions & {
+      normalizeDatabaseName?: boolean;
+      databaseNameNormalizationMode?: DatabaseNameNormalizationMode;
       useEntityIds?: boolean;
       includeSpecialColumns?: boolean;
       includeODataAnnotations?: boolean;
       retryPolicy?: RetryPolicy;
     },
-): Effect.Effect<T, FMODataErrorType, HttpClient> {
-  return Effect.flatMap(HttpClient, (client) => client.request<T>(url, options));
+): Effect.Effect<T, FMODataErrorType, HttpClient | ODataConfig> {
+  return Effect.gen(function* () {
+    const client = yield* HttpClient;
+    const config = yield* ODataConfig;
+
+    return yield* client.request<T>(url, {
+      ...options,
+      normalizeDatabaseName: options?.normalizeDatabaseName ?? config.normalizeDatabaseName,
+    });
+  });
 }
 
 /**
