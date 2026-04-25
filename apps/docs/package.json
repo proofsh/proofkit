@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @proofkit/typegen build && node scripts/bundle-registry-templates.js && next build",
+    "build": "pnpm --filter @proofkit/typegen build && next build",
     "dev": "next dev -p 3005",
     "start": "next start -p 3005",
     "postinstall": "fumadocs-mdx",
@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-rc.0",
-    "@proofkit/registry": "workspace:*",
     "@proofkit/typegen": "workspace:*",
     "@proofkit/webviewer": "workspace:*",
     "@radix-ui/react-collapsible": "^1.1.12",

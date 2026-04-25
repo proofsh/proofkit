@@ -45,7 +45,7 @@ export default function HomePage() {
 
           <Cards className="px-4 text-left">
             <Card href="/docs/cli" icon={<Terminal />} title="ProofKit CLI">
-              A command line tool to start a new project, or easily apply templates and common patterns with{" "}
+              A command line tool to start a new project, or manage ProofKit-specific workflows with{" "}
               <span className="underline">no JavaScript experience</span> required.
             </Card>
             <Card href="/docs/typegen" icon={<Code />} title={"Typegen"}>

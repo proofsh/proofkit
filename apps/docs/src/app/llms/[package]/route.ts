@@ -4,14 +4,13 @@ import { source } from "@/lib/source";
 
 export const revalidate = false;
 
-const PACKAGES = ["better-auth", "cli", "fmdapi", "fmodata", "templates", "typegen", "webviewer"] as const;
+const PACKAGES = ["better-auth", "cli", "fmdapi", "fmodata", "typegen", "webviewer"] as const;
 
 const PACKAGE_DESCRIPTIONS: Record<string, string> = {
   "better-auth": "Better Auth adapter for FileMaker authentication",
   cli: "Interactive CLI for scaffolding ProofKit projects",
   fmdapi: "FileMaker Data API client (REST)",
   fmodata: "FileMaker OData API client with Drizzle-like ORM",
-  templates: "Project templates and starter kits",
   typegen: "TypeScript type generator from FileMaker layouts",
   webviewer: "FileMaker WebViewer utilities",
 };

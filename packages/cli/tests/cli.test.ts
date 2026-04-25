@@ -152,4 +152,15 @@ describe("proofkit CLI", () => {
 
     expect(await fs.pathExists(path.join(addonModulesDir, "ProofKitWV"))).toBe(true);
   });
+
+  it("rejects unsupported add targets", () => {
+    const result = spawnSync("node", [distEntry, "add", "page"], {
+      cwd: packageDir,
+      stdio: "pipe",
+      encoding: "utf8",
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain("Only `proofkit add addon <target>` is supported.");
+  });
 });

@@ -8,7 +8,7 @@ const withMDX = createMDX();
 const config: NextConfig = {
   reactStrictMode: true,
   serverExternalPackages: ["typescript", "twoslash", "shiki"],
-  transpilePackages: ["@proofkit/fmdapi", "@proofkit/registry", "@proofkit/typegen"],
+  transpilePackages: ["@proofkit/fmdapi", "@proofkit/typegen"],
   turbopack: {
     root: path.resolve(__dirname, "../.."),
   },
@@ -21,14 +21,7 @@ const config: NextConfig = {
     return config;
   },
   async redirects() {
-    return [
-      {
-        source: "/registry/:path*",
-        destination: "/r/:path*",
-        permanent: true,
-      },
-      { source: "/docs", destination: "/docs/cli", permanent: false },
-    ];
+    return [{ source: "/docs", destination: "/docs/cli", permanent: false }];
   },
 };
 
