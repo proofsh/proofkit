@@ -16,7 +16,7 @@ export const GenericEmail = ({ title, description, ctaText, ctaHref, footer }: G
         <Img
           alt="ProofKit"
           height="175"
-          src="https://proofkit.proof.sh/_astro/proofkit.DNcFg0_B_1JN3Dz.webp"
+          src="https://proofkit.proof.sh/proofkit.png"
           style={styles.logo}
           width="238"
         />
