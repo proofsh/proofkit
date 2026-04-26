@@ -78,7 +78,7 @@ export default function Home() {
           </p>
           <div>
             <Button asChild variant="outline">
-              <a href="https://proofkit.dev" rel="noreferrer" target="_blank">
+              <a href="https://proofkit.proof.sh" rel="noreferrer" target="_blank">
                 ProofKit Docs <ExternalLinkIcon size={16} />
               </a>
             </Button>

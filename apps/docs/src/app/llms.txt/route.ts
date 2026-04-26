@@ -20,18 +20,18 @@ export function GET() {
   ];
 
   for (const pkg of PACKAGES) {
-    lines.push(`- [${pkg.name}](https://proofkit.dev/llms/${pkg.name}): ${pkg.desc}`);
+    lines.push(`- [${pkg.name}](https://proofkit.proof.sh/llms/${pkg.name}): ${pkg.desc}`);
   }
 
   lines.push("");
   lines.push("## Full Documentation");
   lines.push("");
-  lines.push("- [/llms-full.txt](https://proofkit.dev/llms-full.txt): Complete documentation (all packages)");
+  lines.push("- [/llms-full.txt](https://proofkit.proof.sh/llms-full.txt): Complete documentation (all packages)");
   lines.push("");
   lines.push("## Per-Package Documentation");
   lines.push("");
   for (const pkg of PACKAGES) {
-    lines.push(`- [/llms/${pkg.name}](https://proofkit.dev/llms/${pkg.name})`);
+    lines.push(`- [/llms/${pkg.name}](https://proofkit.proof.sh/llms/${pkg.name})`);
   }
 
   return new Response(lines.join("\n"), {

@@ -62,7 +62,7 @@ This creates `proofkit-typegen-config.jsonc` at your project root. Configure you
 
 ```jsonc
 {
-  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "$schema": "https://proofkit.proof.sh/typegen-config-schema.json",
   "config": {
     "type": "fmdapi",
     "path": "schema",
@@ -199,7 +199,7 @@ FM MCP mode lets typegen fetch layout metadata from a locally running FileMaker 
 
 ```jsonc
 {
-  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "$schema": "https://proofkit.proof.sh/typegen-config-schema.json",
   "config": {
     "type": "fmdapi",
     "fmMcp": { "enabled": true },
@@ -302,7 +302,7 @@ Correct:
 ```jsonc
 // proofkit-typegen-config.jsonc
 {
-  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "$schema": "https://proofkit.proof.sh/typegen-config-schema.json",
   "config": {
     "type": "fmdapi",
     "layouts": [

@@ -50,7 +50,7 @@ export async function generateMetadata(props: { params: Promise<{ slug?: string[
     notFound();
   }
 
-  const url = `https://proofkit.dev${page.url}`;
+  const url = `https://proofkit.proof.sh${page.url}`;
 
   return {
     title: page.data.title,

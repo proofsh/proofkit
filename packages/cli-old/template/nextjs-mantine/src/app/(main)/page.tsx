@@ -42,7 +42,7 @@ export default function Home() {
           </Text>
           <Box>
             <Anchor
-              href="https://proofkit.dev"
+              href="https://proofkit.proof.sh"
               target="_blank"
               rel="proofkit-app"
               style={{ display: "inline-flex", alignItems: "center", gap: 4 }}

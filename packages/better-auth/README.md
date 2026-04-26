@@ -8,4 +8,4 @@ Run the tool directly from the command line:
 npx @proofkit/better-auth@latest
 ```
 
-Check out the full documentation at [proofkit.dev](https://proofkit.dev/docs/better-auth).
+Check out the full documentation at [proofkit.proof.sh](https://proofkit.proof.sh/docs/better-auth).

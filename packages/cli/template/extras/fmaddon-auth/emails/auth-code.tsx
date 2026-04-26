@@ -14,7 +14,7 @@ export const AuthCodeEmail = ({ validationCode, type }: AuthCodeEmailProps) => (
           // TODO: Replace with your logo
           alt="ProofKit"
           height="175"
-          src="https://proofkit.dev/_astro/proofkit.DNcFg0_B_1JN3Dz.webp"
+          src="https://proofkit.proof.sh/_astro/proofkit.DNcFg0_B_1JN3Dz.webp"
           style={logo}
           width="238"
         />

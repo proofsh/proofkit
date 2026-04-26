@@ -40,4 +40,4 @@ buildSchema(file, args);
 
 For `fmodata` configs targeting FileMaker Cloud, `envNames.auth` also supports `clarisIdUsername` and `clarisIdPassword`. These map to Claris ID credentials used for OData auth. MFA-backed Claris ID accounts are not supported yet.
 
-Check out the full documentation at [proofkit.dev](https://proofkit.dev/docs/typegen).
+Check out the full documentation at [proofkit.proof.sh](https://proofkit.proof.sh/docs/typegen).

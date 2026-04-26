@@ -1,5 +1,5 @@
 {
-  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "$schema": "https://proofkit.proof.sh/typegen-config-schema.json",
   "config": {
     "type": "fmdapi",
     "webviewerScriptName": "execute_data_api",

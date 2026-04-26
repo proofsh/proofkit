@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://proofkit.dev"),
+  metadataBase: new URL("https://proofkit.proof.sh"),
 };
 
 export default function Layout({ children }: { children: ReactNode }) {

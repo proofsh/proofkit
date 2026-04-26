@@ -16,7 +16,7 @@ export const GenericEmail = ({ title, description, ctaText, ctaHref, footer }: G
         <Img
           alt="ProofKit"
           height="175"
-          src="https://proofkit.dev/_astro/proofkit.DNcFg0_B_1JN3Dz.webp"
+          src="https://proofkit.proof.sh/_astro/proofkit.DNcFg0_B_1JN3Dz.webp"
           style={styles.logo}
           width="238"
         />
@@ -45,7 +45,7 @@ GenericEmail.PreviewProps = {
   title: "Welcome to ProofKit",
   description: "Thanks for trying ProofKit. This is a sample email template you can customize.",
   ctaText: "Get Started",
-  ctaHref: "https://proofkit.dev",
+  ctaHref: "https://proofkit.proof.sh",
   footer: "You received this email because you signed up for updates.",
 } as GenericEmailProps;
 

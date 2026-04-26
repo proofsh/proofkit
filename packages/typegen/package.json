@@ -62,7 +62,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "homepage": "https://proofkit.dev",
+  "homepage": "https://proofkit.proof.sh",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/proofsh/proofkit.git"

@@ -21,7 +21,7 @@ export default function ForgotForm() {
           <TextInput
             autoFocus
             label="Email"
-            placeholder="you@proofkit.dev"
+            placeholder="you@proofkit.proof.sh"
             required
             withAsterisk={false}
             {...form.register("email")}

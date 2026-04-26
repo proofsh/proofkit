@@ -162,16 +162,16 @@
 
 <DynamicTemplateString>
 	<StringID>com.fmi.calculation.text.1F27E3E6452F6E3D407EC45CDFF933C3</StringID>
-	<SourceText>https://proofkit.dev/auth/fm-addon/</SourceText>
-	<TargetText>https://proofkit.dev/auth/fm-addon/</TargetText>
-	<Comment>com.fmi.calculation.text.https://proofkit.dev/auth/fm-addon/</Comment>
+	<SourceText>https://proofkit.proof.sh/auth/fm-addon/</SourceText>
+	<TargetText>https://proofkit.proof.sh/auth/fm-addon/</TargetText>
+	<Comment>com.fmi.calculation.text.https://proofkit.proof.sh/auth/fm-addon/</Comment>
 </DynamicTemplateString>
 
 <DynamicTemplateString>
 	<StringID>com.fmi.calculation.text.59AFA301111C185DBC5DD64F78DB356F</StringID>
-	<SourceText>https://proofkit.dev</SourceText>
-	<TargetText>https://proofkit.dev</TargetText>
-	<Comment>com.fmi.calculation.text.https://proofkit.dev</Comment>
+	<SourceText>https://proofkit.proof.sh</SourceText>
+	<TargetText>https://proofkit.proof.sh</TargetText>
+	<Comment>com.fmi.calculation.text.https://proofkit.proof.sh</Comment>
 </DynamicTemplateString>
 
 <DynamicTemplateString>
@@ -351,9 +351,9 @@
 
 <DynamicTemplateString>
 	<StringID>com.fmi.layoutobject.text.F8C144711470F2FE602C612E30803932</StringID>
-	<SourceText>Learn more at proofkit.dev</SourceText>
-	<TargetText>Learn more at proofkit.dev</TargetText>
-	<Comment>com.fmi.layoutobject.text.Learn more at proofkit.dev</Comment>
+	<SourceText>Learn more at proofkit.proof.sh</SourceText>
+	<TargetText>Learn more at proofkit.proof.sh</TargetText>
+	<Comment>com.fmi.layoutobject.text.Learn more at proofkit.proof.sh</Comment>
 </DynamicTemplateString>
 
 <DynamicTemplateString>

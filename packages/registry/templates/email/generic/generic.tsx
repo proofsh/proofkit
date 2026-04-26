@@ -13,7 +13,7 @@ export const GenericEmail = ({ title, description, ctaText, ctaHref, footer }: G
     <Head />
     <Body style={styles.main}>
       <Container style={styles.container}>
-        <Img alt="ProofKit" height="175" src="https://proofkit.dev/proofkit.png" style={styles.logo} width="238" />
+        <Img alt="ProofKit" height="175" src="https://proofkit.proof.sh/proofkit.png" style={styles.logo} width="238" />
 
         {title ? <Heading style={styles.title}>{title}</Heading> : null}
 
@@ -39,7 +39,7 @@ GenericEmail.PreviewProps = {
   title: "Welcome to ProofKit",
   description: "Thanks for trying ProofKit. This is a sample email template you can customize.",
   ctaText: "Get Started",
-  ctaHref: "https://proofkit.dev",
+  ctaHref: "https://proofkit.proof.sh",
   footer: "You received this email because you signed up for updates.",
 } as GenericEmailProps;
 

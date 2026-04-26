@@ -72,7 +72,7 @@ async function readJsonConfigFile(configPath: string): Promise<FullProofkitTypeg
     console.error(`Error reading or parsing JSONC config at ${configPath}:`, error);
     // Return a default structure for the *file* if parsing fails but file exists
     return {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       config: [],
     };
   }
@@ -114,7 +114,7 @@ export async function addLayout({
 
   if (!fileContent) {
     fileContent = {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       config: [],
     };
   }
@@ -189,7 +189,7 @@ export async function addConfig({
     }
   } else {
     fileContent = {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       config: configsToAdd,
     };
   }
@@ -232,7 +232,7 @@ export async function ensureWebviewerFmMcpConfig({
 
   if (!fileContent) {
     fileContent = {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       config: [newConfig],
     };
     await writeJsonConfigFile(jsonConfigPath, fileContent);
@@ -402,7 +402,7 @@ export async function addToFmschemaConfig({
     }
   } else {
     fileContent = {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       config: [newDataSource],
     };
   }

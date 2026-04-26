@@ -177,7 +177,7 @@ export function createApiApp(context: ApiContext) {
           console.log("[Server POST /config] Validation data to write:", JSON.stringify(configData, null, 2));
           const { $schema: _, ...rest } = configData;
           const configWithSchema = {
-            $schema: "https://proofkit.dev/typegen-config-schema.json",
+            $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
             ...rest,
           };
           const jsonContent = `${JSON.stringify(configWithSchema, null, 2)}\n`;

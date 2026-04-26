@@ -216,7 +216,7 @@ export function getFmAddonInstallInstructions(addonName: FmAddonName) {
   return {
     addonDisplayName,
     installCommand,
-    docsUrl: addonName === "auth" ? "https://proofkit.dev/auth/fm-addon" : "https://proofkit.dev/webviewer",
+    docsUrl: addonName === "auth" ? "https://proofkit.proof.sh/auth/fm-addon" : "https://proofkit.proof.sh/webviewer",
     steps: [
       `Run \`${installCommand}\` to install or update the local add-on files`,
       "Restart FileMaker Pro so the new local add-on files appear",
@@ -248,13 +248,13 @@ export async function installFmAddonExplicitly({ addonName }: { addonName: FmAdd
     console.log(
       `${chalk.yellowBright(
         "You must install the FM Auth addon in your FileMaker file to continue.",
-      )} ${chalk.dim("(Learn more: https://proofkit.dev/auth/fm-addon)")}`,
+      )} ${chalk.dim("(Learn more: https://proofkit.proof.sh/auth/fm-addon)")}`,
     );
   } else {
     console.log(
       `${chalk.yellowBright(
         "You must install the ProofKit WebViewer addon in your FileMaker file to continue.",
-      )} ${chalk.dim("(Learn more: https://proofkit.dev/webviewer)")}`,
+      )} ${chalk.dim("(Learn more: https://proofkit.proof.sh/webviewer)")}`,
     );
   }
   const steps = [

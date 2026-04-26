@@ -29,8 +29,8 @@ This phase builds the automated doc-staleness detection system that runs during 
 
 - [ ] Improve cross-linking between docs, skills, and CLI output:
   - In each package's main doc page (`apps/docs/content/docs/{package}/index.mdx`), add a "For AI Agents" callout or section at the bottom that points to the package's SKILL.md file location and the llms.txt per-package endpoint. Use a Fumadocs `Callout` component if available, or a simple blockquote.
-  - In each SKILL.md file's `sources` frontmatter field, verify the doc URLs point to the correct pages on proofkit.dev. Update any that are wrong or missing.
-  - In the CLI's help output (check `packages/cli/src/` for the main command definitions), ensure the `--help` text mentions `https://proofkit.dev/docs/cli` for full documentation.
+  - In each SKILL.md file's `sources` frontmatter field, verify the doc URLs point to the correct pages on proofkit.proof.sh. Update any that are wrong or missing.
+  - In the CLI's help output (check `packages/cli/src/` for the main command definitions), ensure the `--help` text mentions `https://proofkit.proof.sh/docs/cli` for full documentation.
 
 - [ ] Write tests for the doc-staleness script:
   - Create `scripts/__tests__/check-doc-staleness.test.ts` (or co-locate with the script).

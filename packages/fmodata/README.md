@@ -10,7 +10,7 @@ Roadmap:
 - [x] Batch operations
   - [ ] Automatically chunk requests into smaller batches (e.g. max 512 inserts per batch)
 - [x] Schema updates (add/update tables and fields)
-- [x] Proper docs at proofkit.dev
+- [x] Proper docs at proofkit.proof.sh
 - [x] @proofkit/typegen integration
 
 ## Installation

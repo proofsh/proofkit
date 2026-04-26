@@ -112,7 +112,7 @@ async function handlePostConfig(req: IncomingMessage, context: ApiContext): Prom
     const configData = validation.data as Record<string, unknown>;
     const { $schema: _, ...rest } = configData;
     const configWithSchema = {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       ...rest,
     };
     const jsonContent = `${JSON.stringify(configWithSchema, null, 2)}\n`;

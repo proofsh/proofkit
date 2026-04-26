@@ -26,9 +26,9 @@ This phase speeds up the `proofkit init` test suite, prepares the test infrastru
   - Refactor existing template tests to use this helper where it reduces duplication. Don't force it if the existing tests are already clean.
 
 - [ ] Make CLI output more AI-agent-friendly:
-  - In the post-init success message (find in `packages/cli/src/` — likely in the init command handler or executor), add a line pointing to docs: "Full documentation: https://proofkit.dev/docs"
+  - In the post-init success message (find in `packages/cli/src/` — likely in the init command handler or executor), add a line pointing to docs: "Full documentation: https://proofkit.proof.sh/docs"
   - If there's a `--help` flag handler for the main `proofkit` command, ensure it includes the docs URL.
-  - In error messages from the CLI, ensure they include enough context for an AI agent to diagnose the issue (e.g., "Missing required field X. See https://proofkit.dev/docs/cli/reference for options.").
+  - In error messages from the CLI, ensure they include enough context for an AI agent to diagnose the issue (e.g., "Missing required field X. See https://proofkit.proof.sh/docs/cli/reference for options.").
   - Review the AGENTS.md at the repo root — ensure it mentions the CLI and how to use it for project scaffolding.
 
 - [ ] Run all tests and verify improvements:

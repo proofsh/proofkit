@@ -64,7 +64,7 @@ This creates `proofkit-typegen-config.jsonc`. Configure for OData mode:
 
 ```jsonc
 {
-  "$schema": "https://proofkit.dev/typegen-config-schema.json",
+  "$schema": "https://proofkit.proof.sh/typegen-config-schema.json",
   "config": {
     "type": "fmodata",
     "path": "schema/odata",

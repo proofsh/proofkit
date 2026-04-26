@@ -1,6 +1,6 @@
 # ProofKit NextJS Template
 
-This is a [NextJS](https://nextjs.org/) project bootstrapped with `@proofkit/cli`. Learn more at [proofkit.dev](https://proofkit.dev)
+This is a [NextJS](https://nextjs.org/) project bootstrapped with `@proofkit/cli`. Learn more at [proofkit.proof.sh](https://proofkit.proof.sh)
 
 ## What's next? How do I make an app with this?
 
@@ -10,7 +10,7 @@ To add new things to your project, simply run the `proofkit` script from the pro
 
 e.g. `npm run proofkit` or `pnpm proofkit` etc.
 
-For more information, see the full [ProofKit documentation](https://proofkit.dev).
+For more information, see the full [ProofKit documentation](https://proofkit.proof.sh).
 
 ## Project Structure
 

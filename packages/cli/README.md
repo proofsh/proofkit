@@ -16,4 +16,4 @@
   Get started with a new ProofKit project by running <code>pnpm create proofkit</code>
 </p>
 
-View full documentation at [proofkit.dev](https://proofkit.dev)
+View full documentation at [proofkit.proof.sh](https://proofkit.proof.sh)

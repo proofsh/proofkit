@@ -20,7 +20,7 @@ export async function deployDemoFile({
         name: "Install ProofKit Demo",
         source: {
           type: "url",
-          url: "https://proofkit.dev/proofkit-demo/manifest.json",
+          url: "https://proofkit.proof.sh/proofkit-demo/manifest.json",
         },
         fileOperations: [
           {

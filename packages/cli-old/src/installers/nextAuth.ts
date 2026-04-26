@@ -184,6 +184,6 @@ async function checkForNextAuthLayouts(projectDir: string) {
   console.log(chalk.bgYellow(" ACTION REQUIRED: "));
   console.log(
     `${chalk.yellowBright("You must now install the NextAuth addon in your FileMaker file.")}
-Learn more: https://proofkit.dev/auth/next-auth\n`,
+Learn more: https://proofkit.proof.sh/auth/next-auth\n`,
   );
 }

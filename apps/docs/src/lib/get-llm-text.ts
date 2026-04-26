@@ -29,7 +29,7 @@ export async function getLLMText(page: InferPageType<typeof source>): Promise<st
   }
 
   return `# ${page.data.title}
-URL: https://proofkit.dev${page.url}
+URL: https://proofkit.proof.sh${page.url}
 
 ${page.data.description ?? ""}
 

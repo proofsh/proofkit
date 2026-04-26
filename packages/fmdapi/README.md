@@ -5,4 +5,4 @@
 
 # Claris FileMaker Data API Client for TypeScript
 
-For full documentation, see [proofkit.dev/docs/fmdapi](https://proofkit.dev/docs/fmdapi).
+For full documentation, see [proofkit.proof.sh/docs/fmdapi](https://proofkit.proof.sh/docs/fmdapi).

@@ -217,7 +217,7 @@ export async function updateTypegenConfig(
 
   if (!(await fs.exists(configPath))) {
     const nextContent: TypegenFileContent = {
-      $schema: "https://proofkit.dev/typegen-config-schema.json",
+      $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
       config: [nextDataSource],
     };
     await fs.writeFile(configPath, `${JSON.stringify(nextContent, null, 2)}\n`);

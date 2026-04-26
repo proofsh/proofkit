@@ -4,7 +4,7 @@
 
 This is a fetch replacement for calling a FileMaker script and getting a promise back in return. Or you can use callback if you want instead.
 
-**[Documentation Website](https://proofkit.dev/docs/webviewer)**
+**[Documentation Website](https://proofkit.proof.sh/docs/webviewer)**
 
 Install via your package manager of choice:
 

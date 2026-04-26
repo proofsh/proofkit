@@ -18,7 +18,7 @@ export async function sendEmail({
     type === "verification" ? "Verify Your Email" : "Reset Your Password";
 
   // TODO: Customize this function to actually send the email to your users
-  // Learn more: https://proofkit.dev/auth/fm-addon
+  // Learn more: https://proofkit.proof.sh/auth/fm-addon
   console.warn("TODO: Customize this function to actually send to your users");
   console.log(`To ${to}: Your ${type} code is ${code}`);
 }

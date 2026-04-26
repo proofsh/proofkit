@@ -9,7 +9,7 @@ const distPath = path.dirname(__filename);
 export const PKG_ROOT = path.join(distPath, "../");
 export const cliName = "proofkit";
 export const npmName = "@proofkit/cli";
-export const DOCS_URL = "https://proofkit.dev";
+export const DOCS_URL = "https://proofkit.proof.sh";
 
 const version = getVersion();
 const versionCharLength = version.length;
@@ -32,4 +32,4 @@ declare const __REGISTRY_URL__: string;
 // Provide a safe fallback when running from source (not built)
 export const DEFAULT_REGISTRY_URL =
   // typeof check avoids ReferenceError if not defined at runtime
-  typeof __REGISTRY_URL__ !== "undefined" && __REGISTRY_URL__ ? __REGISTRY_URL__ : "https://proofkit.dev";
+  typeof __REGISTRY_URL__ !== "undefined" && __REGISTRY_URL__ ? __REGISTRY_URL__ : "https://proofkit.proof.sh";

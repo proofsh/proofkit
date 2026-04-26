@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: ["/", "/llms.txt", "/llms-full.txt", "/llms/"],
     },
-    sitemap: "https://proofkit.dev/sitemap.xml",
+    sitemap: "https://proofkit.proof.sh/sitemap.xml",
   };
 }
