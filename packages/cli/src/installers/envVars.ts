@@ -38,6 +38,6 @@ export function findT3EnvFile(throwIfNotFound?: boolean): string | null {
     return null;
   }
 
-  logger.warn(`Could not find T3 env files. Run "proofkit add utils/t3-env" to initialize them.`);
+  logger.warn("Could not find T3 env files. Initialize them manually before continuing.");
   throw new Error("T3 env file not found");
 }

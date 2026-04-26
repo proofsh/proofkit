@@ -93,7 +93,7 @@ export const makeAddAuthCommand = () => {
     .action(async () => {
       const settings = getSettings();
       if (settings.ui === "shadcn") {
-        throw new Error("Shadcn projects should add auth using the template registry");
+        throw new Error("`proofkit add auth` is no longer supported for shadcn projects");
       }
       if (settings.auth.type !== "none") {
         throw new Error("Auth already exists");

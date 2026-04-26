@@ -207,8 +207,8 @@ function makeAddCommand() {
   return makeCommand(
     "add",
     {
-      name: optionalArg(textArg({ name: "name" })).pipe(withArgDescription("Component or registry item to add")),
-      target: optionalArg(textArg({ name: "target" })).pipe(withArgDescription("Optional add target")),
+      name: optionalArg(textArg({ name: "name" })).pipe(withArgDescription("Supported add target, currently `addon`")),
+      target: optionalArg(textArg({ name: "target" })).pipe(withArgDescription("Add-on target")),
       noInstall: booleanOption("no-install").pipe(withOptionDescription("Skip package installation")),
       CI: booleanOption("ci").pipe(withOptionDescription("Deprecated alias for --non-interactive")),
       nonInteractive: booleanOption("non-interactive").pipe(
@@ -235,7 +235,7 @@ function makeAddCommand() {
         },
         { nonInteractive: CI || nonInteractive, debug },
       ),
-  ).pipe(withCommandDescription("Legacy command. Prefer package-native tools, agents, or shadcn."));
+  ).pipe(withCommandDescription("Add a supported ProofKit add-on."));
 }
 
 function makeRemoveCommand() {

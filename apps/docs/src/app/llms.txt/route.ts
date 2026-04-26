@@ -7,7 +7,6 @@ const PACKAGES = [
   { name: "cli", desc: "Interactive CLI for scaffolding ProofKit projects" },
   { name: "better-auth", desc: "Better Auth adapter for FileMaker" },
   { name: "webviewer", desc: "FileMaker WebViewer utilities" },
-  { name: "templates", desc: "Project templates and starter kits" },
 ] as const;
 
 export function GET() {

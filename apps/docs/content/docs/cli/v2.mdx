@@ -9,9 +9,9 @@ description: In this major release, the ProofKit CLI has been reimagined as a mo
 
 When you start a new app using the ProofKit CLI, the new template is based on shadcn and tailwindcss instead of Mantine. This new simple template still includes the best practices from the Proof team, but now with even more flexibility.
 
-### A new way to add [anything]
+### A new starting point for add-ons
 
-The `proofkit add` command leverages the shadcn CLI to install any component or utility into your app, or you can use the shadcn CLI directly to install any component from any compatible library. Even better, these templates are now published right here on the docs site, so we can more easily release updates and new components that you can use right away.
+The CLI still supports ProofKit-specific add-ons where that workflow makes sense, but general component installation should use package-native tools directly.
 
 ### A new level of compatibility
 
@@ -19,15 +19,15 @@ You can now use the ProofKit CLI in an existing Next.js app, even if it wasn’t
 
 # Why the change?
 
-Adding new templates to the ProofKit CLI was always a challenge, and arguably the most lacking of the whole system. The templates are meant to be just a starting place, so they needed to be generic to fit any project, yet useful enough to warrant inclusion in the binary everyone downloads to run the CLI. That wasn’t scalable. But shadcn has taken the JavaScript world by storm over the past few years, especially with the rise of AI and especially tools like v0. We needed to unlock the ability to easily add anything to your JavaScript projects, whether it was a template from Proof, shadcn, v0 (AI-generated), or from any of the other emerging UI libraries built on the shadcn CLI.
+Adding new templates to the ProofKit CLI was always a challenge, and arguably the most lacking of the whole system. The templates are meant to be just a starting place, so they needed to be generic to fit any project, yet useful enough to warrant inclusion in the binary everyone downloads to run the CLI. That wasn’t scalable.
 
 But this required a new starting point. While mantine and tailwind can be used together in the same project, they get in each other’s way. At Proof, we’ve been building new projects without ProofKit for a few months now, so it was time to bring those learnings back to the framework so we could all move more quickly. New projects will start with a new foundation based on tailwindcss. It’s easier for AI to understand, and more compatible with any UI component built for shadcn to install for you.
 
-But the shadcn CLI isn’t just about UI components. It can install any utility or set of components into your app. Take the new `@proofkit/better-auth` package that was recently released. It’s the best way to quickly and easily add self-hosted authentication to your web app, without having to compromise on login options or pay for an external auth service. But setting it up was not easy...until now! Check out our @proofkit/better-auth [guide](/docs/better-auth/installation) for more details.
+Take the new `@proofkit/better-auth` package that was recently released. It’s the best way to quickly and easily add self-hosted authentication to your web app, without having to compromise on login options or pay for an external auth service. Check out our @proofkit/better-auth [guide](/docs/better-auth/installation) for more details.
 
 # Upgrade from v1
 
-Unfortunately, there is not an easy path for you to upgrade projects that were created with v1 to be fully compatible with v2. But if you are able to setup tailwindcss and shadcn in your existing project, you can still use the ProofKit CLI to add new components and utilities to your app.
+Unfortunately, there is not an easy path for you to upgrade projects that were created with v1 to be fully compatible with v2. But if you are able to setup tailwindcss and shadcn in your existing project, you can still use package-native tools directly alongside ProofKit.
 
 Basic steps:
 
