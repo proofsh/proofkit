@@ -9,7 +9,6 @@
     "v2",
     "---Guides---",
     "guides/getting-started",
-    "guides/adding-components",
     "guides/deployment",
     "guides/typegen",
     "guides/auth",
