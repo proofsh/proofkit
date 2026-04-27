@@ -1,5 +1,11 @@
 # @proofkit/webviewer
 
+## 3.0.7-beta.5
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+
 ## 3.0.7-beta.4
 
 ### Patch Changes

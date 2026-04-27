@@ -1,5 +1,13 @@
 # @proofkit/better-auth
 
+## 0.4.0-beta.17
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- Updated dependencies [e229b35]
+  - @proofkit/fmodata@0.1.0-beta.41
+
 ## 0.4.0-beta.16
 
 ### Patch Changes
