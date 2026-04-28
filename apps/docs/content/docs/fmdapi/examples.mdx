@@ -95,10 +95,11 @@ export async function listCustomers() {
 // Get ALL customers at once (use with caution on large datasets)
 export async function listAllCustomers() {
   const records = await CustomersLayout.listAll();
+  type CustomerRecord = (typeof records)[number];
   
   console.log(`Retrieved all ${records.length} customers`);
   
-  return records.map(customer => ({
+  return records.map((customer: CustomerRecord) => ({
     id: customer.recordId,
     firstName: customer.fieldData.firstName,
     lastName: customer.fieldData.lastName,
