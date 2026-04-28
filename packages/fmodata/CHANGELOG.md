@@ -1,5 +1,11 @@
 # @proofkit/fmodata
 
+## 0.1.0-beta.41
+
+### Patch Changes
+
+- e229b35: Add configurable database name normalization for OData and webhook requests.
+
 ## 0.1.0-beta.40
 
 ### Patch Changes

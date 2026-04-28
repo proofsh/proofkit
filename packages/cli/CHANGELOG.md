@@ -1,5 +1,15 @@
 # @proofgeist/kit
 
+## 2.0.0-beta.32
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- 18ade4d: Limit `proofkit add` to supported ProofKit add-ons and remove the unused registry-backed install path.
+- Updated dependencies [7c7f70a]
+  - @proofkit/fmdapi@5.1.0-beta.5
+  - @proofkit/typegen@1.1.0-beta.26
+
 ## 2.0.0-beta.31
 
 ### Patch Changes

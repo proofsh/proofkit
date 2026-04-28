@@ -1,5 +1,15 @@
 # @proofkit/typegen
 
+## 1.1.0-beta.26
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- Updated dependencies [7c7f70a]
+- Updated dependencies [e229b35]
+  - @proofkit/fmdapi@5.1.0-beta.5
+  - @proofkit/fmodata@0.1.0-beta.41
+
 ## 1.1.0-beta.25
 
 ### Patch Changes
