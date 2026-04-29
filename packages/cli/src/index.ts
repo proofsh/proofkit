@@ -31,7 +31,7 @@ import {
   TemplateService,
 } from "~/core/context.js";
 import { runDoctor } from "~/core/doctor.js";
-import { getCliErrorMessage, isCliError, NonInteractiveInputError } from "~/core/errors.js";
+import { getCliErrorMessage, isCliError, NonInteractiveInputError, UserCancelledError } from "~/core/errors.js";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
 import { runPrompt } from "~/core/prompt.js";
@@ -75,57 +75,76 @@ export const runInit = (name?: string, rawFlags?: Partial<CliFlags>) =>
 
 type ProjectMenuChoice = "add" | "remove" | "typegen" | "deploy" | "upgrade" | "doctor" | "prompt" | "docs";
 
+function isPromptCancellationError(error: unknown) {
+  return error instanceof UserCancelledError || (error instanceof Error && error.name === "ExitPromptError");
+}
+
+function toProjectMenuCommandError(command: string, cause: unknown) {
+  if (isCliError(cause)) {
+    return cause;
+  }
+
+  const error = new Error(`Failed to run \`${command}\` from project menu.`);
+  Object.assign(error, { cause });
+  return error;
+}
+
 const runProjectMenu = Effect.gen(function* () {
   const prompt = yield* PromptService;
   const consoleService = yield* ConsoleService;
 
-  const menuChoice = yield* Effect.tryPromise(() =>
-    prompt.select<ProjectMenuChoice>({
-      message: "What would you like to do?",
-      options: [
-        {
-          label: "Add Components",
-          value: "add",
-          hint: "Add new pages, schemas, data sources, etc.",
-        },
-        {
-          label: "Remove Components",
-          value: "remove",
-          hint: "Remove pages, schemas, data sources, etc.",
-        },
-        {
-          label: "Generate Types",
-          value: "typegen",
-          hint: "Update field definitions from your data sources",
-        },
-        {
-          label: "Deploy",
-          value: "deploy",
-          hint: "Deploy your app to Vercel",
-        },
-        {
-          label: "Upgrade Components",
-          value: "upgrade",
-          hint: "Update ProofKit components to latest version",
-        },
-        {
-          label: "Doctor",
-          value: "doctor",
-          hint: "Inspect project health and next steps",
-        },
-        {
-          label: "Prompt",
-          value: "prompt",
-          hint: "Show agent workflow guidance",
-        },
-        {
-          label: "View Documentation",
-          value: "docs",
-          hint: "Open ProofKit documentation",
-        },
-      ],
-    }),
-  );
+  const menuChoice = yield* Effect.tryPromise({
+    try: () =>
+      prompt.select<ProjectMenuChoice>({
+        message: "What would you like to do?",
+        options: [
+          {
+            label: "Add Components",
+            value: "add",
+            hint: "Add new pages, schemas, data sources, etc.",
+          },
+          {
+            label: "Remove Components",
+            value: "remove",
+            hint: "Remove pages, schemas, data sources, etc.",
+          },
+          {
+            label: "Generate Types",
+            value: "typegen",
+            hint: "Update field definitions from your data sources",
+          },
+          {
+            label: "Deploy",
+            value: "deploy",
+            hint: "Deploy your app to Vercel",
+          },
+          {
+            label: "Upgrade Components",
+            value: "upgrade",
+            hint: "Update ProofKit components to latest version",
+          },
+          {
+            label: "Doctor",
+            value: "doctor",
+            hint: "Inspect project health and next steps",
+          },
+          {
+            label: "Prompt",
+            value: "prompt",
+            hint: "Show agent workflow guidance",
+          },
+          {
+            label: "View Documentation",
+            value: "docs",
+            hint: "Open ProofKit documentation",
+          },
+        ],
+      }),
+    catch: (cause) =>
+      isPromptCancellationError(cause)
+        ? new UserCancelledError({ message: "User aborted the operation" })
+        : toProjectMenuCommandError("menu selection", cause),
+  });
 
   switch (menuChoice) {
     case "doctor":
@@ -140,26 +159,32 @@ const runProjectMenu = Effect.gen(function* () {
       return;
     }
     case "add":
-      return yield* Effect.promise(async () => {
-        const [{ runAdd }, { initProgramState, state }] = await Promise.all([
-          import("~/cli/add/index.js"),
-          import("~/state.js"),
-        ]);
-        initProgramState({});
-        state.baseCommand = "add";
-        state.projectDir = process.cwd();
-        await runAdd(undefined);
+      return yield* Effect.tryPromise({
+        try: async () => {
+          const [{ runAdd }, { initProgramState, state }] = await Promise.all([
+            import("~/cli/add/index.js"),
+            import("~/state.js"),
+          ]);
+          initProgramState({});
+          state.baseCommand = "add";
+          state.projectDir = process.cwd();
+          await runAdd(undefined);
+        },
+        catch: (cause) => toProjectMenuCommandError("add", cause),
       });
     case "remove":
-      return yield* Effect.promise(async () => {
-        const [{ runRemove }, { initProgramState, state }] = await Promise.all([
-          import("~/cli/remove/index.js"),
-          import("~/state.js"),
-        ]);
-        initProgramState({});
-        state.baseCommand = "remove";
-        state.projectDir = process.cwd();
-        await runRemove(undefined);
+      return yield* Effect.tryPromise({
+        try: async () => {
+          const [{ runRemove }, { initProgramState, state }] = await Promise.all([
+            import("~/cli/remove/index.js"),
+            import("~/state.js"),
+          ]);
+          initProgramState({});
+          state.baseCommand = "remove";
+          state.projectDir = process.cwd();
+          await runRemove(undefined);
+        },
+        catch: (cause) => toProjectMenuCommandError("remove", cause),
       });
     case "typegen":
       return yield* Effect.promise(async () => {

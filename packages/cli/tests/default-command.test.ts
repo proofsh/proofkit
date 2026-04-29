@@ -3,7 +3,7 @@ import path from "node:path";
 import { Effect } from "effect";
 import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
-import { NonInteractiveInputError } from "~/core/errors.js";
+import { NonInteractiveInputError, UserCancelledError } from "~/core/errors.js";
 import { runDefaultCommand } from "~/index.js";
 import { getFailure } from "./effect-test-utils.js";
 import { makeTestLayer } from "./test-layer.js";
@@ -84,6 +84,36 @@ describe("default command routing", () => {
       },
     ]);
     expect(consoleTranscript.note.some((entry) => entry.title === "Project commands")).toBe(false);
+  });
+
+  it("preserves user cancellation from the project menu prompt", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-default-project-cancel-"));
+    await fs.writeJson(path.join(cwd, "proofkit.json"), {
+      appType: "browser",
+      ui: "shadcn",
+      dataSources: [],
+      replacedMainPage: false,
+      registryTemplates: [],
+    });
+
+    expect(
+      await getFailure(
+        runDefaultCommand().pipe(
+          makeTestLayer({
+            cwd,
+            packageManager: "pnpm",
+            nonInteractive: false,
+            prompts: {
+              select: ["__cancel__"],
+            },
+          }),
+        ),
+      ),
+    ).toMatchObject(
+      new UserCancelledError({
+        message: "User aborted the operation",
+      }),
+    );
   });
 
   it("shows explicit project command guidance when a ProofKit project is present in non-interactive mode", async () => {
