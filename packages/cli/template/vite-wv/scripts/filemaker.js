@@ -26,6 +26,11 @@ async function getConnectedFiles(baseUrl = defaultFmMcpBaseUrl) {
   return Array.isArray(connectedFiles) ? connectedFiles : [];
 }
 
+async function isBridgeReachable(baseUrl = defaultFmMcpBaseUrl) {
+  const healthResponse = await fetch(`${baseUrl}/health`).catch(() => null);
+  return healthResponse?.ok === true;
+}
+
 function normalizeTarget(fileName) {
   return stripFileExtension(fileName).toLowerCase();
 }
@@ -84,6 +89,91 @@ export async function resolveFileMakerTarget() {
   }
 
   return null;
+}
+
+export async function callFileMakerScript({
+  baseUrl = defaultFmMcpBaseUrl,
+  connectedFileName,
+  scriptName,
+  data,
+}) {
+  const response = await fetch(`${baseUrl}/callScript`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      connectedFileName,
+      scriptName,
+      data,
+    }),
+  }).catch((error) => {
+    throw new Error(`Could not reach FM MCP bridge at ${baseUrl}/callScript.`, {
+      cause: error,
+    });
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const errorMessage =
+      payload && typeof payload.error === "string"
+        ? payload.error
+        : `HTTP ${response.status} from ${baseUrl}/callScript`;
+    throw new Error(errorMessage);
+  }
+
+  if (!payload || typeof payload.fetchId !== "string" || !("result" in payload)) {
+    throw new Error("Invalid response from FM MCP bridge /callScript.");
+  }
+
+  return payload;
+}
+
+export async function deployHtml({
+  appName,
+  path,
+  scriptName = "deploy_html",
+}) {
+  const target = await resolveFileMakerTarget();
+  if (!target) {
+    return {
+      method: "none",
+      target: null,
+    };
+  }
+
+  const payload = { appName, path };
+  const bridgeAvailable = target.source === "fm-mcp" && (await isBridgeReachable());
+
+  if (bridgeAvailable) {
+    try {
+      const bridgeResult = await callFileMakerScript({
+        connectedFileName: target.fileName,
+        scriptName,
+        data: payload,
+      });
+      return {
+        method: "bridge",
+        result: bridgeResult,
+        target,
+      };
+    } catch (error) {
+      if (target.host !== "$") {
+        throw error;
+      }
+    }
+  }
+
+  const parameter = JSON.stringify(payload);
+  return {
+    method: "url",
+    target,
+    url: buildFmpUrl({
+      host: target.host,
+      fileName: target.fileName,
+      scriptName,
+      parameter,
+    }),
+  };
 }
 
 export function buildFmpUrl({ host, fileName, scriptName, parameter }) {
