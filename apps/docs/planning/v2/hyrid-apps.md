@@ -62,6 +62,10 @@ FileMaker's printing capabilities have always been a strength, and hybrid apps g
 
 The round-trip between WebViewer-generated content and FileMaker's PDF/print engine is a powerful combination.
 
+### Works Offline
+
+Apps built with ProofKit work great offline — both in **FileMaker Pro** (with a local file) and in **FileMaker Go**. The WebViewer bundle ships inside the FileMaker file itself, so there's no server to call out to for the UI, and the local FileMaker engine handles data, scripting, and storage. Pure browser apps cannot match this without significant additional engineering (service workers, sync layers, conflict resolution). Hybrid apps get it for free.
+
 ### Plugin SDK as an Escape Hatch
 
 FileMaker's plugin SDK lets you write C/C++ extensions that can do virtually anything:

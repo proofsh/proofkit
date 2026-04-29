@@ -59,10 +59,12 @@ A complete redo of the current ProofKit homepage at proofkit.dev. The new homepa
 
 - **Hero and value proposition** — drawn from [Highlights](hilights.md) and [What We Want FM Devs to Hear](what-want-fm-devs-to-feel.md)
 - **Feature narrative** — drawn from [Highlights — What ProofKit Does Well](hilights.md#what-proofkit-does-well)
-- **Hybrid app concept** — drawn from [Hybrid Apps](hyrid-apps.md)
+- **Hybrid app concept** — drawn from [Hybrid Apps](hyrid-apps.md), with the runtime diagram from [Data Flow](data-flow.md)
+- **"Why ProofKit?" / alternatives** — drawn from [Alternatives](alternatives.md)
+- **Pricing clarity** — "ProofKit is free" callout, drawn from the [FAQ](faq-page.md#what-does-proofkit-cost)
 - **FAQ section** — drawn from [FAQ](faq-page.md)
 - **Embedded getting started videos** — from the video series above
-- **Calls to action** — links to the Getting Started Guide, documentation, and GitHub
+- **Community and calls to action** — links to the Getting Started Guide, documentation, GitHub, and [community.proof.sh](https://community.proof.sh)
 
 The homepage should convey the core messages from [What We Want FM Devs to Hear](what-want-fm-devs-to-feel.md): you can code with agents in FileMaker, you can move in stages, and security comes built in.
 
@@ -106,3 +108,5 @@ A documentation page that details exactly what is required to use ProofKit. The 
 | Announcement Blog Post | Blog | [What We Want FM Devs to Hear](what-want-fm-devs-to-feel.md), [Highlights](hilights.md) |
 | FAQ Page | Docs | [FAQ](faq-page.md) |
 | Technical Requirements | Docs | [Technical Requirements](technical-requirements.md), [FAQ](faq-page.md) |
+| Data Flow / Architecture | Docs | [Data Flow](data-flow.md), [Hybrid Apps](hyrid-apps.md) |
+| Alternatives / "Why ProofKit?" | Docs / Web | [Alternatives](alternatives.md), [First Principles](first-principles.md) |

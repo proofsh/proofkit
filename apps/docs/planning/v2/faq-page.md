@@ -29,13 +29,39 @@ It's both a replacement and an expansion. ProofKit started before agents were re
 
 The proofkit.dev website and the public GitHub repo will remain open source. The MCP server and other components we want to maintain in closed source will live in a separate repo.
 
+## What does ProofKit cost?
+
+**ProofKit is free.** It's a tool — like a hammer. Apps you build with ProofKit are yours. You can do whatever you want with them. You don't need ProofKit installed to run the apps you build with it; the deployed bundle is just HTML and JavaScript living in your FileMaker file.
+
+The cost you do pay is for the AI agent itself (Claude Code subscription, OpenAI API usage, etc.) — that's between you and your AI provider, not us.
+
 ## Is token cost a real concern?
 
 Yes. AI inference is currently being heavily subsidized by Anthropic, OpenAI, and others — we're paying a fraction of what it actually costs to run. That will eventually have to correct. We hope that competition from open source and local models will keep the prices within a range were the value is clear.
 
-## How is this related to ProofChat?
+## What happens when the agent generates bad code?
 
-It's not currenlty, but it might be that ProofChat gets repackaged as ProofKit component in the future.
+ProofKit ships with a lot of guardrails specifically to keep agents on track — see [First Principles — Close the Loop for Agents](first-principles.md#3-close-the-loop-for-agents) and [Highlights — Closes the Loop Between Writing, Testing, and Fixing](hilights.md#2-closes-the-loop-between-writing-testing-and-fixing). Linters, type checks, type generators from your FileMaker schema, and an embedded browser that lets the agent see runtime errors all combine to let the agent self-correct most mistakes without you intervening.
+
+When you do need to dig in yourself, the project includes the standard web devtools — including TanStack Query devtools — so you can inspect state and network calls just like in any modern web project.
+
+To be clear: ProofKit doesn't make you a senior engineer. It gets you started on your coding journey, and if you're already advanced it makes you more productive.
+
+## Can I migrate apps built with an older version of ProofKit to v2?
+
+The deployed apps themselves are just HTML and JavaScript living in your FileMaker file — they will continue to work as-is. There's nothing to migrate on the runtime side.
+
+What changes between versions is the **developer tooling** — the MCP server, CLI, and skills you use to build new apps or modify existing ones. Future Claris releases may unlock new ProofKit features that depend on newer FileMaker versions, but older deployed apps will continue to run.
+
+## How does multi-developer / team workflow work?
+
+For the **FileMaker file** itself, ProofKit doesn't change anything. FileMaker has never had a shared development model that doesn't involve developers working against a shared file hosted on a server. That's still how it works. It may be solved in the future, but it isn't yet.
+
+For the **web code**, you have all the normal options. The ProofKit project is just a web project — you can put it on GitHub, use branches and pull requests, run CI, and follow whatever SDLC your team prefers.
+
+## Where do I get help?
+
+The community lives at [community.proof.sh](https://community.proof.sh). That's the place for questions, sharing what you've built, and getting unstuck.
 
 ## Can ProofKit enable agentic editing of scripts or tables
 

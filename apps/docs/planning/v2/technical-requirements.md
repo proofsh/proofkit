@@ -22,8 +22,25 @@ To **build** ProofKit apps, a developer needs:
 
 - **FileMaker Pro** — required. The agentic coding workflow runs against an open FileMaker file in FileMaker Pro.
 - **FileMaker Server** — *not* required. ProofKit works against any open FileMaker file, whether it lives locally or is hosted on a server.
+- **Node.js (LTS)** — required. ProofKit's tooling runs on Node. Install the current LTS release from [nodejs.org](https://nodejs.org/).
 
-In short: ProofKit needs an open file, not a particular hosting model.
+In short: ProofKit needs an open file and Node installed locally — no particular hosting model required.
+
+## Developer Background
+
+You do **not** need to be a web developer to get started with ProofKit. The agent does the heavy lifting; the workflow is designed for FileMaker developers who may be writing their first React component.
+
+That said, prior knowledge accelerates everything:
+
+- **Familiarity with React and TypeScript** is helpful but not required. The agent can scaffold and modify components for you, and you'll learn as you go.
+- **Comfort with a terminal** is helpful — most agentic editors run from one.
+- **Git** is recommended for any non-trivial project, just as it would be for any web codebase.
+
+The getting started videos are designed so a developer with no prior web experience can follow along and get to a deployed app.
+
+## Time to First Deployed App
+
+The goal: **about 30 minutes from install to a working WebViewer app deployed in your FileMaker file**, following the [getting started video series](content-required-for-launch.md#getting-started-video-series). The videos walk through the path end to end so anyone can verify the timing by watching.
 
 ## Runtime Environments (Where Deployed Apps Run)
 
@@ -54,7 +71,9 @@ These are on the roadmap. We are working with Claris on the underlying capabilit
 | FileMaker version | 22 or greater (next major version: 26) |
 | Tested AI environments | Claude Code, Claude Desktop |
 | Goal AI environments | Cursor, Codex, OpenCode, and other MCP-compatible agents |
-| Required for development | FileMaker Pro |
+| Required for development | FileMaker Pro, Node.js (LTS) |
 | Required for hosting the file | None — local or server is fine |
+| Web development experience | Helpful but not required |
+| Time to first deployed app | ~30 minutes (per the getting started videos) |
 | Deployed app runtimes | FileMaker Pro (macOS/Windows), FileMaker Go, FileMaker WebDirect |
 | Agentic coding scope | WebViewer apps only (scripts, tables, layouts not yet supported) |
