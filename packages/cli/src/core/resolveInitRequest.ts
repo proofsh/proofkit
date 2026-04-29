@@ -447,7 +447,7 @@ function resolveFileMakerInputs({
 
             return yield* Effect.fail(
               new FileMakerSetupError({
-                message: `FileMaker file "${flags.fileName}" is not currently connected to the local ProofKit MCP Server. Connected files: ${availableFiles.join(", ")}.`,
+                message: `FileMaker file "${flags.fileName}" is not currently connected to the ProofKit plugin. Connected files: ${availableFiles.join(", ")}.`,
               }),
             );
           }
@@ -459,7 +459,7 @@ function resolveFileMakerInputs({
           if (nonInteractive) {
             return yield* Effect.fail(
               new NonInteractiveInputError({
-                message: `Multiple FileMaker files are connected to the local ProofKit MCP Server. Pass --file-name with one of: ${availableFiles.join(", ")}.`,
+                message: `Multiple FileMaker files are connected to the ProofKit plugin. Pass --file-name with one of: ${availableFiles.join(", ")}.`,
               }),
             );
           }
@@ -470,7 +470,7 @@ function resolveFileMakerInputs({
               options: availableFiles.map((fileName) => ({
                 value: fileName,
                 label: fileName,
-                hint: "Connected via local ProofKit MCP Server",
+                hint: "Connected via ProofKit plugin",
                 keywords: [fileName],
               })),
             }),
@@ -482,7 +482,7 @@ function resolveFileMakerInputs({
         yield* fileMakerService.installLocalWebViewerAddon();
         const selectedFile = localFmMcp.healthy ? yield* resolveLocalFmMcpFile(localFmMcp.connectedFiles) : undefined;
         if (localFmMcp.healthy && selectedFile) {
-          console.info(`Using local ProofKit MCP file: ${selectedFile}`);
+          console.info(`Using ProofKit plugin file: ${selectedFile}`);
           return {
             fileMaker: {
               mode: "local-fm-mcp",
@@ -502,7 +502,7 @@ function resolveFileMakerInputs({
             return yield* Effect.fail(
               new NonInteractiveInputError({
                 message:
-                  "ProofKit MCP Server was detected, but no FileMaker files are open. Open a file in FileMaker and rerun, or pass --server.",
+                  "ProofKit plugin was detected, but no FileMaker file is connected. Install the ProofKit plugin, install the ProofKit WebViewer add-on in your FileMaker file, then run the add-on connection script and rerun. Or pass --server.",
               }),
             );
           }
@@ -510,7 +510,7 @@ function resolveFileMakerInputs({
           return yield* Effect.fail(
             new NonInteractiveInputError({
               message:
-                "ProofKit MCP Server was not detected and no FileMaker server was provided. Start the ProofKit MCP Server locally or rerun with --server.",
+                "ProofKit plugin was not detected and no FileMaker server was provided. Install the ProofKit plugin, then rerun. Or pass --server.",
             }),
           );
         }
@@ -518,15 +518,15 @@ function resolveFileMakerInputs({
         const fallbackAction = yield* promptEffect("Unable to choose FileMaker setup fallback.", () =>
           prompt.select({
             message: localFmMcp.healthy
-              ? "ProofKit MCP Server is running, but no FileMaker file is open yet. Open one, then choose how to continue."
-              : "ProofKit MCP Server was not detected. How would you like to continue?",
+              ? "ProofKit plugin is installed, but no FileMaker file is connected yet. Install the ProofKit WebViewer add-on in your FileMaker file, run the add-on connection script, then choose how to continue."
+              : "ProofKit plugin was not detected. How would you like to continue?",
             options: [
               {
                 value: "retry",
                 label: "Try again",
                 hint: localFmMcp.healthy
                   ? "Check again after opening a FileMaker file"
-                  : "Retry ProofKit MCP Server detection",
+                  : "Retry ProofKit plugin detection",
               },
               {
                 value: "hosted",

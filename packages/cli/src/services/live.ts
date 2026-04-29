@@ -354,7 +354,7 @@ const fileMakerService = {
       },
       catch: (cause) =>
         new FileMakerSetupError({
-          message: "Unable to detect local ProofKit MCP Server.",
+          message: "Unable to detect local ProofKit plugin.",
           cause,
         }),
     }),

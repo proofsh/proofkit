@@ -47,6 +47,39 @@ describe("Batch Operations - Mock Tests", () => {
 
   const db = mock.database("test_db");
 
+  it("should preserve multipart content type on outbound batch requests", async () => {
+    const spyMock = new MockFMServerConnection({ enableSpy: true });
+    spyMock.addRoute({
+      urlPattern: "/test_db/$batch",
+      method: "POST",
+      response: [
+        "--b_header_boundary",
+        "Content-Type: application/http",
+        "",
+        "HTTP/1.1 200 Ok",
+        "Content-Type: application/json;charset=utf-8",
+        "",
+        JSON.stringify({
+          "@odata.context": "test/$metadata#contacts",
+          value: [],
+        }),
+        "--b_header_boundary--",
+      ].join("\r\n"),
+      headers: {
+        "content-type": "multipart/mixed; boundary=b_header_boundary",
+      },
+    });
+
+    const spyDb = spyMock.database("test_db");
+
+    const result = await spyDb.batch([spyDb.from(contactsTO).list().top(1)]).execute();
+
+    expect(result.results[0]?.error).toBeUndefined();
+    const batchCall = spyMock.spy?.calls.filter((call) => call.url.includes("/test_db/$batch")).at(-1);
+    expect(batchCall?.headers?.["content-type"]).toContain("multipart/mixed; boundary=");
+    expect(batchCall?.headers?.["content-type"]).not.toBe("application/json");
+  });
+
   describe("Mixed success/failure responses", () => {
     it("should support list().count() and top-level count() in the same batch", async () => {
       const mockBatchResponse = [
