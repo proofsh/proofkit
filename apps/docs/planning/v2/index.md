@@ -31,8 +31,15 @@ Anticipated questions and clear answers. Covers: what ProofKit is, what it produ
 ### [What We Want FM Devs to Hear](what-want-fm-devs-to-feel.md)
 Messaging strategy and positioning for the FileMaker community. Split into "things we say out loud" (you can code with agents in FileMaker, move in stages, security matters) and "things we imply" (Proof services for complex projects, Proof can help you leave FileMaker if that's the right outcome). This is the document to consult when writing marketing copy, conference talks, or community posts.
 
+### [Content Required for Launch](content-required-for-launch.md)
+The launch content plan — what assets we need to produce and where they come from. Covers: a four-part getting started video series, a written getting started guide, a homepage redesign, an announcement blog post, a public FAQ page, and a technical requirements page. Each asset maps back to the source documents in this folder. This is the document to consult when planning production work and tracking what's done.
+
+### [Technical Requirements](technical-requirements.md)
+The hard requirements for ProofKit v2 at launch: FileMaker 22 or greater (with future releases tracking FileMaker 26), Claude Code and Claude Desktop as the tested AI environments, FileMaker Pro required for development, and the runtime environments where deployed apps will run (Pro, Go, WebDirect). Also calls out what is explicitly out of scope for this release — agentic editing of scripts, tables, and layouts. This is the document to consult when answering "will this work for me?" questions or writing the public technical requirements page.
+
 ## How to Use This Library
 
 1. **For landing pages**: Start with [Highlights](hilights.md) for the feature narrative, pull the "why" from [First Principles](first-principles.md), and use [What We Want FM Devs to Hear](what-want-fm-devs-to-feel.md) for tone and messaging guardrails.
 2. **For documentation pages**: Start with [Hybrid Apps](hyrid-apps.md) and [Highlights](hilights.md) for conceptual content, and [FAQ](faq-page.md) for anticipated questions.
 3. **For decision-making**: Consult [First Principles](first-principles.md) — it explains not just what we're building but what we're deliberately not building and why.
+4. **For launch planning**: Consult [Content Required for Launch](content-required-for-launch.md) for the full list of assets to produce, their source documents, and how they relate to each other.

@@ -39,7 +39,7 @@ It's not currenlty, but it might be that ProofChat gets repackaged as ProofKit c
 
 ## Can ProofKit enable agentic editing of scripts or tables
 
-This release is targeted at building UI components. We want to be able to support scripts and other FileMaker elements, but it's challenging. We are working with Claris to suggest ways that this might get easier. We may enable some experimental features to try these types of operations if we can.
+This release is targeted at building UI components. We want to be able to support scripts and other FileMaker elements, but it's challenging. We are working with Claris to suggest ways that this might get easier. We may enable some experimental features to try these types of operations if we can. For the full scope of what's in and out of this release, see [Technical Requirements — What's Out of Scope for This Release](technical-requirements.md#whats-out-of-scope-for-this-release).
 
 ## Do the users of my ProofKit coded app need to have proofkit installed?
 
@@ -47,4 +47,4 @@ No. What get's installed is just for developer mode. After the application is bu
 
 ## Does Proofkit work in WebDirect.
 
-You will need FileMaker Pro to agentically code your FileMaker application. Once the application is bundled and deployed into FileMaker, it will work in WebDirect, but there are some special things you will need to do do make sure that refreshing the windows doesn't disrupt your users.  We will have more information on that soon.
+You will need FileMaker Pro to agentically code your FileMaker application. Once the application is bundled and deployed into FileMaker, it will work in WebDirect, but there are some special things you will need to do do make sure that refreshing the windows doesn't disrupt your users.  We will have more information on that soon. For the full list of supported runtime environments and FileMaker version requirements, see [Technical Requirements](technical-requirements.md).

@@ -24,3 +24,7 @@ For some people, it may make sense for them to hire Proof as the consultant or p
 Yes, you might. For some companies, the economics simply may not work anymore. FileMaker may no longer make sense from a cost perspective, or you may be running into scale or performance limits that cannot be solved by moving the UI into a web viewer or even a separate web app.
 
 If leaving FileMaker is the right outcome, Proof has a strong process for using AI to complete that migration. We still believe there is value in moving step by step: first converting some UI to web viewers, then possibly moving to a web app, and only then deciding whether to leave FileMaker altogether. Wherever that path leads, Proof can be your partner in getting there.
+
+---
+
+For how these messages translate into specific launch assets — the homepage redesign, announcement blog post, and getting started videos — see [Content Required for Launch](content-required-for-launch.md).

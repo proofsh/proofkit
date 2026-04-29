@@ -92,4 +92,4 @@ Without ProofKit, building an agentic FileMaker WebViewer app means:
 
 With ProofKit, the agent reads the file, writes the code, tests it in a real browser, fixes its own mistakes, and ships the result into your FileMaker file. You stay focused on the application — not the plumbing.
 
-For common questions about what ProofKit is and how it fits, see the [FAQ](faq-page.md). For the advantages a hybrid WebViewer app gives you over a pure browser app, see [Hybrid Apps](hyrid-apps.md).
+For common questions about what ProofKit is and how it fits, see the [FAQ](faq-page.md). For the advantages a hybrid WebViewer app gives you over a pure browser app, see [Hybrid Apps](hyrid-apps.md). For how these capabilities translate into launch content — videos, guides, and the homepage — see [Content Required for Launch](content-required-for-launch.md).
