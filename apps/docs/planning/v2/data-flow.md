@@ -9,37 +9,37 @@ This document explains how data moves between FileMaker and a ProofKit WebViewer
 A ProofKit WebViewer app is a normal React app that happens to run inside a FileMaker WebViewer. The WebViewer hosts the HTML/JS bundle; the React app talks to FileMaker by calling FileMaker scripts and receiving structured data back.
 
 ```mermaid
-flowchart TD
+flowchart LR
     User([User])
-    subgraph FMClient["FileMaker Pro / Go / WebDirect"]
-        Layout["FileMaker Layout"]
-        WV["WebViewer<br/>(hosts the bundle)"]
-        React["React App<br/>(TanStack Query)"]
-        Script["FileMaker Script<br/>(secure backend)"]
-        DB[("FileMaker Database<br/>+ permissions")]
-        FS["File System / cURL /<br/>Printing / PDF"]
-    end
-    External[("External APIs<br/>(no CORS)")]
 
-    User -->|interacts| Layout
-    Layout --> WV
-    WV --> React
-    React -->|FileMaker.PerformScript<br/>with parameter| Script
-    Script -->|reads/writes| DB
-    Script -->|cURL / file ops| FS
-    Script -->|HTTP| External
-    Script -->|FileMaker.PerformScriptResult| React
-    React -->|renders UI| WV
-    DB -.->|permissions inherited| Script
+    subgraph FMFile["FileMaker File"]
+        Script{{"FileMaker<br/>Scripts"}}
+        WV["WebViewer<br/>(React App)"]
+        HTML["html bundle"]
+        DB[("FM Database")]
+        Print["Printing, etc."]
+        FS["File System"]
+        APIs["External APIs"]
+
+        HTML --> WV
+        WV <--> Script
+        Script <--> DB
+        Script --> Print
+        Script --> FS
+        Script -->|"No CORS issues"| APIs
+        WV --> APIs
+    end
+
+    User <--> WV
 ```
 
 ## The Pieces
 
-- **The user** interacts with a FileMaker layout that contains a WebViewer.
-- **The WebViewer** hosts the bundled HTML/JS — the React app deployed by ProofKit.
-- **The React app** uses TanStack Query to manage server state and trigger calls to FileMaker.
-- **FileMaker scripts** are the secure back end. Anything the script can do, the web app can now do — read/write the database, make CORS-free network requests, access the file system, generate PDFs.
+- **The user** interacts with the WebViewer directly.
+- **The WebViewer** hosts the bundled HTML/JS — the React app deployed by ProofKit. It uses TanStack Query to manage server state and trigger calls into FileMaker.
+- **FileMaker scripts** are the secure back end and the hub of the diagram. Anything a script can do, the web app can now do — read/write the database, access the file system, print, generate PDFs, make network requests.
 - **The database** enforces the user's privilege set. The script runs with the user's permissions, so authorization is inherited rather than re-implemented.
+- **External APIs** can be reached two ways: directly from the WebViewer (subject to CORS, with any secrets exposed to the browser) or through a script (no CORS, secrets stay in FileMaker). The script path is the reason this architecture matters.
 
 ## Why This Matters
 

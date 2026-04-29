@@ -28,6 +28,9 @@ Deep dive on what a hybrid FileMaker app actually is and why it's powerful. The 
 ### [Data Flow](data-flow.md)
 How data actually moves between FileMaker and a ProofKit WebViewer app at runtime. Includes a Mermaid diagram of the round-trip between the React app, FileMaker scripts, the database, and external systems. This is the document to draw from when developers ask "how does this actually work under the hood?" — pairs naturally with [Hybrid Apps](hyrid-apps.md).
 
+### [Tech Stack](tech-stack.md)
+The inventory of pieces that make up a ProofKit-generated application — React, TypeScript, shadcn/ui, Tailwind, Vite, TanStack Query and Router, ProofKit FMDAPI and TypeGen, FMFetch, plus the skills, tests, and project setup that keep agents on track. Explains what each piece does and why it was chosen. This is the document to draw from when developers ask "what exactly does ProofKit set up for me?"
+
 ### [Alternatives](alternatives.md)
 How ProofKit compares to other ways of solving the same problem: hand-rolled WebViewers, pre-agentic FileMaker web frameworks, commercial tools, and leaving FileMaker entirely. Framed through the lens of agent-first design and closing the loop. This is the document to draw from when answering "why ProofKit and not X?" on the homepage, FAQ, or in sales conversations.
 
