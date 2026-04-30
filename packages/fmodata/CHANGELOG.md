@@ -1,5 +1,11 @@
 # @proofkit/fmodata
 
+## 0.1.0-beta.42
+
+### Patch Changes
+
+- ee4c951: Preserve caller-supplied `Content-Type` headers so OData batch requests keep their required multipart boundary.
+
 ## 0.1.0-beta.41
 
 ### Patch Changes

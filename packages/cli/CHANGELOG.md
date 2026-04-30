@@ -1,5 +1,15 @@
 # @proofgeist/kit
 
+## 2.0.0-beta.33
+
+### Patch Changes
+
+- ee4c951: Clarify local FileMaker setup prompts for the ProofKit plugin flow.
+- d5ca0e5: Preserve typed cancellation errors in the default project menu and wrap add/remove menu failures with stable error messages.
+- ee4c951: Restore the interactive project menu when running `proofkit` inside an existing ProofKit project.
+- be34116: Make scaffolded WebViewer upload scripts use `deploy_html` as the canonical FileMaker script, with bridge-first and FMP URL fallback deployment.
+  - @proofkit/typegen@1.1.0-beta.27
+
 ## 2.0.0-beta.32
 
 ### Patch Changes
