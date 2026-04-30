@@ -274,7 +274,9 @@ export class FMServerConnection implements ExecutionContext {
     const buildHeaders = async () => {
       const headers = new Headers(options?.headers);
       headers.set("Authorization", await this._getAuthorizationHeader(fetchHandler));
-      headers.set("Content-Type", "application/json");
+      if (!headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
       // Respect a caller-supplied Accept header (e.g. getMetadata({ format: "xml" })
       // sets Accept: application/xml). Only fall back to the default JSON Accept
       // when the caller didn't specify one.

@@ -229,7 +229,7 @@ describe("resolveInitRequest", () => {
       mode: "local-fm-mcp",
       fileName: "LocalFile.fmp12",
     });
-    expect(consoleTranscript.info).toContain("Using local ProofKit MCP file: LocalFile.fmp12");
+    expect(consoleTranscript.info).toContain("Using ProofKit plugin file: LocalFile.fmp12");
   });
 
   it("asks which local FileMaker file to use when multiple are open", async () => {
@@ -308,7 +308,7 @@ describe("resolveInitRequest", () => {
     ).toMatchObject(
       new NonInteractiveInputError({
         message:
-          "Multiple FileMaker files are connected to the local ProofKit MCP Server. Pass --file-name with one of: A.fmp12, B.fmp12.",
+          "Multiple FileMaker files are connected to the ProofKit plugin. Pass --file-name with one of: A.fmp12, B.fmp12.",
       }),
     );
   });
@@ -374,7 +374,7 @@ describe("resolveInitRequest", () => {
     ).toMatchObject(
       new FileMakerSetupError({
         message:
-          'FileMaker file "Missing.fmp12" is not currently connected to the local ProofKit MCP Server. Connected files: A.fmp12, B.fmp12.',
+          'FileMaker file "Missing.fmp12" is not currently connected to the ProofKit plugin. Connected files: A.fmp12, B.fmp12.',
       }),
     );
   });
@@ -413,7 +413,7 @@ describe("resolveInitRequest", () => {
     );
   });
 
-  it("prompts to retry when Proofkit MCP is running but no FileMaker file is open", async () => {
+  it("prompts to retry when ProofKit plugin is installed but no FileMaker file is connected", async () => {
     const promptTranscript: PromptTranscript = {
       text: [],
       password: [],
@@ -465,7 +465,7 @@ describe("resolveInitRequest", () => {
     expect(tracker.addonInstalls).toBe(1);
     expect(promptTranscript.select).toContainEqual({
       message:
-        "ProofKit MCP Server is running, but no FileMaker file is open yet. Open one, then choose how to continue.",
+        "ProofKit plugin is installed, but no FileMaker file is connected yet. Install the ProofKit WebViewer add-on in your FileMaker file, run the add-on connection script, then choose how to continue.",
       options: ["retry", "hosted", "skip"],
     });
   });
@@ -527,10 +527,10 @@ describe("resolveInitRequest", () => {
       fileName: "RetryConnected.fmp12",
     });
     expect(tracker.addonInstalls).toBe(2);
-    expect(consoleTranscript.info).toContain("Using local ProofKit MCP file: RetryConnected.fmp12");
+    expect(consoleTranscript.info).toContain("Using ProofKit plugin file: RetryConnected.fmp12");
   });
 
-  it("fails with a specific non-interactive error when Proofkit MCP is running but no FileMaker file is open", async () => {
+  it("fails with a specific non-interactive error when ProofKit plugin is installed but no FileMaker file is connected", async () => {
     expect(
       await getFailure(
         resolveInitRequest("demo", {
@@ -558,7 +558,7 @@ describe("resolveInitRequest", () => {
     ).toMatchObject(
       new NonInteractiveInputError({
         message:
-          "ProofKit MCP Server was detected, but no FileMaker files are open. Open a file in FileMaker and rerun, or pass --server.",
+          "ProofKit plugin was detected, but no FileMaker file is connected. Install the ProofKit plugin, install the ProofKit WebViewer add-on in your FileMaker file, then run the add-on connection script and rerun. Or pass --server.",
       }),
     );
   });

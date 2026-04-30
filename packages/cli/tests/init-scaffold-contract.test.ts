@@ -219,6 +219,12 @@ describe("Init scaffold contract tests", () => {
     expect(typegenConfig.config?.webviewerScriptName).toBe("ExecuteDataApi");
     expect(typegenConfig.config?.fmMcp?.enabled).toBe(true);
 
+    const uploadScriptText = readFileSync(join(webviewerProjectDir, "scripts", "upload.js"), "utf-8");
+    const filemakerHelperText = readFileSync(join(webviewerProjectDir, "scripts", "filemaker.js"), "utf-8");
+    expect(uploadScriptText).toContain("const deployment = await deployHtml({");
+    expect(uploadScriptText).toContain("Deployed via FM MCP bridge.");
+    expect(filemakerHelperText).toContain('scriptName = "deploy_html"');
+
     // Compile-equivalent smoke checks without external installs.
     expect(checkNodeSyntax(webviewerProjectDir, "scripts/launch-fm.js")).toBe(true);
     expect(checkNodeSyntax(webviewerProjectDir, "scripts/upload.js")).toBe(true);

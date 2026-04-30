@@ -27,10 +27,11 @@ import {
   ConsoleService,
   FileSystemService,
   PackageManagerService,
+  PromptService,
   TemplateService,
 } from "~/core/context.js";
 import { runDoctor } from "~/core/doctor.js";
-import { getCliErrorMessage, isCliError, NonInteractiveInputError } from "~/core/errors.js";
+import { getCliErrorMessage, isCliError, NonInteractiveInputError, UserCancelledError } from "~/core/errors.js";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
 import { runPrompt } from "~/core/prompt.js";
@@ -72,6 +73,156 @@ export const runInit = (name?: string, rawFlags?: Partial<CliFlags>) =>
     return { request, plan };
   });
 
+type ProjectMenuChoice = "add" | "remove" | "typegen" | "deploy" | "upgrade" | "doctor" | "prompt" | "docs";
+
+function isPromptCancellationError(error: unknown) {
+  return error instanceof UserCancelledError || (error instanceof Error && error.name === "ExitPromptError");
+}
+
+function toProjectMenuCommandError(command: string, cause: unknown) {
+  if (isCliError(cause)) {
+    return cause;
+  }
+
+  const error = new Error(`Failed to run \`${command}\` from project menu.`);
+  Object.assign(error, { cause });
+  return error;
+}
+
+const runProjectMenu = Effect.gen(function* () {
+  const prompt = yield* PromptService;
+  const consoleService = yield* ConsoleService;
+
+  const menuChoice = yield* Effect.tryPromise({
+    try: () =>
+      prompt.select<ProjectMenuChoice>({
+        message: "What would you like to do?",
+        options: [
+          {
+            label: "Add Components",
+            value: "add",
+            hint: "Add new pages, schemas, data sources, etc.",
+          },
+          {
+            label: "Remove Components",
+            value: "remove",
+            hint: "Remove pages, schemas, data sources, etc.",
+          },
+          {
+            label: "Generate Types",
+            value: "typegen",
+            hint: "Update field definitions from your data sources",
+          },
+          {
+            label: "Deploy",
+            value: "deploy",
+            hint: "Deploy your app to Vercel",
+          },
+          {
+            label: "Upgrade Components",
+            value: "upgrade",
+            hint: "Update ProofKit components to latest version",
+          },
+          {
+            label: "Doctor",
+            value: "doctor",
+            hint: "Inspect project health and next steps",
+          },
+          {
+            label: "Prompt",
+            value: "prompt",
+            hint: "Show agent workflow guidance",
+          },
+          {
+            label: "View Documentation",
+            value: "docs",
+            hint: "Open ProofKit documentation",
+          },
+        ],
+      }),
+    catch: (cause) =>
+      isPromptCancellationError(cause)
+        ? new UserCancelledError({ message: "User aborted the operation" })
+        : toProjectMenuCommandError("menu selection", cause),
+  });
+
+  switch (menuChoice) {
+    case "doctor":
+      return yield* runDoctor;
+    case "prompt":
+      return yield* runPrompt;
+    case "docs": {
+      const { DOCS_URL } = yield* Effect.promise(() => import("~/consts.js"));
+      consoleService.info(`Opening ${DOCS_URL} in your browser...`);
+      const { default: open } = yield* Effect.promise(() => import("open"));
+      yield* Effect.promise(() => open(DOCS_URL));
+      return;
+    }
+    case "add":
+      return yield* Effect.tryPromise({
+        try: async () => {
+          const [{ runAdd }, { initProgramState, state }] = await Promise.all([
+            import("~/cli/add/index.js"),
+            import("~/state.js"),
+          ]);
+          initProgramState({});
+          state.baseCommand = "add";
+          state.projectDir = process.cwd();
+          await runAdd(undefined);
+        },
+        catch: (cause) => toProjectMenuCommandError("add", cause),
+      });
+    case "remove":
+      return yield* Effect.tryPromise({
+        try: async () => {
+          const [{ runRemove }, { initProgramState, state }] = await Promise.all([
+            import("~/cli/remove/index.js"),
+            import("~/state.js"),
+          ]);
+          initProgramState({});
+          state.baseCommand = "remove";
+          state.projectDir = process.cwd();
+          await runRemove(undefined);
+        },
+        catch: (cause) => toProjectMenuCommandError("remove", cause),
+      });
+    case "typegen":
+      return yield* Effect.promise(async () => {
+        const [{ runTypegen }, { getSettings }, { state }] = await Promise.all([
+          import("~/cli/typegen/index.js"),
+          import("~/utils/parseSettings.js"),
+          import("~/state.js"),
+        ]);
+        state.projectDir = process.cwd();
+        await runTypegen({ settings: getSettings() });
+      });
+    case "deploy":
+      return yield* Effect.promise(async () => {
+        const [{ runDeploy }, { initProgramState, state }] = await Promise.all([
+          import("~/cli/deploy/index.js"),
+          import("~/state.js"),
+        ]);
+        initProgramState({});
+        state.baseCommand = "deploy";
+        state.projectDir = process.cwd();
+        await runDeploy();
+      });
+    case "upgrade":
+      return yield* Effect.promise(async () => {
+        const [{ runUpgrade }, { initProgramState, state }] = await Promise.all([
+          import("~/cli/update/index.js"),
+          import("~/state.js"),
+        ]);
+        initProgramState({});
+        state.baseCommand = "upgrade";
+        state.projectDir = process.cwd();
+        await runUpgrade();
+      });
+    default:
+      throw new Error(`Unknown menu choice: ${menuChoice}`);
+  }
+});
+
 export const runDefaultCommand = (rawFlags?: Partial<CliFlags>) =>
   Effect.gen(function* () {
     const cliContext = yield* CliContext;
@@ -83,6 +234,10 @@ export const runDefaultCommand = (rawFlags?: Partial<CliFlags>) =>
 
     if (hasProofKitProject) {
       intro(`Found ${proofGradient("ProofKit")} project`);
+      if (!(cliContext.nonInteractive || flags.CI || flags.nonInteractive)) {
+        return yield* runProjectMenu;
+      }
+
       consoleService.note(
         [
           "ProofKit now focuses on project bootstrap, diagnostics, and agent entrypoints.",
