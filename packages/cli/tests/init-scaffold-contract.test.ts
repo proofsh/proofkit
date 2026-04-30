@@ -177,7 +177,6 @@ describe("Init scaffold contract tests", () => {
     expect(existsSync(join(webviewerProjectDir, ".env"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, ".cursorignore"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, "src", "main.tsx"))).toBe(true);
-    expect(existsSync(join(webviewerProjectDir, "scripts", "launch-fm.js"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, "scripts", "upload.js"))).toBe(true);
 
     const packageJson = readJsonFile<PackageJsonShape>(join(webviewerProjectDir, "package.json"));
@@ -193,7 +192,6 @@ describe("Init scaffold contract tests", () => {
     expect(readFileSync(join(webviewerProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
     const pkgManager = getPackageManagerName(packageJson);
     expect(outputSuggestsCommand(normalizedOutput, formatRunCommand(pkgManager, "typegen"))).toBe(true);
-    expect(outputSuggestsCommand(normalizedOutput, formatRunCommand(pkgManager, "launch-fm"))).toBe(true);
 
     const proofkitConfig = readJsonFile<ProofkitSettings>(join(webviewerProjectDir, "proofkit.json"));
     expect(proofkitConfig.appType).toBe("webviewer");
@@ -226,7 +224,6 @@ describe("Init scaffold contract tests", () => {
     expect(filemakerHelperText).toContain('scriptName = "deploy_html"');
 
     // Compile-equivalent smoke checks without external installs.
-    expect(checkNodeSyntax(webviewerProjectDir, "scripts/launch-fm.js")).toBe(true);
     expect(checkNodeSyntax(webviewerProjectDir, "scripts/upload.js")).toBe(true);
   });
 });
