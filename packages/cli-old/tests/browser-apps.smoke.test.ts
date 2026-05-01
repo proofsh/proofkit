@@ -19,9 +19,7 @@ const describeWhenSmokeEnvPresent = parsedSmokeEnv.success ? describe : describe
 
 if (!parsedSmokeEnv.success) {
   const missingKeys = [...new Set(parsedSmokeEnv.error.issues.map((issue) => issue.path.join(".")))];
-  console.warn(
-    `Skipping external integration smoke tests; missing required env vars: ${missingKeys.join(", ")}`,
-  );
+  console.warn(`Skipping external integration smoke tests; missing required env vars: ${missingKeys.join(", ")}`);
 }
 
 describeWhenSmokeEnvPresent("External integration smoke tests (non-interactive CLI)", () => {

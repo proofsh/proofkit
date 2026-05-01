@@ -15,16 +15,9 @@
  */
 
 import { execSync } from "node:child_process";
-import {
-  existsSync,
-  rmSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-  copyFileSync,
-} from "node:fs";
-import { join, resolve } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ADDON_NAME = "ProofKit";
@@ -35,17 +28,12 @@ const FM_CONTROLLER = "addon-creator.fmp12";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 
-const packageJson = JSON.parse(
-  readFileSync(join(repoRoot, "package.json"), "utf8"),
-);
+const packageJson = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
 const version = packageJson.version;
 
 const addonCreatorPath = join(repoRoot, "fm-addon", FM_CONTROLLER);
 const stageDir = join(repoRoot, "fm-addon", "stage");
-const addonModulesDir = join(
-  homedir(),
-  "Library/Application Support/FileMaker/Extensions/AddonModules",
-);
+const addonModulesDir = join(homedir(), "Library/Application Support/FileMaker/Extensions/AddonModules");
 const fmaddonPath = join(addonModulesDir, `${ADDON_NAME}.fmaddon`);
 const addonFolderPath = join(addonModulesDir, ADDON_NAME);
 const infoJsonPath = join(addonFolderPath, "info_en.json");
@@ -70,7 +58,7 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function waitForFile(filePath, timeout = 60000, interval = 1000) {
+async function waitForFile(filePath, timeout = 60_000, interval = 1000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     if (existsSync(filePath)) return true;
@@ -131,7 +119,7 @@ try {
   openPath(addonCreatorPath);
 
   info("Waiting 10 seconds for FileMaker to fully load...");
-  await sleep(10000);
+  await sleep(10_000);
 
   success("FileMaker loaded");
 
@@ -165,10 +153,7 @@ try {
   info("Reading info_en.json...");
   let jsonContent = readFileSync(infoJsonPath, "utf8");
 
-  jsonContent = jsonContent.replace(
-    /"\*\*\* DESCRIPTION MISSING \*\*\* - DNL"/g,
-    `"${ADDON_DESCRIPTION}"`,
-  );
+  jsonContent = jsonContent.replace(/"\*\*\* DESCRIPTION MISSING \*\*\* - DNL"/g, `"${ADDON_DESCRIPTION}"`);
   jsonContent = jsonContent.replace(/"___\.\.\.___"/g, `"${ADDON_CATEGORY}"`);
 
   const BOM = "\uFEFF";
@@ -194,7 +179,7 @@ try {
   // --- Step 9: Close FileMaker ---
   section("Step 9: Close FileMaker");
 
-  const closeUrl = `fmp://$/addon-creator.fmp12?script=CloseThisFile`;
+  const closeUrl = "fmp://$/addon-creator.fmp12?script=CloseThisFile";
   info(`Closing ${FM_CONTROLLER}...`);
   openPath(closeUrl);
 
@@ -219,18 +204,13 @@ try {
     rmSync(stageZipPath, { force: true });
   }
 
-  execSync(
-    `cd "${addonModulesDir}" && zip -r "${stageZipPath}" "${ADDON_NAME}"`,
-  );
+  execSync(`cd "${addonModulesDir}" && zip -r "${stageZipPath}" "${ADDON_NAME}"`);
   success(`Created: ${stageZipPath}`);
 
   // --- Step 12: Refresh CLI template ---
   section("Step 12: Update CLI Template");
 
-  const cliTemplatePath = join(
-    repoRoot,
-    "packages/cli/template/fm-addon/ProofKitWV",
-  );
+  const cliTemplatePath = join(repoRoot, "packages/cli/template/fm-addon/ProofKitWV");
 
   info(`Clearing ${cliTemplatePath}...`);
   if (existsSync(cliTemplatePath)) {
@@ -238,7 +218,7 @@ try {
   }
   mkdirSync(cliTemplatePath, { recursive: true });
 
-  info(`Copying addon folder contents to CLI template...`);
+  info("Copying addon folder contents to CLI template...");
   execSync(`cp -a "${addonFolderPath}/"* "${cliTemplatePath}/"`);
 
   success(`CLI template updated: ${cliTemplatePath}`);
@@ -248,14 +228,14 @@ try {
   console.log("=".repeat(70));
   console.log("\u{1F389} Add-on Pipeline Complete!");
   console.log("=".repeat(70));
-  console.log(`Staged Files:`);
+  console.log("Staged Files:");
   console.log(`  ${stageFmaddonPath}`);
   console.log(`  ${stageZipPath}`);
   console.log("");
-  console.log(`CLI Template Updated:`);
+  console.log("CLI Template Updated:");
   console.log(`  ${cliTemplatePath}`);
   console.log("");
-  console.log(`Original Files (preserved):`);
+  console.log("Original Files (preserved):");
   console.log(`  ${fmaddonPath}`);
   console.log(`  ${addonFolderPath}`);
   console.log("=".repeat(70));
