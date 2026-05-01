@@ -235,6 +235,12 @@ const gitService = {
       yield* withCommandError("git", ["add", "."], projectDir, () => execa("git", ["add", "."], { cwd: projectDir }));
       yield* withCommandError("git", ["commit", "-m", "Initial commit"], projectDir, () =>
         execa("git", ["commit", "-m", "Initial commit"], { cwd: projectDir }),
+      ).pipe(
+        Effect.catchTag("ExternalCommandError", () =>
+          Effect.sync(() => {
+            consoleService.warn("Git initial commit failed; continuing without commit.");
+          }),
+        ),
       );
     }),
 };
