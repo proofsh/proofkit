@@ -1,4 +1,19 @@
-import { Bot, Code, Download, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Code,
+  Download,
+  Eye,
+  Gift,
+  Layers,
+  LayoutGrid,
+  RefreshCw,
+  Route,
+  Server,
+  Shield,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import DarkVeil from "@/components/DarkVeil";
@@ -33,8 +48,9 @@ const stackItems = [
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="relative isolate min-h-screen overflow-hidden rounded-b-[2rem] border-white/10 border-b">
+    <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
+      {/* Hero — always dark */}
+      <section className="relative isolate min-h-screen overflow-hidden bg-black text-white">
         <div className="absolute inset-0">
           <DarkVeil
             hueShift={315}
@@ -69,7 +85,7 @@ export default function HomePage() {
                 <Link className="font-medium text-sm text-white/55 transition hover:text-white" href="/docs/cli">
                   Docs
                 </Link>
-                <Link className="font-medium text-sm text-white/55 transition hover:text-white" href="/docs/webviewer">
+                <Link className="font-medium text-sm text-white/55 transition hover:text-white" href="/why-proofkit">
                   Features
                 </Link>
                 <Link
@@ -136,7 +152,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="pb-8">
+            <div className="pb-2">
               <p className="font-semibold text-[0.7rem] text-white/35 uppercase tracking-[0.42em]">
                 Built for the modern stack
               </p>
@@ -148,6 +164,217 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 2: The UI Ceiling Disappears — primary bg */}
+      {/* Hero curve sweeping down */}
+      <div aria-hidden="true" className="h-12 rounded-b-[50%] bg-black" />
+
+      <section className="relative pt-6 pb-24 sm:pt-8 sm:pb-32">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-balance font-bold text-3xl tracking-tight sm:text-4xl md:text-5xl">
+              Build any UI you can imagine — inside FileMaker.
+            </h2>
+            <p className="mt-6 text-gray-600 text-lg leading-8 dark:text-white/60">
+              Native FileMaker layouts have limits. ProofKit removes them. Anything you can build on the web — kanban
+              boards, interactive calendars, data grids, dashboards, drag-and-drop interfaces — now runs inside a
+              FileMaker WebViewer.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-6 sm:grid-cols-2">
+            {["Dashboard with charts", "Data grid with filtering", "Kanban board", "Interactive calendar"].map(
+              (label) => (
+                <div
+                  className="flex aspect-video items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.03]"
+                  key={label}
+                >
+                  <span className="text-gray-400 text-sm dark:text-white/30">[Screenshot: {label}]</span>
+                </div>
+              ),
+            )}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              className="inline-flex items-center gap-2 font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/60 dark:hover:text-white"
+              href="/examples"
+            >
+              See more examples
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 3: The Agent Does the Work — alternate bg */}
+      <section className="bg-gray-100 py-24 sm:py-32 dark:bg-gray-900">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="grid items-center gap-16 lg:grid-cols-2">
+            <div>
+              <h2 className="text-balance font-bold text-3xl tracking-tight sm:text-4xl md:text-5xl">
+                Your AI agent reads your FileMaker file, writes the code, and deploys it.
+              </h2>
+              <p className="mt-6 text-gray-600 text-lg leading-8 dark:text-white/60">
+                The agent reads your schema through MCP, generates a working app, deploys it into your file, opens it in
+                a real browser, catches its own mistakes, and self-corrects. No copy-paste. No shepherding.
+              </p>
+              <Link
+                className="mt-8 inline-flex items-center gap-2 font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/60 dark:hover:text-white"
+                href="/how-it-works"
+              >
+                How it works
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-8 dark:border-white/10 dark:bg-white/[0.03]">
+              {[
+                { icon: <Server className="size-5" />, label: "Read Schema" },
+                { icon: <Code className="size-5" />, label: "Write Code" },
+                { icon: <Zap className="size-5" />, label: "Deploy" },
+                { icon: <Eye className="size-5" />, label: "Verify in Browser" },
+                { icon: <RefreshCw className="size-5" />, label: "Fix & Iterate" },
+              ].map((step, i) => (
+                <div className="flex items-center gap-4" key={step.label}>
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
+                    {step.icon}
+                  </div>
+                  <span className="font-medium text-gray-700 dark:text-white/80">{step.label}</span>
+                  {i < 4 && <div className="ml-auto text-gray-300 dark:text-white/20">↓</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 4: Everything You Need, Ready to Go — primary bg */}
+      <section className="py-24 sm:py-32">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-balance font-bold text-3xl tracking-tight sm:text-4xl md:text-5xl">
+              An opinionated stack — so you can focus on your app, not your toolchain.
+            </h2>
+          </div>
+
+          <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: <Code className="size-5" />,
+                title: "React + TypeScript",
+                desc: "The foundation agents know best.",
+              },
+              {
+                icon: <Layers className="size-5" />,
+                title: "shadcn/ui",
+                desc: "Beautiful, accessible components with dark/light mode.",
+              },
+              {
+                icon: <Route className="size-5" />,
+                title: "Multi-page routing",
+                desc: "Sidebar nav, detail views, dashboards in one app.",
+              },
+              {
+                icon: <RefreshCw className="size-5" />,
+                title: "Intelligent caching",
+                desc: "TanStack Query keeps your UI in sync without hammering the server.",
+              },
+              {
+                icon: <Shield className="size-5" />,
+                title: "Type-safe data",
+                desc: "TypeGen generates types from your actual FileMaker schema.",
+              },
+              {
+                icon: <Zap className="size-5" />,
+                title: "One-command deploy",
+                desc: "Bundle and ship into your FileMaker file.",
+              },
+            ].map((feature) => (
+              <div
+                className="rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-white/10 dark:bg-white/[0.03]"
+                key={feature.title}
+              >
+                <div className="mb-3 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
+                  {feature.icon}
+                </div>
+                <h3 className="font-semibold">{feature.title}</h3>
+                <p className="mt-1 text-gray-500 text-sm dark:text-white/50">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section 5: It's Free + Start in Stages — alternate bg */}
+      <section className="bg-gray-100 py-24 sm:py-32 dark:bg-gray-900">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="mb-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
+                <Gift className="size-5" />
+              </div>
+              <h3 className="font-bold text-2xl sm:text-3xl">Free. No catch.</h3>
+              <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+                ProofKit is free to download, free to use, and the apps you build are yours. You don't even need
+                ProofKit installed to run what you deploy. The only cost is your AI agent subscription.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="mb-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
+                <LayoutGrid className="size-5" />
+              </div>
+              <h3 className="font-bold text-2xl sm:text-3xl">Replace one layout. Then go from there.</h3>
+              <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+                Start by replacing a single FileMaker layout with a WebViewer app — low risk, security inherited, no
+                infrastructure changes. When you're ready, progress to full web apps with a FileMaker backend. Each step
+                builds on the last.
+              </p>
+              <Link
+                className="mt-6 inline-flex items-center gap-2 font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/60 dark:hover:text-white"
+                href="/why-webviewers"
+              >
+                Why WebViewers?
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 6: Community & Closing CTA — primary bg */}
+      <section className="relative py-24 sm:py-32">
+        <div className="absolute -top-20 left-1/2 h-64 w-[60%] -translate-x-1/2 rounded-full bg-[#D15ABB]/10 blur-3xl dark:bg-[#D15ABB]/15" />
+
+        <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-balance font-bold text-3xl tracking-tight sm:text-4xl md:text-5xl">
+              Built for the FileMaker community. By people who've been part of it for decades.
+            </h2>
+            <p className="mx-auto mt-6 max-w-2xl text-gray-600 text-lg leading-8 dark:text-white/60">
+              This is built in service of FileMaker developers, by people who understand this community. You're not
+              alone. We're moving forward together.
+            </p>
+
+            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-900 bg-gray-900 px-6 font-semibold text-base text-white shadow-lg transition hover:bg-gray-800 dark:border-white/15 dark:bg-white/[0.06] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_36px_rgba(255,255,255,0.08)] dark:hover:border-white/25 dark:hover:bg-white/[0.1]"
+                href="/docs/cli/guides/getting-started"
+              >
+                <Download className="size-5" />
+                Download for macOS
+              </Link>
+              <Link
+                className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-300 bg-white px-6 font-semibold text-base text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white"
+                href="https://community.ottomatic.cloud/c/proofkit"
+              >
+                Join the Community
+              </Link>
             </div>
           </div>
         </div>

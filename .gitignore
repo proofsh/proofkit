@@ -79,5 +79,8 @@ packages/typegen/schema/metadata.xml
 # FM ADD-ON BUILD ARTIFACTS
 fm-addon/stage/
 
+# Internal planning docs (not for publication)
+apps/docs/v2-plans/
+
 # Prevent accidentally committing files with absolute paths
 Users/
