@@ -1,54 +1,12 @@
 import { ArrowRight, Code, Download, Eye, RefreshCw, Server, Zap } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
-import { LargeSearchToggle } from "@/components/search-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HowItWorksPage() {
   return (
     <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
-      {/* Nav */}
-      <header className="mx-auto mt-6 flex w-full max-w-4xl items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-purple-950/30">
-        <div className="flex items-center gap-8">
-          <Link aria-label="ProofKit home" className="flex items-center gap-2 font-semibold" href="/">
-            <Image
-              alt="ProofKit"
-              className="h-6 w-auto dark:brightness-0 dark:invert"
-              height={40}
-              src="/proofkit-horiz.png"
-              width={120}
-            />
-          </Link>
-          <nav aria-label="Primary navigation" className="hidden items-center gap-8 sm:flex">
-            <Link
-              className="font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/55 dark:hover:text-white"
-              href="/docs/cli"
-            >
-              Docs
-            </Link>
-            <Link
-              className="font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/55 dark:hover:text-white"
-              href="/why-proofkit"
-            >
-              Features
-            </Link>
-            <Link
-              className="font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/55 dark:hover:text-white"
-              href="https://community.ottomatic.cloud/c/proofkit"
-            >
-              Community
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-2">
-          <LargeSearchToggle
-            className="hidden min-w-40 border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900 md:inline-flex dark:border-white/10 dark:bg-white/[0.06] dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white [&_kbd]:border-gray-200 [&_kbd]:bg-gray-100 [&_kbd]:text-gray-400 dark:[&_kbd]:border-white/10 dark:[&_kbd]:bg-white/[0.06] dark:[&_kbd]:text-white/45"
-            hideIfDisabled
-          />
-          <ThemeToggle className="border-gray-200 bg-gray-50 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/55 [&_.bg-fd-accent]:bg-gray-200 dark:[&_.bg-fd-accent]:bg-white/15 [&_.text-fd-accent-foreground]:text-gray-900 dark:[&_.text-fd-accent-foreground]:text-white [&_svg]:text-gray-500 dark:[&_svg]:text-white/60" />
-        </div>
-      </header>
+      <MarketingNav />
 
       {/* Page Header */}
       <section className="py-24 pb-16">
@@ -143,18 +101,18 @@ export default function HowItWorksPage() {
             <h2 className="font-bold text-2xl sm:text-3xl">The feedback loop</h2>
             <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
               This is what makes ProofKit different from "just using ChatGPT to write code." The agent doesn't just
-              write — it deploys, verifies in a real browser, sees what it built, and fixes its own mistakes. The loop
-              runs until the app works correctly.
+              write — it deploys, verifies in a real browser, sees what it built, and can inspect, iterate, and fix
+              common issues in the same loop.
             </p>
 
             <MarketingCard className="mt-8" surface="alternate">
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   { icon: <Server className="size-4" />, label: "Read your schema and understand your data" },
-                  { icon: <Code className="size-4" />, label: "Generate a complete working app" },
+                  { icon: <Code className="size-4" />, label: "Generate app code from real project context" },
                   { icon: <Zap className="size-4" />, label: "Deploy into FileMaker with one command" },
                   { icon: <Eye className="size-4" />, label: "Open the app in a real browser" },
-                  { icon: <RefreshCw className="size-4" />, label: "Spot issues and self-correct" },
+                  { icon: <RefreshCw className="size-4" />, label: "Spot and fix common issues" },
                 ].map((step) => (
                   <div className="flex items-center gap-3" key={step.label}>
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
@@ -175,9 +133,9 @@ export default function HowItWorksPage() {
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">TypeGen and type safety</h2>
             <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-              The agent knows the shape of your data at compile time. TypeGen reads your FileMaker schema and generates
-              TypeScript types — field names, value lists, relationships. Typos in field names are caught before the app
-              ever runs.
+              The agent can work from the shape of your data at compile time. TypeGen reads your FileMaker schema and
+              generates TypeScript types — field names, value lists, relationships. Many field-name mistakes are caught
+              before you run the app.
             </p>
           </div>
         </div>

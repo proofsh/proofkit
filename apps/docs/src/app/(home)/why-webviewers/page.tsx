@@ -1,55 +1,13 @@
 import { Download, Globe, HardDrive, Lock, Printer, Server, Shield, Wifi } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import DataFlowDiagram from "@/components/DataFlowDiagramLazy";
+import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
-import { LargeSearchToggle } from "@/components/search-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function WhyWebviewersPage() {
   return (
     <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
-      {/* Nav */}
-      <header className="mx-auto mt-6 flex w-full max-w-4xl items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-purple-950/30">
-        <div className="flex items-center gap-8">
-          <Link aria-label="ProofKit home" className="flex items-center gap-2 font-semibold" href="/">
-            <Image
-              alt="ProofKit"
-              className="h-6 w-auto dark:brightness-0 dark:invert"
-              height={40}
-              src="/proofkit-horiz.png"
-              width={120}
-            />
-          </Link>
-          <nav aria-label="Primary navigation" className="hidden items-center gap-8 sm:flex">
-            <Link
-              className="font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/55 dark:hover:text-white"
-              href="/docs/cli"
-            >
-              Docs
-            </Link>
-            <Link
-              className="font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/55 dark:hover:text-white"
-              href="/why-proofkit"
-            >
-              Features
-            </Link>
-            <Link
-              className="font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/55 dark:hover:text-white"
-              href="https://community.ottomatic.cloud/c/proofkit"
-            >
-              Community
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-2">
-          <LargeSearchToggle
-            className="hidden min-w-40 border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900 md:inline-flex dark:border-white/10 dark:bg-white/[0.06] dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white [&_kbd]:border-gray-200 [&_kbd]:bg-gray-100 [&_kbd]:text-gray-400 dark:[&_kbd]:border-white/10 dark:[&_kbd]:bg-white/[0.06] dark:[&_kbd]:text-white/45"
-            hideIfDisabled
-          />
-          <ThemeToggle className="border-gray-200 bg-gray-50 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/55 [&_.bg-fd-accent]:bg-gray-200 dark:[&_.bg-fd-accent]:bg-white/15 [&_.text-fd-accent-foreground]:text-gray-900 dark:[&_.text-fd-accent-foreground]:text-white [&_svg]:text-gray-500 dark:[&_svg]:text-white/60" />
-        </div>
-      </header>
+      <MarketingNav />
 
       {/* Page Header */}
       <section className="py-24 pb-16">

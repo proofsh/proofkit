@@ -14,15 +14,13 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import DarkVeil from "@/components/DarkVeil";
 import { ExampleShowcaseGrid } from "@/components/examples/ExampleShowcaseGrid";
+import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
 import { ProofkitLogo } from "@/components/ProofkitLogo";
 import { ProofLogo } from "@/components/ProofLogo";
-import { LargeSearchToggle } from "@/components/search-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const stackItems = [
   { name: "Cursor", icon: <Sparkles className="size-5" /> },
@@ -73,42 +71,7 @@ export default function HomePage() {
         <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[#D15ABB]/25 to-transparent blur-3xl" />
 
         <div className="relative z-10 mx-auto flex min-h-[75vh] w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
-          <header className="mx-auto flex w-full max-w-4xl items-center justify-between rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 shadow-2xl shadow-purple-950/30 backdrop-blur-xl">
-            <div className="flex items-center gap-8">
-              <Link aria-label="ProofKit home" className="flex items-center gap-2 font-semibold text-white" href="/">
-                <Image
-                  alt="ProofKit"
-                  className="h-6 w-auto brightness-0 invert"
-                  height={40}
-                  src="/proofkit-horiz.png"
-                  width={120}
-                />
-              </Link>
-
-              <nav aria-label="Primary navigation" className="hidden items-center gap-8 sm:flex">
-                <Link className="font-medium text-sm text-white/55 transition hover:text-white" href="/docs/cli">
-                  Docs
-                </Link>
-                <Link className="font-medium text-sm text-white/55 transition hover:text-white" href="/why-proofkit">
-                  Features
-                </Link>
-                <Link
-                  className="font-medium text-sm text-white/55 transition hover:text-white"
-                  href="https://community.ottomatic.cloud/c/proofkit"
-                >
-                  Community
-                </Link>
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <LargeSearchToggle
-                className="hidden min-w-40 border-white/10 bg-white/[0.06] text-white/55 hover:bg-white/10 hover:text-white md:inline-flex [&_kbd]:border-white/10 [&_kbd]:bg-white/[0.06] [&_kbd]:text-white/45"
-                hideIfDisabled
-              />
-              <ThemeToggle className="border-white/10 bg-white/[0.06] text-white/55 [&_.bg-fd-accent]:bg-white/15 [&_.text-fd-accent-foreground]:text-white [&_svg]:text-white/60" />
-            </div>
-          </header>
+          <MarketingNav variant="dark" />
 
           <div className="flex flex-1 flex-col pt-12 text-center">
             <div className="flex flex-1 items-center justify-center pb-10">
@@ -124,8 +87,8 @@ export default function HomePage() {
 
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60 leading-8">
                   ProofKit helps you create modern web interfaces for FileMaker without becoming a web developer first.
-                  It connects your AI agent to your file, gives it the intelligence it needs, and closes the loop so it
-                  can write, test, fix, and deploy interfaces that fit your app.
+                  It connects your AI agent to your file, gives it useful context, and closes the loop so it can build,
+                  test, refine, and deploy interfaces that fit your app.
                 </p>
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -214,8 +177,8 @@ export default function HomePage() {
                 Your AI agent reads your FileMaker file, writes the code, and deploys it.
               </h2>
               <p className="mt-6 text-gray-600 text-lg leading-8 dark:text-white/60">
-                The agent reads your schema through MCP, generates a working app, deploys it into your file, opens it in
-                a real browser, catches its own mistakes, and self-corrects. No copy-paste. No shepherding.
+                The agent reads your schema through MCP, generates an app, deploys it into your file, opens it in a real
+                browser, and can inspect and fix common issues in the same loop. Less copy-paste, less shepherding.
               </p>
               <Link
                 className="mt-8 inline-flex items-center gap-2 font-medium text-gray-500 text-sm transition hover:text-gray-900 dark:text-white/60 dark:hover:text-white"
