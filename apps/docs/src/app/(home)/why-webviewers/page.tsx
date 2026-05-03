@@ -2,6 +2,7 @@ import { Download, Globe, HardDrive, Lock, Printer, Server, Shield, Wifi } from 
 import Image from "next/image";
 import Link from "next/link";
 import DataFlowDiagram from "@/components/DataFlowDiagramLazy";
+import { MarketingCard, MarketingSection } from "@/components/marketing-section";
 import { LargeSearchToggle } from "@/components/search-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -72,7 +73,7 @@ export default function WhyWebviewersPage() {
       </section>
 
       {/* What is a Hybrid App — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">What is a hybrid app?</h2>
@@ -88,10 +89,31 @@ export default function WhyWebviewersPage() {
             </p>
           </div>
         </div>
-      </section>
+      </MarketingSection>
+
+      {/* Anything a FileMaker Script Can Do — primary bg */}
+      <MarketingSection>
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl">
+            <p className="font-semibold text-[#D15ABB] text-sm uppercase tracking-[0.2em]">The core idea</p>
+            <h2 className="mt-3 font-bold text-2xl sm:text-3xl">Anything a FileMaker script can do</h2>
+            <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+              A WebViewer app can call FileMaker scripts. That means the modern web UI is not trapped in the browser
+              sandbox — it can reach the database, run business logic, generate PDFs, call external APIs, and use the
+              local machine through FileMaker.
+            </p>
+            <MarketingCard className="mt-8">
+              <p className="text-balance font-semibold text-xl leading-8">
+                You build the interface with web tools. FileMaker remains the secure, scriptable application platform
+                underneath it.
+              </p>
+            </MarketingCard>
+          </div>
+        </div>
+      </MarketingSection>
 
       {/* What You Inherit for Free — primary bg */}
-      <section className="py-16">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">What you inherit for free</h2>
@@ -139,40 +161,75 @@ export default function WhyWebviewersPage() {
                 desc: "Access the full FileMaker plugin SDK.",
               },
             ].map((item) => (
-              <div
-                className="rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-white/10 dark:bg-white/[0.03]"
-                key={item.title}
-              >
+              <MarketingCard key={item.title} surface="alternate">
                 <div className="mb-3 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
                   {item.icon}
                 </div>
                 <h3 className="font-semibold">{item.title}</h3>
                 <p className="mt-1 text-gray-500 text-sm dark:text-white/50">{item.desc}</p>
-              </div>
+              </MarketingCard>
             ))}
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
-      {/* What You'd Have to Build — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      {/* Performance + Staged Adoption — primary bg */}
+      <MarketingSection>
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <MarketingCard className="rounded-3xl p-8">
+              <h2 className="font-bold text-2xl sm:text-3xl">Faster screens, not just prettier screens</h2>
+              <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+                A lot of FileMaker layout behavior is powered by show/hide logic, conditional formatting, filtered
+                portals, sortable portal headers, and unstored calculations. Those patterns work, but they can make the
+                database do expensive work just to draw a screen.
+              </p>
+              <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+                A WebViewer can move that presentation logic into the browser, where filtering, sorting, conditional
+                rendering, and rich interactions are cheap. The result is often a layout that feels faster and asks less
+                of the FileMaker engine.
+              </p>
+            </MarketingCard>
+
+            <MarketingCard className="rounded-3xl p-8">
+              <h2 className="font-bold text-2xl sm:text-3xl">Start with one layout</h2>
+              <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+                You do not have to rewrite your system to get value from a hybrid app. Replace one FileMaker layout with
+                a WebViewer experience, keep the same users, data, security, scripts, and deployment model, then expand
+                when the next workflow is ready.
+              </p>
+              <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
+                That staged path is the practical advantage: modernize the parts of your app that need a better
+                interface without putting the whole business system at risk.
+              </p>
+            </MarketingCard>
+          </div>
+        </div>
+      </MarketingSection>
+
+      {/* Migration Risk — primary bg */}
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-bold text-2xl sm:text-3xl">What you'd have to build yourself if you left</h2>
+            <h2 className="font-bold text-2xl sm:text-3xl">
+              AI makes migration easier. It does not make it risk-free.
+            </h2>
             <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-              Leaving FileMaker means rebuilding every one of those capabilities from scratch — authentication,
-              role-based access, a secure API layer, file handling, offline sync, PDF generation. It's months of
-              infrastructure work before you write your first feature.
+              AI coding tools can dramatically reduce the time it takes to move a complex FileMaker solution to a modern
+              web stack. But migration is still migration. You still have to learn new systems, rebuild authentication,
+              reproduce permissions, handle files, replace offline workflows, recreate PDF generation, and operate new
+              infrastructure.
             </p>
             <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-              With ProofKit, you skip all of that. FileMaker already solved those problems. You just build the UI.
+              With ProofKit, you do not have to trade all of that working FileMaker capability just to give users the
+              interfaces they want. Keep the platform you know. Modernize the experience on top of it.
             </p>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* CTA — primary bg */}
-      <section className="py-24">
+      <MarketingSection className="py-24">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="font-bold text-2xl sm:text-3xl">Ready to try it?</h2>
@@ -187,7 +244,7 @@ export default function WhyWebviewersPage() {
             </div>
           </div>
         </div>
-      </section>
+      </MarketingSection>
     </main>
   );
 }

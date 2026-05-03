@@ -17,6 +17,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import DarkVeil from "@/components/DarkVeil";
+import { ExampleShowcaseGrid } from "@/components/examples/ExampleShowcaseGrid";
+import { MarketingCard, MarketingSection } from "@/components/marketing-section";
+import { ProofkitLogo } from "@/components/ProofkitLogo";
+import { ProofLogo } from "@/components/ProofLogo";
 import { LargeSearchToggle } from "@/components/search-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -50,7 +54,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
       {/* Hero — always dark */}
-      <section className="relative isolate min-h-screen overflow-hidden bg-black text-white">
+      <section className="relative isolate min-h-[75vh] overflow-hidden bg-black text-white">
         <div className="absolute inset-0">
           <DarkVeil
             hueShift={315}
@@ -68,7 +72,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/35 to-black" />
         <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[#D15ABB]/25 to-transparent blur-3xl" />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
+        <div className="relative z-10 mx-auto flex min-h-[75vh] w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
           <header className="mx-auto flex w-full max-w-4xl items-center justify-between rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 shadow-2xl shadow-purple-950/30 backdrop-blur-xl">
             <div className="flex items-center gap-8">
               <Link aria-label="ProofKit home" className="flex items-center gap-2 font-semibold text-white" href="/">
@@ -106,21 +110,22 @@ export default function HomePage() {
             </div>
           </header>
 
-          <div className="flex flex-1 flex-col pt-20 text-center">
-            <div className="flex flex-1 items-center justify-center pb-16">
+          <div className="flex flex-1 flex-col pt-12 text-center">
+            <div className="flex flex-1 items-center justify-center pb-10">
               <div className="mx-auto max-w-3xl">
                 <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.06] p-1 pr-4 text-sm text-white/55 shadow-purple-950/20 shadow-xl backdrop-blur-md">
                   <span className="rounded-full bg-white px-3 py-1 font-bold text-black text-xs">NEW</span>
-                  FileMaker-aware TypeScript tools
+                  MCP Server connects to your file.
                 </div>
 
                 <h1 className="text-balance font-bold text-5xl tracking-tight sm:text-6xl md:text-7xl">
-                  Agentic Coding for FileMaker!
+                  Build modern FileMaker UIs with AI.
                 </h1>
 
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60 leading-8">
-                  Build beautiful, modern interfaces for any FileMaker app using your favorite coding agent. Type-safe
-                  data, scaffolded apps, and agent skills built from decades of FileMaker experience.
+                  ProofKit helps you create modern web interfaces for FileMaker without becoming a web developer first.
+                  It connects your AI agent to your file, gives it the intelligence it needs, and closes the loop so it
+                  can write, test, fix, and deploy interfaces that fit your app.
                 </p>
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -186,18 +191,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mt-16 grid gap-6 sm:grid-cols-2">
-            {["Dashboard with charts", "Data grid with filtering", "Kanban board", "Interactive calendar"].map(
-              (label) => (
-                <div
-                  className="flex aspect-video items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.03]"
-                  key={label}
-                >
-                  <span className="text-gray-400 text-sm dark:text-white/30">[Screenshot: {label}]</span>
-                </div>
-              ),
-            )}
-          </div>
+          <ExampleShowcaseGrid />
 
           <div className="mt-10 text-center">
             <Link
@@ -212,7 +206,7 @@ export default function HomePage() {
       </section>
 
       {/* Section 3: The Agent Does the Work — alternate bg */}
-      <section className="bg-gray-100 py-24 sm:py-32 dark:bg-gray-900">
+      <MarketingSection className="py-24 sm:py-32" variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="grid items-center gap-16 lg:grid-cols-2">
             <div>
@@ -232,7 +226,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-8 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="flex flex-col gap-3 p-8" surface="alternate">
               {[
                 { icon: <Server className="size-5" />, label: "Read Schema" },
                 { icon: <Code className="size-5" />, label: "Write Code" },
@@ -248,10 +242,10 @@ export default function HomePage() {
                   {i < 4 && <div className="ml-auto text-gray-300 dark:text-white/20">↓</div>}
                 </div>
               ))}
-            </div>
+            </MarketingCard>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* Section 4: Everything You Need, Ready to Go — primary bg */}
       <section className="py-24 sm:py-32">
@@ -295,26 +289,23 @@ export default function HomePage() {
                 desc: "Bundle and ship into your FileMaker file.",
               },
             ].map((feature) => (
-              <div
-                className="rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-white/10 dark:bg-white/[0.03]"
-                key={feature.title}
-              >
+              <MarketingCard key={feature.title}>
                 <div className="mb-3 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
                   {feature.icon}
                 </div>
                 <h3 className="font-semibold">{feature.title}</h3>
                 <p className="mt-1 text-gray-500 text-sm dark:text-white/50">{feature.desc}</p>
-              </div>
+              </MarketingCard>
             ))}
           </div>
         </div>
       </section>
 
       {/* Section 5: It's Free + Start in Stages — alternate bg */}
-      <section className="bg-gray-100 py-24 sm:py-32 dark:bg-gray-900">
+      <MarketingSection className="py-24 sm:py-32" variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="p-8 sm:p-10" surface="alternate">
               <div className="mb-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
                 <Gift className="size-5" />
               </div>
@@ -323,9 +314,9 @@ export default function HomePage() {
                 ProofKit is free to download, free to use, and the apps you build are yours. You don't even need
                 ProofKit installed to run what you deploy. The only cost is your AI agent subscription.
               </p>
-            </div>
+            </MarketingCard>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 sm:p-10 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="p-8 sm:p-10" surface="alternate">
               <div className="mb-4 flex size-10 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-500 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
                 <LayoutGrid className="size-5" />
               </div>
@@ -342,10 +333,10 @@ export default function HomePage() {
                 Why WebViewers?
                 <ArrowRight className="size-4" />
               </Link>
-            </div>
+            </MarketingCard>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* Section 6: Community & Closing CTA — primary bg */}
       <section className="relative py-24 sm:py-32">
@@ -353,12 +344,13 @@ export default function HomePage() {
 
         <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
+            <ProofkitLogo className="mx-auto mb-8 block h-auto w-52 sm:w-64" />
             <h2 className="text-balance font-bold text-3xl tracking-tight sm:text-4xl md:text-5xl">
-              Built for the FileMaker community. By people who've been part of it for decades.
+              Build like anything is possible again.
             </h2>
             <p className="mx-auto mt-6 max-w-2xl text-gray-600 text-lg leading-8 dark:text-white/60">
-              This is built in service of FileMaker developers, by people who understand this community. You're not
-              alone. We're moving forward together.
+              FileMaker gave a generation of problem-solvers the power to build the systems they imagined. ProofKit
+              brings that same creative momentum into the AI coding era.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -375,6 +367,13 @@ export default function HomePage() {
               >
                 Join the Community
               </Link>
+            </div>
+
+            <div className="mt-16 flex flex-col items-center gap-0 border-gray-200 border-t pt-10 dark:border-white/10">
+              <p className="font-semibold text-[0.68rem] text-gray-400 uppercase tracking-[0.36em] dark:text-white/35">
+                Made by
+              </p>
+              <ProofLogo className="block h-auto w-24 sm:w-28" />
             </div>
           </div>
         </div>

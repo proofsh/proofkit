@@ -1,6 +1,7 @@
 import { Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { MarketingCard, MarketingSection } from "@/components/marketing-section";
 import { LargeSearchToggle } from "@/components/search-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -63,7 +64,7 @@ export default function WhyProofkitPage() {
       </section>
 
       {/* The Shift — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">The shift that changes everything</h2>
@@ -74,39 +75,39 @@ export default function WhyProofkitPage() {
             </p>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* Comparison sections — primary bg */}
-      <section className="py-16">
+      <MarketingSection>
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-4xl space-y-8">
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="p-8">
               <h3 className="font-bold text-xl">Hand-rolled WebViewers</h3>
               <p className="mt-3 text-gray-600 leading-7 dark:text-white/60">
                 Works — but every iteration is a copy-paste cycle. You write the code, manually bundle it, paste it into
                 a FileMaker field or file, refresh the WebViewer, and check. No agent feedback loop. No type safety. No
                 self-correction. It's 2015-era workflow with 2026-era tools sitting unused.
               </p>
-            </div>
+            </MarketingCard>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="p-8">
               <h3 className="font-bold text-xl">Pre-agentic FileMaker web frameworks</h3>
               <p className="mt-3 text-gray-600 leading-7 dark:text-white/60">
                 Good for their era. But they were designed for humans writing code by hand — not for agents that need
                 schema access through MCP, automated deployment, and visual verification in a real browser. The problem
                 has moved.
               </p>
-            </div>
+            </MarketingCard>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="p-8">
               <h3 className="font-bold text-xl">Commercial tools</h3>
               <p className="mt-3 text-gray-600 leading-7 dark:text-white/60">
                 ProofKit is free, agent-first by design, and transparent about scope. No license fees. No lock-in. The
                 apps you build run without ProofKit installed.
               </p>
-            </div>
+            </MarketingCard>
 
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="p-8">
               <h3 className="font-bold text-xl">Leaving FileMaker entirely</h3>
               <p className="mt-3 text-gray-600 leading-7 dark:text-white/60">
                 Sometimes the right move. But it's the highest cost and highest risk path. You're rebuilding security,
@@ -114,13 +115,13 @@ export default function WhyProofkitPage() {
                 collapsing under that weight. ProofKit gives you the safe, staged on-ramp — start inside FileMaker,
                 expand from there.
               </p>
-            </div>
+            </MarketingCard>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* Bottom Line — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">The bottom line</h2>
@@ -130,10 +131,10 @@ export default function WhyProofkitPage() {
             </p>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* CTA — primary bg */}
-      <section className="py-24">
+      <MarketingSection className="py-24">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="font-bold text-2xl sm:text-3xl">Try ProofKit free</h2>
@@ -148,7 +149,7 @@ export default function WhyProofkitPage() {
             </div>
           </div>
         </div>
-      </section>
+      </MarketingSection>
     </main>
   );
 }

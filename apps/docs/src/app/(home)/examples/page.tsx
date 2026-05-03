@@ -1,39 +1,75 @@
 import { Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ExamplesGallery } from "@/components/examples/ExamplesGallery";
+import { ShadcnPresetThemes } from "@/components/ShadcnPresetThemes";
 import { LargeSearchToggle } from "@/components/search-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const examples = [
+const examples: {
+  desc: string;
+  liveExampleId?: string;
+  title: string;
+}[] = [
   {
-    title: "Sales Dashboard",
-    desc: "Charts, KPIs, and filters. Pulls data via Execute Data API.",
-    buildTime: "~15 minutes with an agent",
+    title: "Customer Workspace",
+    desc: "Record detail views with tabs, timelines, related contacts, notes, and files.",
+    liveExampleId: "customer-workspace",
+  },
+  {
+    title: "Rich Record Form",
+    desc: "Validated forms with sections, conditional fields, save states, and review panels.",
+    liveExampleId: "rich-record-form",
+  },
+  {
+    title: "Approval Inbox",
+    desc: "Review requests, approve or reject changes, comment, and inspect status history.",
+    liveExampleId: "approval-inbox",
+  },
+  {
+    title: "Document Center",
+    desc: "File cards, preview panels, tags, attachment metadata, and document actions.",
+    liveExampleId: "document-center",
+  },
+  {
+    title: "Inventory Tracker",
+    desc: "Stock levels, reorder alerts, bin locations, and adjustment workflows.",
+    liveExampleId: "inventory-tracker",
+  },
+  {
+    title: "Command Center",
+    desc: "Global search, command palette, recent records, and quick actions for power users.",
+    liveExampleId: "command-center",
+  },
+  {
+    title: "Service Dispatch",
+    desc: "Map-like technician assignments, appointment status, route notes, and job updates.",
+    liveExampleId: "service-dispatch",
+  },
+  {
+    title: "Reporting Builder",
+    desc: "Saved report views, grouped metrics, export actions, and configurable chart blocks.",
+    liveExampleId: "reporting-builder",
+  },
+  {
+    title: "Dashboard with Charts",
+    desc: "KPIs, trend charts, pipeline mix, and executive reporting views.",
+    liveExampleId: "dashboard-with-charts",
   },
   {
     title: "Kanban Board",
-    desc: "Drag-and-drop project management. Updates records via FileMaker scripts.",
-    buildTime: "~20 minutes with an agent",
+    desc: "Drag-and-drop project management for deals, tasks, and service queues.",
+    liveExampleId: "kanban-board",
   },
   {
     title: "Interactive Calendar",
-    desc: "Drag-and-drop scheduling. Syncs with FileMaker date fields.",
-    buildTime: "~15 minutes with an agent",
+    desc: "Drag-and-drop scheduling with event details, filters, and editable agenda cards.",
+    liveExampleId: "interactive-calendar",
   },
   {
-    title: "Data Grid",
-    desc: "Sorting, filtering, inline editing. Powered by TanStack Table.",
-    buildTime: "~10 minutes with an agent",
-  },
-  {
-    title: "Customer Portal",
-    desc: "Modern navigation, detail views, tabbed interfaces.",
-    buildTime: "~25 minutes with an agent",
-  },
-  {
-    title: "Rich Form",
-    desc: "Date pickers, accordions, disclosure panels, validation.",
-    buildTime: "~10 minutes with an agent",
+    title: "Data Grid with Filtering",
+    desc: "Search, filters, column visibility, and dense record browsing.",
+    liveExampleId: "data-grid",
   },
 ];
 
@@ -90,7 +126,7 @@ export default function ExamplesPage() {
               What You Can Build
             </h1>
             <p className="mt-6 text-gray-600 text-lg leading-8 dark:text-white/60">
-              Real examples of modern web UI running inside FileMaker — all built with an AI agent and ProofKit.
+              Examples of modern web UI you can build for FileMaker with Agentic Coding and a modern web stack.
             </p>
           </div>
         </div>
@@ -99,56 +135,11 @@ export default function ExamplesPage() {
       {/* Examples Gallery — alternate bg */}
       <section className="bg-gray-50 py-16 dark:bg-gray-950">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {examples.map((example) => (
-              <div
-                className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/[0.03]"
-                key={example.title}
-              >
-                <div className="flex aspect-video items-center justify-center border-gray-100 border-b bg-gray-50 dark:border-white/10 dark:bg-white/[0.02]">
-                  <span className="text-gray-400 text-sm dark:text-white/25">[Screenshot: {example.title}]</span>
-                </div>
-                <div className="p-5">
-                  <h3 className="font-semibold">{example.title}</h3>
-                  <p className="mt-1 text-gray-500 text-sm dark:text-white/50">{example.desc}</p>
-                  <p className="mt-3 text-gray-400 text-xs dark:text-white/35">{example.buildTime}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <ExamplesGallery examples={examples} />
         </div>
       </section>
 
-      {/* Before & After — primary bg */}
-      <section className="py-16">
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-bold text-2xl sm:text-3xl">Before and after</h2>
-            <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-              The same workflow — native FileMaker layout vs. ProofKit WebViewer.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/[0.03]">
-              <div className="flex aspect-video items-center justify-center bg-gray-50 dark:bg-white/[0.02]">
-                <span className="text-gray-400 text-sm dark:text-white/25">[Before: Native FM Layout]</span>
-              </div>
-              <div className="p-4 text-center">
-                <p className="font-medium text-gray-500 text-sm dark:text-white/50">Native FileMaker Layout</p>
-              </div>
-            </div>
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/[0.03]">
-              <div className="flex aspect-video items-center justify-center bg-gray-50 dark:bg-white/[0.02]">
-                <span className="text-gray-400 text-sm dark:text-white/25">[After: ProofKit WebViewer]</span>
-              </div>
-              <div className="p-4 text-center">
-                <p className="font-medium text-gray-500 text-sm dark:text-white/50">ProofKit WebViewer</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ShadcnPresetThemes />
 
       {/* CTA — alternate bg */}
       <section className="bg-gray-50 py-24 dark:bg-gray-950">

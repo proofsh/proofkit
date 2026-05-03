@@ -1,6 +1,7 @@
 import { ArrowRight, Code, Download, Eye, RefreshCw, Server, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { MarketingCard, MarketingSection } from "@/components/marketing-section";
 import { LargeSearchToggle } from "@/components/search-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -64,7 +65,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* What Gets Installed — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">What gets installed</h2>
@@ -96,10 +97,7 @@ export default function HowItWorksPage() {
                 desc: "Skills, rules, and context that teach your AI agent how to build ProofKit apps effectively.",
               },
             ].map((piece) => (
-              <div
-                className="flex gap-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.03]"
-                key={piece.num}
-              >
+              <MarketingCard className="flex gap-4" key={piece.num} surface="alternate">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 font-bold text-gray-500 text-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60">
                   {piece.num}
                 </div>
@@ -107,14 +105,14 @@ export default function HowItWorksPage() {
                   <h3 className="font-semibold">{piece.title}</h3>
                   <p className="mt-1 text-gray-500 text-sm dark:text-white/50">{piece.desc}</p>
                 </div>
-              </div>
+              </MarketingCard>
             ))}
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* How the Pieces Connect — primary bg */}
-      <section className="py-16">
+      <MarketingSection>
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">How the pieces connect</h2>
@@ -123,7 +121,7 @@ export default function HowItWorksPage() {
             </p>
           </div>
 
-          <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-gray-50 p-8 dark:border-white/10 dark:bg-white/[0.03]">
+          <MarketingCard className="mx-auto max-w-3xl p-8">
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
               {["AI Agent", "MCP Server", "Plug-in", "Add-on", "Your FM File"].map((node, i) => (
                 <div className="flex items-center gap-3" key={node}>
@@ -134,12 +132,12 @@ export default function HowItWorksPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </MarketingCard>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* The Feedback Loop — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">The feedback loop</h2>
@@ -149,7 +147,7 @@ export default function HowItWorksPage() {
               runs until the app works correctly.
             </p>
 
-            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.03]">
+            <MarketingCard className="mt-8" surface="alternate">
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   { icon: <Server className="size-4" />, label: "Read your schema and understand your data" },
@@ -166,13 +164,13 @@ export default function HowItWorksPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </MarketingCard>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* Type Safety — primary bg */}
-      <section className="py-16">
+      <MarketingSection>
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">TypeGen and type safety</h2>
@@ -183,10 +181,10 @@ export default function HowItWorksPage() {
             </p>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* The Stack — alternate bg */}
-      <section className="bg-gray-50 py-16 dark:bg-gray-950">
+      <MarketingSection variant="alternate">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">The opinionated stack</h2>
@@ -227,10 +225,10 @@ export default function HowItWorksPage() {
             </p>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* CTA — primary bg */}
-      <section className="py-24">
+      <MarketingSection className="py-24">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="font-bold text-2xl sm:text-3xl">Ready to try it?</h2>
@@ -245,7 +243,7 @@ export default function HowItWorksPage() {
             </div>
           </div>
         </div>
-      </section>
+      </MarketingSection>
     </main>
   );
 }
