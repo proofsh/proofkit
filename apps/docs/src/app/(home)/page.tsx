@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  Bot,
   Code,
   Eye,
   Gift,
@@ -10,7 +9,6 @@ import {
   Route,
   Server,
   Shield,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,11 +19,14 @@ import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
 import { ProofkitLogo } from "@/components/ProofkitLogo";
 import { ProofLogo } from "@/components/ProofLogo";
+import { ClaudeAiIcon } from "@/components/ui/svgs/claudeAiIcon";
+import { CodexDark } from "@/components/ui/svgs/codexDark";
+import { CursorDark } from "@/components/ui/svgs/cursorDark";
 
 const stackItems = [
-  { name: "Cursor", icon: <Sparkles className="size-5" /> },
-  { name: "Claude", icon: <Bot className="size-5" /> },
-  { name: "Codex", icon: <Code className="size-5" /> },
+  { name: "Cursor", icon: <CursorDark className="size-5" fill="currentColor" /> },
+  { name: "Claude", icon: <ClaudeAiIcon className="size-5" /> },
+  { name: "Codex", icon: <CodexDark className="size-5" /> },
   {
     name: "React",
     icon: (
@@ -91,8 +92,15 @@ export default function HomePage() {
                   test, refine, and deploy interfaces that fit your app.
                 </p>
 
-                <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <div className="mt-10 flex flex-col items-center justify-center gap-4">
                   <DownloadButton variant="dark" />
+                  <Link
+                    className="inline-flex items-center gap-1.5 font-medium text-sm text-white/60 underline-offset-4 transition hover:text-white hover:underline"
+                    href="/docs/ai/getting-started"
+                  >
+                    Read the Getting Started guide
+                    <ArrowRight className="size-4" />
+                  </Link>
                 </div>
               </div>
             </div>
