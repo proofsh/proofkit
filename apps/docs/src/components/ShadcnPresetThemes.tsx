@@ -1,20 +1,12 @@
 "use client";
 
 import { Check, Copy, ExternalLink, Moon, Sun, X } from "lucide-react";
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import lumaDark from "../../v2-plans/screenshots/luma-inter-dk.png";
-import lumaLight from "../../v2-plans/screenshots/luma-inter-lt.png";
-import lyraDark from "../../v2-plans/screenshots/lyra-jetbrains-mono-dk.png";
-import lyraLight from "../../v2-plans/screenshots/lyra-jetbrains-mono-lt.png";
-import maiaDark from "../../v2-plans/screenshots/maia-ibm-plex-sans-dk.png";
-import maiaLight from "../../v2-plans/screenshots/maia-ibm-plex-sans-lt.png";
-import vegaDark from "../../v2-plans/screenshots/vega-eb-garamond-dk.png";
-import vegaLight from "../../v2-plans/screenshots/vega-eb-garamond-lt.png";
 
 interface PresetTheme {
   description: string;
-  images: Record<ScreenshotMode, StaticImageData>;
+  images: Record<ScreenshotMode, string>;
   name: string;
   preset?: string;
 }
@@ -27,8 +19,8 @@ const presetThemes: PresetTheme[] = [
     preset: "b1GLYNP5U",
     description: "Sharp mono typography, electric indigo controls, and amber charts for dense technical workspaces.",
     images: {
-      dark: lyraDark,
-      light: lyraLight,
+      dark: "/screenshots/shadcn-presets/lyra-jetbrains-mono-dk.png",
+      light: "/screenshots/shadcn-presets/lyra-jetbrains-mono-lt.png",
     },
   },
   {
@@ -36,8 +28,8 @@ const presetThemes: PresetTheme[] = [
     preset: "b2WOINJcO",
     description: "Soft Inter layouts with emerald actions and magenta analytics for polished operations apps.",
     images: {
-      dark: lumaDark,
-      light: lumaLight,
+      dark: "/screenshots/shadcn-presets/luma-inter-dk.png",
+      light: "/screenshots/shadcn-presets/luma-inter-lt.png",
     },
   },
   {
@@ -45,8 +37,8 @@ const presetThemes: PresetTheme[] = [
     preset: "b4gfKIwlc",
     description: "Elegant Garamond typography, deep teal actions, and warm red charts for refined business tools.",
     images: {
-      dark: vegaDark,
-      light: vegaLight,
+      dark: "/screenshots/shadcn-presets/vega-eb-garamond-dk.png",
+      light: "/screenshots/shadcn-presets/vega-eb-garamond-lt.png",
     },
   },
   {
@@ -54,8 +46,8 @@ const presetThemes: PresetTheme[] = [
     preset: "b4gzXVxFz",
     description: "Balanced IBM Plex Sans screens with blue primary actions and red alert-friendly reporting.",
     images: {
-      dark: maiaDark,
-      light: maiaLight,
+      dark: "/screenshots/shadcn-presets/maia-ibm-plex-sans-dk.png",
+      light: "/screenshots/shadcn-presets/maia-ibm-plex-sans-lt.png",
     },
   },
 ];
@@ -130,8 +122,9 @@ export function ShadcnPresetThemes() {
                       <Image
                         alt={`${theme.name} ${mode} mode screenshot`}
                         className="size-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                        placeholder="blur"
+                        height={810}
                         src={theme.images[mode]}
+                        width={1440}
                       />
                       <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full border border-white/30 bg-black/55 px-2.5 py-1 text-white text-xs backdrop-blur">
                         {mode === "light" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
@@ -217,8 +210,9 @@ export function ShadcnPresetThemes() {
               <Image
                 alt={`${preview.theme.name} ${preview.mode} mode screenshot`}
                 className="size-full object-contain"
-                placeholder="blur"
+                height={810}
                 src={preview.theme.images[preview.mode]}
+                width={1440}
               />
               <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-1.5 text-sm text-white backdrop-blur">
                 {preview.mode === "light" ? <Sun className="size-4" /> : <Moon className="size-4" />}
