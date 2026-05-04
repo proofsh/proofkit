@@ -2,7 +2,6 @@ import {
   ArrowRight,
   Bot,
   Code,
-  Download,
   Eye,
   Gift,
   Layers,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import DarkVeil from "@/components/DarkVeil";
+import { DownloadButton } from "@/components/DownloadButton";
 import { ExampleShowcaseGrid } from "@/components/examples/ExampleShowcaseGrid";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
@@ -92,30 +92,7 @@ export default function HomePage() {
                 </p>
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link
-                    className="inline-flex h-12 items-center gap-3 rounded-full border border-white/15 bg-white/[0.06] px-6 font-semibold text-base text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_36px_rgba(255,255,255,0.08)] backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.1]"
-                    href="/docs/ai/getting-started"
-                  >
-                    <Download className="size-5" />
-                    Download for macOS
-                  </Link>
-                  <button
-                    aria-disabled="true"
-                    className="inline-flex h-12 cursor-not-allowed items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-6 font-semibold text-base text-white/45 backdrop-blur-md"
-                    type="button"
-                  >
-                    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M4 5.5h7v6H4zM13 5.5h7v6h-7zM4 13h7v5.5H4zM13 13h7v5.5h-7z"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                      />
-                    </svg>
-                    Download for Windows
-                    <span className="rounded-full border border-white/10 px-2 py-1 font-semibold text-[0.62rem] text-white/35 uppercase tracking-[0.2em]">
-                      Coming soon
-                    </span>
-                  </button>
+                  <DownloadButton variant="dark" />
                 </div>
               </div>
             </div>
@@ -317,13 +294,7 @@ export default function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-900 bg-gray-900 px-6 font-semibold text-base text-white shadow-lg transition hover:bg-gray-800 dark:border-white/15 dark:bg-white/[0.06] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_36px_rgba(255,255,255,0.08)] dark:hover:border-white/25 dark:hover:bg-white/[0.1]"
-                href="/docs/ai/getting-started"
-              >
-                <Download className="size-5" />
-                Download for macOS
-              </Link>
+              <DownloadButton variant="light" />
               <Link
                 className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-300 bg-white px-6 font-semibold text-base text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white"
                 href="https://community.ottomatic.cloud/c/proofkit"
