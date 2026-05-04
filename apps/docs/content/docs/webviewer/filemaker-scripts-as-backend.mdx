@@ -1,9 +1,9 @@
 ---
 title: FileMaker Scripts as Backend
-description: Use FileMaker scripts for secure business logic behind WebViewer apps.
+description: Use FileMaker scripts for secure business logic behind Web Viewer apps.
 ---
 
-FileMaker scripts are the backend for many hybrid app workflows. The WebViewer handles the interface, while scripts perform privileged work inside FileMaker.
+FileMaker scripts are the backend for many hybrid app workflows. The Web Viewer handles the interface, while scripts perform privileged work inside FileMaker.
 
 ## When to use a script
 
@@ -24,7 +24,7 @@ Keep the bridge contract simple: send JSON in, return JSON out.
 {
   "action": "approveInvoice",
   "invoiceId": "123",
-  "notes": "Approved from WebViewer"
+  "notes": "Approved from Web Viewer"
 }
 ```
 
@@ -54,6 +54,6 @@ Scripts run inside the FileMaker security and data model. That means the web app
 
 ## Related docs
 
-- [Runtime Under the Hood](/docs/hybrid-apps/runtime-under-the-hood)
-- [Data Access](/docs/hybrid-apps/data-access)
-- [WebViewer package docs](/docs/webviewer)
+- [Runtime Under the Hood](/docs/webviewer/runtime-under-the-hood)
+- [Data Access](/docs/webviewer/data-access)
+- [Web Viewer package docs](/docs/webviewer/package)

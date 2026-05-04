@@ -12,7 +12,7 @@ const PACKAGE_DESCRIPTIONS: Record<string, string> = {
   fmdapi: "FileMaker Data API client (REST)",
   fmodata: "FileMaker OData API client with Drizzle-like ORM",
   typegen: "TypeScript type generator from FileMaker layouts",
-  webviewer: "FileMaker WebViewer utilities",
+  webviewer: "FileMaker Web Viewer utilities",
 };
 
 export async function GET(_request: Request, props: { params: Promise<{ package: string }> }) {

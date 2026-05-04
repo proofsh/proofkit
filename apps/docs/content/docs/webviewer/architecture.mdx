@@ -1,11 +1,11 @@
 ---
 title: Architecture
-description: How ProofKit connects agents, local tools, FileMaker, and WebViewer apps.
+description: How ProofKit connects agents, local tools, FileMaker, and Web Viewer apps.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-ProofKit has two related architectures: the development loop that lets an agent build the app, and the runtime loop that lets the deployed WebViewer app talk to FileMaker.
+ProofKit has two related architectures: the development loop that lets an agent build the app, and the runtime loop that lets the deployed Web Viewer app talk to FileMaker.
 
 ## Development architecture
 
@@ -16,7 +16,7 @@ flowchart LR
   plugin <-->|"Script calls"| addon["ProofKit add-on"]
   addon <--> file["Your FileMaker file"]
   agent --> project["Web project"]
-  project --> bundle["WebViewer bundle"]
+  project --> bundle["Web Viewer bundle"]
   bundle --> file
 ```
 
@@ -28,7 +28,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  user["User"] <--> webviewer["WebViewer React app"]
+  user["User"] <--> webviewer["Web Viewer React app"]
   webviewer <-->|"JSON through script bridge"| scripts["FileMaker scripts"]
   scripts <--> database["FileMaker database"]
   scripts --> externalApis["External APIs"]
@@ -43,11 +43,11 @@ flowchart LR
 ## How to think about it
 
 - During development, the agent uses ProofKit tools to understand the FileMaker file and deploy bundles.
-- At runtime, the deployed web app talks to FileMaker scripts through the WebViewer bridge.
+- At runtime, the deployed web app talks to FileMaker scripts through the Web Viewer bridge.
 - FileMaker scripts remain the secure place for privileged operations, external API secrets, filesystem work, and print/PDF flows.
 
 ## Related pages
 
 - [Agent Workflow](/docs/ai/agent-workflow)
-- [Runtime Under the Hood](/docs/hybrid-apps/runtime-under-the-hood)
-- [FileMaker Scripts as Backend](/docs/hybrid-apps/filemaker-scripts-as-backend)
+- [Runtime Under the Hood](/docs/webviewer/runtime-under-the-hood)
+- [FileMaker Scripts as Backend](/docs/webviewer/filemaker-scripts-as-backend)

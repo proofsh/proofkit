@@ -18,7 +18,7 @@ export function QueryDemoPage() {
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">React Query ready</p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">TanStack Query is preconfigured</h1>
         <p className="mt-4 text-muted-foreground">
-          This route is rendered by TanStack Router using hash history, which is recommended for FileMaker WebViewer
+          This route is rendered by TanStack Router using hash history, which is recommended for FileMaker Web Viewer
           apps.
         </p>
 

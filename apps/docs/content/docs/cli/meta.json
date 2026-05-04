@@ -12,7 +12,6 @@
     "guides/deployment",
     "guides/typegen",
     "guides/auth",
-    "webviewer",
     "---Reference---",
     "reference/cli-commands",
     "guides/resources"

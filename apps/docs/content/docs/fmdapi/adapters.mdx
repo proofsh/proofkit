@@ -2,7 +2,7 @@
 title: Adapters
 ---
 
-Adapters are a new level of abstraction that allows you to reuse the same client API with any number of proxies, including via a FileMaker Webviewer using the [`@proofkit/webviewer`](/docs/webviewer) package and the Execute Data API script step. The adapter is responsible for handling the specifics of the connection to the FileMaker Data API, while the shared client exposes helper functions, schema validators, and other utilities to the developer.
+Adapters are a new level of abstraction that allows you to reuse the same client API with any number of proxies, including via a FileMaker Webviewer using the [`@proofkit/webviewer`](/docs/webviewer/package) package and the Execute Data API script step. The adapter is responsible for handling the specifics of the connection to the FileMaker Data API, while the shared client exposes helper functions, schema validators, and other utilities to the developer.
 
 Choose the adapter that is right for your project, or view below for how to build your own custom adatper.
 
@@ -44,7 +44,7 @@ import { DataApi, FetchAdapter } from "@proofkit/fmdapi";
 
 ## WebViewerAdapter
 
-For rich webviewer experiences, use the `WebViewerAdapter` with the [`@proofkit/webviewer`](/docs/webviewer) package:
+For rich webviewer experiences, use the `WebViewerAdapter` with the [`@proofkit/webviewer`](/docs/webviewer/package) package:
 
 ```package-install
 @proofkit/webviewer

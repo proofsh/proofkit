@@ -708,9 +708,9 @@
 
 <DynamicTemplateString>
 	<StringID>com.fmi.calculation.text.BC60F87E4D78046DC14562853A562493</StringID>
-	<SourceText> wrap everything in the WebViewer compatible iFrame (only takes effect in WebDirect)<CR/></SourceText>
-	<TargetText> wrap everything in the WebViewer compatible iFrame (only takes effect in WebDirect)<CR/></TargetText>
-	<Comment>com.fmi.calculation.text. wrap everything in the WebViewer compatible iFrame (only takes effect in WebDirect)_CR/_</Comment>
+	<SourceText> wrap everything in the Web Viewer compatible iFrame (only takes effect in WebDirect)<CR/></SourceText>
+	<TargetText> wrap everything in the Web Viewer compatible iFrame (only takes effect in WebDirect)<CR/></TargetText>
+	<Comment>com.fmi.calculation.text. wrap everything in the Web Viewer compatible iFrame (only takes effect in WebDirect)_CR/_</Comment>
 </DynamicTemplateString>
 
 <DynamicTemplateString>

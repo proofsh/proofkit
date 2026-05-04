@@ -65,7 +65,7 @@ const initialEvents: CalendarEvent[] = [
     owner: "Nia Brooks",
     time: "9:30 AM",
     location: "Zoom",
-    notes: "Review the first pass at the WebViewer workflow and capture launch blockers.",
+    notes: "Review the first pass at the Web Viewer workflow and capture launch blockers.",
     type: "consult",
   },
   {

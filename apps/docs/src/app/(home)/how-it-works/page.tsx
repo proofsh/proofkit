@@ -37,7 +37,7 @@ export default function HowItWorksPage() {
               {
                 num: "1",
                 title: "The Add-on",
-                desc: "Installed into your FileMaker file. Provides the WebViewer and the bridge between your app and FileMaker scripts/data.",
+                desc: "Installed into your FileMaker file. Provides the Web Viewer and the bridge between your app and FileMaker scripts/data.",
               },
               {
                 num: "2",

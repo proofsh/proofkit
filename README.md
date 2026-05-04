@@ -13,7 +13,7 @@ This monorepo includes the following core packages:
 
 - [`@proofkit/cli`](./packages/cli): Interactive CLI to scaffold and manage TypeScript projects that connect with FileMaker.
 - [`@proofkit/fmdapi`](./packages/fmdapi): TypeScript client for the FileMaker Data API. [Docs](https://proofkit.proof.sh/docs/fmdapi)
-- [`@proofkit/webviewer`](./packages/webviewer): Utility for interacting with the FileMaker WebViewer. [Docs](https://proofkit.proof.sh/docs/webviewer)
+- [`@proofkit/webviewer`](./packages/webviewer): Utility for interacting with the FileMaker Web Viewer. [Docs](https://proofkit.proof.sh/docs/webviewer)
 - [`@proofkit/typegen`](./packages/typegen): Generate TypeScript types and validation schemas from FileMaker layouts.
 - [`@proofkit/create-proofkit`](./packages/create-proofkit): Alias package for quickly starting new ProofKit projects.
 

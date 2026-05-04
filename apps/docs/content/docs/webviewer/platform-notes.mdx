@@ -1,0 +1,42 @@
+---
+title: Platform Notes
+description: Runtime notes for FileMaker Pro, FileMaker Go, and WebDirect.
+---
+
+ProofKit Web Viewer apps are built during development and then deployed into FileMaker. After deployment, the runtime environment is FileMaker.
+
+## FileMaker Pro
+
+FileMaker Pro is required for the agentic development workflow. Your file must be open in FileMaker Pro so ProofKit can connect through the local bridge.
+
+Deployed Web Viewer apps can also run in FileMaker Pro on macOS and Windows.
+
+## FileMaker Go
+
+After deployment, Web Viewer apps can run in FileMaker Go. Test mobile-specific layouts, viewport behavior, and any script behavior that depends on platform capabilities.
+
+<Callout title="TODO: Screenshot - FileMaker Go runtime">
+  Capture a deployed ProofKit Web Viewer app running in FileMaker Go on iPad or iPhone.
+</Callout>
+
+## WebDirect
+
+Deployed Web Viewer apps can run in WebDirect, but browser refresh and session behavior need special care. Avoid designs that assume a user can freely refresh a WebDirect window without affecting their FileMaker session.
+
+<Callout title="TODO: Screenshot - WebDirect runtime">
+  Capture a deployed ProofKit Web Viewer app running in WebDirect, plus any notes about refresh behavior once finalized.
+</Callout>
+
+## End users
+
+End users do not need ProofKit installed. They need the FileMaker runtime where the Web Viewer app is deployed.
+
+## Development versus runtime
+
+| Requirement | Development | Runtime |
+| --- | --- | --- |
+| ProofKit installer | Yes | No |
+| FileMaker Pro | Yes | Optional |
+| Node.js | Yes | No |
+| MCP-compatible agent | Yes | No |
+| Deployed Web Viewer bundle | Created here | Runs here |

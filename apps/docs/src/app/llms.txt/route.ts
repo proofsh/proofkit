@@ -6,7 +6,7 @@ const PACKAGES = [
   { name: "typegen", desc: "TypeScript type generator from FileMaker layouts" },
   { name: "cli", desc: "Interactive CLI for scaffolding ProofKit projects" },
   { name: "better-auth", desc: "Better Auth adapter for FileMaker" },
-  { name: "webviewer", desc: "FileMaker WebViewer utilities" },
+  { name: "webviewer", desc: "FileMaker Web Viewer utilities" },
 ] as const;
 
 export function GET() {

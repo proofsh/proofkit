@@ -43,7 +43,7 @@ export default function WhyProofkitPage() {
               <h3 className="font-bold text-xl">Hand-rolled WebViewers</h3>
               <p className="mt-3 text-gray-600 leading-7 dark:text-white/60">
                 Works — but every iteration is a copy-paste cycle. You write the code, manually bundle it, paste it into
-                a FileMaker field or file, refresh the WebViewer, and check. No agent feedback loop. No type safety. No
+                a FileMaker field or file, refresh the Web Viewer, and check. No agent feedback loop. No type safety. No
                 self-correction. It's 2015-era workflow with 2026-era tools sitting unused.
               </p>
             </MarketingCard>

@@ -352,7 +352,7 @@ export const executeInitPlan = (plan: InitPlan) =>
           }
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : String(error);
-          consoleService.warn(`Could not inspect the ProofKit WebViewer add-on (${message}).`);
+          consoleService.warn(`Could not inspect the ProofKit Web Viewer add-on (${message}).`);
         }
       });
     }

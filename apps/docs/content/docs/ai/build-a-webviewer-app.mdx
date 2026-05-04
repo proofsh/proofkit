@@ -1,6 +1,6 @@
 ---
-title: Build a WebViewer App
-description: Scaffold and iterate on a FileMaker WebViewer app with your coding agent.
+title: Build a Web Viewer App
+description: Scaffold and iterate on a FileMaker Web Viewer app with your coding agent.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -12,7 +12,7 @@ After ProofKit is connected and your agent understands the file, switch from exp
 
 <Steps>
   <Step>
-    **Ask the agent to scaffold a WebViewer project.**
+    **Ask the agent to scaffold a Web Viewer project.**
 
     The project should use the ProofKit CLI and the current ProofKit stack: React, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query, and TypeGen.
   </Step>
@@ -23,7 +23,7 @@ After ProofKit is connected and your agent understands the file, switch from exp
     The agent should start the dev server and open the app in a browser so it can inspect the result.
 
     <Callout title="TODO: Screenshot - Local preview">
-      Capture the generated WebViewer app running locally in a browser with FileMaker-backed data visible.
+      Capture the generated Web Viewer app running locally in a browser with FileMaker-backed data visible.
     </Callout>
   </Step>
 
@@ -43,7 +43,7 @@ After ProofKit is connected and your agent understands the file, switch from exp
 ## Prompt shape
 
 ```text
-Build a ProofKit WebViewer screen for the Contacts workflow.
+Build a ProofKit Web Viewer screen for the Contacts workflow.
 Use the FileMaker layouts and fields you discovered earlier.
 Start with a read-only list and detail view, then run checks and preview it in the browser.
 ```
@@ -60,8 +60,8 @@ ProofKit projects use shadcn/ui and Tailwind, so the agent can apply a theme or 
 
 - Use the [CLI docs](/docs/cli) for project setup details.
 - Use [TypeGen](/docs/typegen) when your FileMaker layout metadata changes.
-- Use [WebViewer](/docs/webviewer) for lower-level bridge behavior.
-- Use [Hybrid App Data Access](/docs/hybrid-apps/data-access) for layout and Execute Data API patterns.
+- Use [Web Viewer](/docs/webviewer/package) for lower-level bridge behavior.
+- Use [Hybrid App Data Access](/docs/webviewer/data-access) for layout and Execute Data API patterns.
 
 ## Next step
 

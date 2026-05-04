@@ -36,7 +36,7 @@ export default function WhyWebviewersPage() {
           <div className="mx-auto max-w-3xl">
             <h2 className="font-bold text-2xl sm:text-3xl">What is a hybrid app?</h2>
             <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-              A hybrid app renders modern web UI inside a FileMaker WebViewer. The web layer handles the interface —
+              A hybrid app renders modern web UI inside a FileMaker Web Viewer. The web layer handles the interface —
               rich interactions, beautiful components, responsive layouts — while FileMaker provides the backend: data,
               security, scripting, and infrastructure.
             </p>
@@ -56,7 +56,7 @@ export default function WhyWebviewersPage() {
             <p className="font-semibold text-[#D15ABB] text-sm uppercase tracking-[0.2em]">The core idea</p>
             <h2 className="mt-3 font-bold text-2xl sm:text-3xl">Anything a FileMaker script can do</h2>
             <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-              A WebViewer app can call FileMaker scripts. That means the modern web UI is not trapped in the browser
+              A Web Viewer app can call FileMaker scripts. That means the modern web UI is not trapped in the browser
               sandbox — it can reach the database, run business logic, generate PDFs, call external APIs, and use the
               local machine through FileMaker.
             </p>
@@ -143,7 +143,7 @@ export default function WhyWebviewersPage() {
                 database do expensive work just to draw a screen.
               </p>
               <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-                A WebViewer can move that presentation logic into the browser, where filtering, sorting, conditional
+                A Web Viewer can move that presentation logic into the browser, where filtering, sorting, conditional
                 rendering, and rich interactions are cheap. The result is often a layout that feels faster and asks less
                 of the FileMaker engine.
               </p>
@@ -153,7 +153,7 @@ export default function WhyWebviewersPage() {
               <h2 className="font-bold text-2xl sm:text-3xl">Start with one layout</h2>
               <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
                 You do not have to rewrite your system to get value from a hybrid app. Replace one FileMaker layout with
-                a WebViewer experience, keep the same users, data, security, scripts, and deployment model, then expand
+                a Web Viewer experience, keep the same users, data, security, scripts, and deployment model, then expand
                 when the next workflow is ready.
               </p>
               <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
@@ -194,7 +194,7 @@ export default function WhyWebviewersPage() {
             <div className="mt-8">
               <Link
                 className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-900 bg-gray-900 px-6 font-semibold text-base text-white shadow-lg transition hover:bg-gray-800 dark:border-white/15 dark:bg-white/[0.06] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_36px_rgba(255,255,255,0.08)] dark:hover:border-white/25 dark:hover:bg-white/[0.1]"
-                href="/docs/hybrid-apps/why-webviewers"
+                href="/docs/webviewer/why-webviewers"
               >
                 <Download className="size-5" />
                 Read the Hybrid Apps Guide

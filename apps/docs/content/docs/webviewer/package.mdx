@@ -1,0 +1,51 @@
+---
+title: "Getting Started"
+description: The Web Viewer bridge package.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+
+## Purpose
+
+The goal of this package is to make it easy to work with FileMaker scripts and data when building a custom webviewer integration. @proofkit/webviewer works only inside of webviewer and allows you to interact with your FileMaker solution via local scripts.
+
+<Callout title="Building with an agent?">
+  Start with the [ProofKit AI guide](/docs/ai/getting-started), then come back here for lower-level Web Viewer bridge details.
+</Callout>
+
+This is a **client-side** package, meant to run specifically in a FileMaker Web Viewer, but it can still be used in a hosted web app, such as Next.js. However, it will cause errors if loaded in a standard browser. For more information about deployment strategies, see the [Deployment Methods](/docs/webviewer/deployment-methods) guide.
+
+For web-based applications where you're looking to interact with the Data API using a network request, check out the [@proofkit/fmdapi](/docs/fmdapi) package instead.
+
+## Automatic Installation
+
+We strongly recommend using the [ProofKit CLI](/docs/cli) to setup your project. It will also walk you through a FileMaker add-on that installs the neccesary layouts, scripts and custom functions to get you started.
+
+If you already have a ProofKit Web Viewer project and need to install or update the FileMaker add-on manually, run `proofkit add addon webviewer` from the project root. That copies the local add-on files; you still need to install the add-on into the FileMaker file.
+
+<Accordions type="single">
+  <Accordion title="Manual Installation">
+
+{" "}
+<Callout type="warn">
+  This demo file is a very simplified example. To see more features, use the
+  [ProofKit CLI](/docs/cli) to build a new app or run `proofkit add addon webviewer`
+  in an existing ProofKit project, then install the FileMaker add-on.
+</Callout>
+
+Use your preferred package manager to install the package.
+
+```package-install
+@proofkit/webviewer
+```
+
+### FileMaker File Setup
+
+Download this [Demo FileMaker file](/fmFetch-demo.fmp12) and copy the scripts folder named `fm-webviewer-fetch` into your own FileMaker solution.
+
+Demo file credentials: `admin` / `admin`
+
+</Accordion>
+</Accordions>

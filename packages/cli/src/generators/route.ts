@@ -15,7 +15,7 @@ export async function addRouteToNav({
 }) {
   const navFilePath = path.join(projectDir, "src/app/navigation.tsx");
 
-  // If the navigation file doesn't exist (e.g., WebViewer apps), skip adding to nav
+  // If the navigation file doesn't exist (e.g., Web Viewer apps), skip adding to nav
   if (!fs.existsSync(navFilePath)) {
     return;
   }

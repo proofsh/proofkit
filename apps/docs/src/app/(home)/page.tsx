@@ -150,7 +150,7 @@ export default function HomePage() {
             <p className="mt-6 text-gray-600 text-lg leading-8 dark:text-white/60">
               Native FileMaker layouts have limits. ProofKit removes them. Anything you can build on the web — kanban
               boards, interactive calendars, data grids, dashboards, drag-and-drop interfaces — now runs inside a
-              FileMaker WebViewer.
+              FileMaker Web Viewer.
             </p>
           </div>
 
@@ -285,7 +285,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-bold text-2xl sm:text-3xl">Replace one layout. Then go from there.</h3>
               <p className="mt-4 text-gray-600 leading-7 dark:text-white/60">
-                Start by replacing a single FileMaker layout with a WebViewer app — low risk, security inherited, no
+                Start by replacing a single FileMaker layout with a Web Viewer app — low risk, security inherited, no
                 infrastructure changes. When you're ready, progress to full web apps with a FileMaker backend. Each step
                 builds on the last.
               </p>

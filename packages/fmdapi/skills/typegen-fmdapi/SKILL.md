@@ -4,7 +4,7 @@ description: >
   ENTRY POINT for @proofkit/fmdapi projects. Generate TypeScript types and Zod
   validators from FileMaker layouts using @proofkit/typegen. Covers
   proofkit-typegen-config.jsonc for Data API mode, npx @proofkit/typegen setup,
-  OttoAdapter and FetchAdapter env vars, FM MCP mode for local WebViewer
+  OttoAdapter and FetchAdapter env vars, FM MCP mode for local Web Viewer
   development, generated vs override file structure, schema/generated/client
   directory layout, Standard Schema validation, InferZodPortals, fmMcp mode
   prerequisites, and choosing between OttoAdapter and FetchAdapter auth.
@@ -193,7 +193,7 @@ Default env variable names when `envNames` is omitted: `FM_SERVER`, `FM_DATABASE
 
 The `config` key can be an array mixing `fmdapi` and `fmodata` entries, each with its own `path` and `envNames`.
 
-### FM MCP mode (local WebViewer development — no credentials)
+### FM MCP mode (local Web Viewer development — no credentials)
 
 FM MCP mode lets typegen fetch layout metadata from a locally running FileMaker file via the FM MCP proxy, without needing OttoFMS, a hosted server, or any credentials. Generated clients use `WebViewerAdapter` — FM MCP is only used during typegen.
 
@@ -222,8 +222,8 @@ The generated client uses `WebViewerAdapter` with `webviewerScriptName` if set, 
 **Prerequisites:**
 1. FM MCP daemon running locally (`GET http://127.0.0.1:1365/health` should return OK)
 2. FileMaker file open on the local machine
-3. "Connect to MCP" script run in the FileMaker file (opens a WebViewer window that bridges HTTP requests)
-4. That WebViewer window must stay open in **Browse mode** (not Layout mode)
+3. "Connect to MCP" script run in the FileMaker file (opens a Web Viewer window that bridges HTTP requests)
+4. That Web Viewer window must stay open in **Browse mode** (not Layout mode)
 
 No `.env` file needed for typegen in fmMcp mode — baseUrl defaults, connectedFileName is auto-discovered.
 
@@ -414,7 +414,7 @@ import { ContactsLayout } from "./schema/client";
 const { data } = await ContactsLayout.find({ query: { name: "==John" } });
 ```
 
-`FmMcpAdapter` is internal to typegen's metadata fetching process. It only runs during code generation, never in production. Generated clients use `WebViewerAdapter` for runtime data access inside FileMaker WebViewer.
+`FmMcpAdapter` is internal to typegen's metadata fetching process. It only runs during code generation, never in production. Generated clients use `WebViewerAdapter` for runtime data access inside FileMaker Web Viewer.
 
 ### HIGH: Setting standard FM env vars when using fmMcp mode
 
@@ -445,7 +445,7 @@ Troubleshooting checklist:
 1. **Daemon running?** `curl http://127.0.0.1:1365/health` — should return `{"service":"fm-mcp","status":"ok"}`
 2. **File connected?** `curl http://127.0.0.1:1365/connectedFiles` — should list the target file
 3. **File not listed?** Open the FileMaker file and run the **"Connect to MCP"** script
-4. **Still not working?** Ensure the WebViewer window opened by "Connect to MCP" is in **Browse mode**, not Layout mode. Closing this window or switching to Layout mode silently breaks the proxy.
+4. **Still not working?** Ensure the Web Viewer window opened by "Connect to MCP" is in **Browse mode**, not Layout mode. Closing this window or switching to Layout mode silently breaks the proxy.
 
 ### CRITICAL: FM_SERVER without https:// prefix
 
@@ -472,4 +472,4 @@ Source: apps/docs/content/docs/cli/guides/getting-started.mdx
 ## References
 
 - **fmdapi-client**: After generating clients with typegen, see the fmdapi-client skill for full CRUD method usage, adapter configuration, portal data, and script execution patterns.
-- **webviewer-integration**: For WebViewer projects using FM MCP mode, the webviewer-integration skill covers fmFetch, callFMScript, and WebViewerAdapter runtime usage.
+- **webviewer-integration**: For Web Viewer projects using FM MCP mode, the webviewer-integration skill covers fmFetch, callFMScript, and WebViewerAdapter runtime usage.

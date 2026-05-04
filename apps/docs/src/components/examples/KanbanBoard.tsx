@@ -31,7 +31,7 @@ const initialCards = [
     due: "May 6",
     value: 28_400,
     stage: "backlog" as ColumnId,
-    tags: ["WebViewer", "Contacts"],
+    tags: ["Web Viewer", "Contacts"],
   },
   {
     id: "northstar",

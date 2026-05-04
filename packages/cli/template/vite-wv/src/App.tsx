@@ -35,7 +35,7 @@ export default function App() {
         <div className="mb-10 flex-1">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm text-muted-foreground shadow-sm">
             <span className="h-2 w-2 rounded-full bg-primary" />
-            ProofKit WebViewer Starter
+            ProofKit Web Viewer Starter
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
@@ -44,7 +44,7 @@ export default function App() {
                 React + TypeScript + Vite
               </p>
               <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-                Build browser-safe FileMaker WebViewer apps without scaffolding against a hosted server.
+                Build browser-safe FileMaker Web Viewer apps without scaffolding against a hosted server.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
                 This starter stays intentionally small, but it is already ready for Tailwind v4, shadcn component
@@ -61,7 +61,7 @@ export default function App() {
             <aside className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-muted/50 p-8 shadow-sm">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Starter notes</p>
               <div className="mt-5 space-y-4 text-sm text-muted-foreground">
-                <p>Update the default WebViewer name in <code>src/App.tsx</code> to match your FileMaker layout object.</p>
+                <p>Update the default Web Viewer name in <code>src/App.tsx</code> to match your FileMaker layout object.</p>
                 <p>When the app runs inside FileMaker, you can start using <code>fmFetch</code> or generated clients right away.</p>
                 <p>The local helper scripts prefer FM MCP connected files before falling back to hosted server env vars.</p>
               </div>

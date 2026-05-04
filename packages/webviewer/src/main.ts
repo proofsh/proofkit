@@ -3,8 +3,8 @@ import { v4 } from "uuid";
 let webViewerName: string;
 /**
  * @private
- * set the name of the WebViewer to use for all fetches
- * @param name the Layout Object Name of the FileMaker WebViewer to callback too
+ * set the name of the Web Viewer to use for all fetches
+ * @param name the Layout Object Name of the FileMaker Web Viewer to callback too
  */
 function setWebViewerName(name: string) {
   webViewerName = name;
@@ -16,8 +16,8 @@ function setWebViewerName(name: string) {
 export const globalSettings = {
   /**
    *
-   * set the name of the WebViewer to use for all fetches
-   * @param name the Layout Object Name of the FileMaker WebViewer to callback too
+   * set the name of the Web Viewer to use for all fetches
+   * @param name the Layout Object Name of the FileMaker Web Viewer to callback too
    */
   setWebViewerName,
 };

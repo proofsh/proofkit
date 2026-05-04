@@ -21,9 +21,9 @@ domains:
     slug: 'data-access'
     description: 'Querying, creating, updating, and deleting FileMaker records through either API surface'
 
-  - name: 'Running in WebViewer'
+  - name: 'Running in Web Viewer'
     slug: 'webviewer'
-    description: 'Executing JavaScript inside FileMaker WebViewer with script calls and local Data API access'
+    description: 'Executing JavaScript inside FileMaker Web Viewer with script calls and local Data API access'
 
   - name: 'Authenticating Users'
     slug: 'auth'
@@ -208,20 +208,20 @@ skills:
         skills: ['typegen-setup']
 
       - mistake: 'Suggesting OttoFMS/FetchAdapter fallback when FM MCP fails'
-        mechanism: 'Agent troubleshoots FM MCP connection failure by suggesting standard auth. Developer chose fmMcp because they have no hosted credentials or are working offline. Correct troubleshooting: check daemon health (GET http://127.0.0.1:1365/health), check /connectedFiles, ensure FM file has run "Connect to MCP" script and WebViewer window is open in Browse mode.'
+        mechanism: 'Agent troubleshoots FM MCP connection failure by suggesting standard auth. Developer chose fmMcp because they have no hosted credentials or are working offline. Correct troubleshooting: check daemon health (GET http://127.0.0.1:1365/health), check /connectedFiles, ensure FM file has run "Connect to MCP" script and Web Viewer window is open in Browse mode.'
         source: 'maintainer interview'
         priority: HIGH
         status: active
         skills: ['typegen-setup']
 
-      - mistake: 'FM MCP WebViewer window closed or in Layout mode'
-        mechanism: 'The FM MCP proxy works via a WebViewer window opened by the "Connect to MCP" script in FileMaker. If this window is closed or switched to Layout mode, all proxy requests fail. Error may not be obvious — typegen just fails to connect.'
+      - mistake: 'FM MCP Web Viewer window closed or in Layout mode'
+        mechanism: 'The FM MCP proxy works via a Web Viewer window opened by the "Connect to MCP" script in FileMaker. If this window is closed or switched to Layout mode, all proxy requests fail. Error may not be obvious — typegen just fails to connect.'
         correct_pattern: |
           # Troubleshooting checklist:
           # 1. Is the fm-mcp daemon running? GET http://127.0.0.1:1365/health
           # 2. Is the file connected? GET http://127.0.0.1:1365/connectedFiles
           # 3. If file not listed: open it in FileMaker, run "Connect to MCP" script
-          # 4. Ensure the WebViewer window stays open in Browse mode (not Layout mode)
+          # 4. Ensure the Web Viewer window stays open in Browse mode (not Layout mode)
         source: 'maintainer interview'
         priority: HIGH
         status: active
@@ -514,10 +514,10 @@ skills:
         priority: MEDIUM
         status: active
 
-  - name: 'WebViewer Integration'
+  - name: 'Web Viewer Integration'
     slug: 'webviewer-integration'
     domain: 'webviewer'
-    description: 'Use @proofkit/webviewer to call FileMaker scripts and access Data API from JavaScript running inside a FileMaker WebViewer'
+    description: 'Use @proofkit/webviewer to call FileMaker scripts and access Data API from JavaScript running inside a FileMaker Web Viewer'
     type: core
     packages:
       - '@proofkit/webviewer'
@@ -532,17 +532,17 @@ skills:
       - 'Browser-only runtime constraint'
     tasks:
       - 'Call a FileMaker script from JavaScript and get a result back'
-      - 'Use fmdapi Data API client inside a WebViewer'
-      - 'Debug WebViewer script communication issues'
-      - 'Deploy WebViewer code (embedded, hosted, downloaded)'
+      - 'Use fmdapi Data API client inside a Web Viewer'
+      - 'Debug Web Viewer script communication issues'
+      - 'Deploy Web Viewer code (embedded, hosted, downloaded)'
     failure_modes:
       - mistake: 'Importing @proofkit/webviewer in server-side code'
-        mechanism: 'The package requires window.FileMaker which only exists inside FM WebViewer. Importing in Node/SSR throws or silently breaks.'
+        mechanism: 'The package requires window.FileMaker which only exists inside FM Web Viewer. Importing in Node/SSR throws or silently breaks.'
         wrong_pattern: |
           // In a Next.js API route or server component
           import { fmFetch } from "@proofkit/webviewer";
         correct_pattern: |
-          // Only import in client-side code that runs inside FM WebViewer
+          // Only import in client-side code that runs inside FM Web Viewer
           // Use "use client" directive in React, or ensure the code only runs in browser
           "use client";
           import { fmFetch } from "@proofkit/webviewer";
@@ -580,25 +580,25 @@ skills:
         status: active
 
       - mistake: 'Using executeScript or containerUpload via WebViewerAdapter'
-        mechanism: 'WebViewerAdapter explicitly throws for executeScript and containerUpload. These are not supported in WebViewer context.'
+        mechanism: 'WebViewerAdapter explicitly throws for executeScript and containerUpload. These are not supported in Web Viewer context.'
         wrong_pattern: |
           const client = DataApi({ adapter: new WebViewerAdapter({ scriptName: "DAPI" }), layout: "Contacts" });
           await client.executeScript("MyScript"); // throws
         correct_pattern: |
-          // Use callFMScript or fmFetch for script execution in WebViewer
+          // Use callFMScript or fmFetch for script execution in Web Viewer
           import { callFMScript } from "@proofkit/webviewer";
           callFMScript("MyScript", { param: "value" });
         source: 'source: adapter.ts:133-141'
         priority: HIGH
         status: active
 
-      - mistake: 'Not understanding single-threaded script execution in WebViewer local mode'
-        mechanism: 'WebViewerAdapter sends queries via FM client script execution which is single-threaded. Rapid concurrent queries (e.g. TanStack Query retries, listAll auto-pagination) cause queuing and beach balls for the user. This is especially problematic when scripts take time to run. Consider server-based OData approach for heavy queries, but note that introduces authentication requirements not normally needed for WebViewer.'
+      - mistake: 'Not understanding single-threaded script execution in Web Viewer local mode'
+        mechanism: 'WebViewerAdapter sends queries via FM client script execution which is single-threaded. Rapid concurrent queries (e.g. TanStack Query retries, listAll auto-pagination) cause queuing and beach balls for the user. This is especially problematic when scripts take time to run. Consider server-based OData approach for heavy queries, but note that introduces authentication requirements not normally needed for Web Viewer.'
         correct_pattern: |
-          // Avoid firing many concurrent queries in WebViewer local mode
+          // Avoid firing many concurrent queries in Web Viewer local mode
           // Bad: multiple parallel queries or TanStack Query with aggressive retries
           // Good: sequential queries, debounced fetching, or server-based OData for heavy workloads
-          // If diagnosing slow WebViewer: check if queries are queuing up in FM script engine
+          // If diagnosing slow Web Viewer: check if queries are queuing up in FM script engine
           // Architecture decision: local WebViewerAdapter (simple, no auth, single-threaded)
           //   vs server OData (fast, concurrent, but requires auth + FM server connection)
         source: 'maintainer interview'
@@ -705,12 +705,12 @@ skills:
       - 'First typegen run'
       - 'First query with generated client'
       - 'Choosing between Data API and OData'
-      - 'FM MCP mode for local/offline WebViewer development (no credentials needed)'
+      - 'FM MCP mode for local/offline Web Viewer development (no credentials needed)'
     tasks:
       - 'Set up a new project with ProofKit'
       - 'Connect to FileMaker server for the first time'
       - 'Generate types and make first data query'
-      - 'Set up FM MCP mode for local WebViewer development'
+      - 'Set up FM MCP mode for local Web Viewer development'
     failure_modes:
       - mistake: 'Missing fmrest or fmodata privilege on FM account'
         mechanism: 'Data API requires fmrest extended privilege. OData requires fmodata privilege. Without these, all API calls return 401/403.'
@@ -868,10 +868,10 @@ tensions:
     description: 'defaultSelect "schema" is performant and safe but only returns fields defined in the TypeScript schema. "all" returns everything but is slower and types are less precise.'
     implication: 'An agent might switch to "all" to fix missing data issues without understanding the performance cost, or stick with "schema" without realizing fields are being excluded.'
 
-  - name: 'WebViewer local mode vs server-based data access'
+  - name: 'Web Viewer local mode vs server-based data access'
     skills: ['webviewer-integration', 'fmdapi-client', 'fmodata-client']
-    description: 'WebViewer local mode (WebViewerAdapter) requires no auth and works offline, but uses single-threaded FM script execution — concurrent queries cause beach balls. Server-based OData is fast and concurrent but requires authentication and FM server connectivity. This is a core architecture decision.'
-    implication: 'An agent might use listAll or TanStack Query with retries in WebViewer local mode, overwhelming the single-threaded FM script engine. Or it might try server patterns inside WebViewer without considering auth requirements.'
+    description: 'Web Viewer local mode (WebViewerAdapter) requires no auth and works offline, but uses single-threaded FM script execution — concurrent queries cause beach balls. Server-based OData is fast and concurrent but requires authentication and FM server connectivity. This is a core architecture decision.'
+    implication: 'An agent might use listAll or TanStack Query with retries in Web Viewer local mode, overwhelming the single-threaded FM script engine. Or it might try server patterns inside Web Viewer without considering auth requirements.'
 
 cross_references:
   - from: 'typegen-setup'
@@ -888,7 +888,7 @@ cross_references:
     reason: 'Better Auth uses fmodata under the hood. Understanding fmodata connection setup is prerequisite for auth configuration.'
   - from: 'webviewer-integration'
     to: 'fmdapi-client'
-    reason: 'WebViewerAdapter implements the fmdapi Adapter interface. Understanding both is needed for Data API access inside WebViewer.'
+    reason: 'WebViewerAdapter implements the fmdapi Adapter interface. Understanding both is needed for Data API access inside Web Viewer.'
   - from: 'getting-started'
     to: 'typegen-setup'
     reason: 'Getting started flow always involves typegen as the first step after env setup.'
@@ -923,6 +923,6 @@ gaps:
     status: resolved
 
   - skill: 'webviewer-integration'
-    question: 'What are the most common deployment pitfalls for WebViewer apps?'
+    question: 'What are the most common deployment pitfalls for Web Viewer apps?'
     context: 'Partially resolved: single-threaded script execution bottleneck added. Deployment method tradeoffs covered in docs.'
     status: open

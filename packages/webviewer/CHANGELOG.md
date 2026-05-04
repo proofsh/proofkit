@@ -10,7 +10,7 @@
 
 ### Patch Changes
 
-- 8818805: Document the `proofkit add addon webviewer` command in the WebViewer skill and setup docs.
+- 8818805: Document the `proofkit add addon webviewer` command in the Web Viewer skill and setup docs.
 - e6889d0: Update skill content
 
 ## 3.0.7-beta.3
@@ -23,7 +23,7 @@
 
 ### Patch Changes
 
-- b73b0d7: - cli: Revamp the WebViewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
+- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
   - cli: Install typegen skills locally when scaffolding projects.
   - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
   - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
@@ -33,7 +33,7 @@
 
 ### Patch Changes
 
-- 5544f68: - cli: Revamp the WebViewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
+- 5544f68: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
   - cli: Install typegen skills locally when scaffolding projects.
   - typegen: Add optional `fmHttp` config for using an FM HTTP proxy during metadata fetching.
   - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
