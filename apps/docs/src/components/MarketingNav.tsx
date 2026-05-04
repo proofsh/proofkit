@@ -7,7 +7,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 const primaryNavLinks = [
-  { href: "/docs/cli", label: "Docs" },
+  { href: "/docs", label: "Docs" },
   { href: "https://community.ottomatic.cloud/c/proofkit", label: "Community" },
 ];
 
@@ -36,7 +36,8 @@ export function MarketingNav({ variant = "light" }: MarketingNavProps) {
           : "border-gray-200 bg-white/80 dark:border-white/10 dark:bg-white/[0.06] dark:shadow-purple-950/30",
       )}
     >
-      <div className="flex min-w-0 items-center gap-8">
+      <div className="flex min-w-0 items-center gap-2 lg:gap-8">
+        <MobileNavPopover isDark={isDark} links={navLinks} />
         <Link
           aria-label="ProofKit home"
           className={cn("flex items-center gap-2 font-semibold", isDark && "text-white")}
@@ -80,7 +81,6 @@ export function MarketingNav({ variant = "light" }: MarketingNavProps) {
           )}
           hideIfDisabled
         />
-        <MobileNavPopover isDark={isDark} links={navLinks} />
         <ThemeToggle
           className={cn(
             isDark
@@ -137,7 +137,7 @@ function MobileNavPopover({ isDark, links }: { isDark: boolean; links: typeof na
         <Menu className="size-5" />
       </PopoverTrigger>
       <PopoverContent
-        align="end"
+        align="start"
         className={cn(
           "min-w-64 border p-2",
           isDark

@@ -196,7 +196,7 @@ export function DataGridWithFiltering({ className, interactive = false }: DataGr
             {visibleColumns.map((column) => (
               <span className="flex items-center gap-1.5" key={column.id}>
                 {column.label}
-                {column.sortable && <ArrowDownUp className="size-3" />}
+                {"sortable" in column && column.sortable && <ArrowDownUp className="size-3" />}
               </span>
             ))}
             <span />

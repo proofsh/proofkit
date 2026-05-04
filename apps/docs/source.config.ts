@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { rehypeCodeDefaultOptions, remarkNpm } from "fumadocs-core/mdx-plugins";
+import { rehypeCodeDefaultOptions, remarkMdxMermaid, remarkNpm } from "fumadocs-core/mdx-plugins";
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
 import { transformerTwoslash } from "fumadocs-twoslash";
 import type { LanguageRegistration, ShikiTransformer } from "shiki";
@@ -21,7 +21,7 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    remarkPlugins: [[remarkNpm, { persist: { id: "package-manager" } }]],
+    remarkPlugins: [remarkMdxMermaid, [remarkNpm, { persist: { id: "package-manager" } }]],
     rehypeCodeOptions: {
       // You might want to configure themes here as well
       themes: {

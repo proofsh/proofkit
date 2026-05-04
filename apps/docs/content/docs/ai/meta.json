@@ -1,0 +1,19 @@
+{
+  "title": "Coding Agents",
+  "description": "Build FileMaker WebViewer apps with coding agents",
+  "icon": "Bot",
+  "root": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "---Guides---",
+    "install-and-connect",
+    "explore-your-file",
+    "build-a-webviewer-app",
+    "deploy-to-filemaker",
+    "---Understand---",
+    "agent-workflow",
+    "technical-requirements",
+    "faq"
+  ]
+}

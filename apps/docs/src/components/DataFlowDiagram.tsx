@@ -38,6 +38,14 @@ interface Point {
   y: number;
 }
 
+function requirePoint(points: Point[], index: number): Point {
+  const point = points.at(index);
+  if (!point) {
+    throw new Error(`Expected a point at index ${index}`);
+  }
+  return point;
+}
+
 interface NodeDef {
   x: number;
   y: number;
@@ -83,11 +91,12 @@ function roundedPath(points: Point[], r = 14): string {
   if (points.length < 2) {
     return "";
   }
-  let d = `M ${points[0].x} ${points[0].y}`;
+  const first = requirePoint(points, 0);
+  let d = `M ${first.x} ${first.y}`;
   for (let i = 1; i < points.length - 1; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const next = points[i + 1];
+    const prev = requirePoint(points, i - 1);
+    const curr = requirePoint(points, i);
+    const next = requirePoint(points, i + 1);
     const dx1 = Math.sign(curr.x - prev.x);
     const dy1 = Math.sign(curr.y - prev.y);
     const dx2 = Math.sign(next.x - curr.x);
@@ -98,7 +107,7 @@ function roundedPath(points: Point[], r = 14): string {
     d += ` L ${curr.x - dx1 * rr} ${curr.y - dy1 * rr}`;
     d += ` Q ${curr.x} ${curr.y} ${curr.x + dx2 * rr} ${curr.y + dy2 * rr}`;
   }
-  const last = points.at(-1);
+  const last = requirePoint(points, -1);
   d += ` L ${last.x} ${last.y}`;
   return d;
 }
@@ -108,13 +117,13 @@ function samplePolyline(points: Point[], t: number): { x: number; y: number; ang
     return { x: 0, y: 0, angle: 0 };
   }
   if (points.length === 1) {
-    return { ...points[0], angle: 0 };
+    return { ...requirePoint(points, 0), angle: 0 };
   }
   const segs: { a: Point; b: Point; len: number; start: number }[] = [];
   let total = 0;
   for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i];
-    const b = points[i + 1];
+    const a = requirePoint(points, i);
+    const b = requirePoint(points, i + 1);
     const len = Math.hypot(b.x - a.x, b.y - a.y);
     segs.push({ a, b, len, start: total });
     total += len;
@@ -130,7 +139,7 @@ function samplePolyline(points: Point[], t: number): { x: number; y: number; ang
       };
     }
   }
-  const last = points.at(-1);
+  const last = requirePoint(points, -1);
   return { x: last.x, y: last.y, angle: 0 };
 }
 

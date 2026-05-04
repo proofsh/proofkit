@@ -110,8 +110,9 @@ export function ShadcnPresetThemes() {
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
           {presetThemes.map((theme) => {
-            const prompt = theme.preset ? `apply this shadcn preset to this project --preset ${theme.preset}` : null;
-            const isCopied = copiedPreset === theme.preset;
+            const preset = theme.preset;
+            const prompt = preset ? `apply this shadcn preset to this project --preset ${preset}` : null;
+            const isCopied = copiedPreset === preset;
 
             return (
               <article
@@ -150,11 +151,11 @@ export function ShadcnPresetThemes() {
                     <p className="mt-2 text-gray-500 text-sm leading-6 dark:text-white/50">{theme.description}</p>
                   </div>
 
-                  {prompt && theme.preset ? (
+                  {prompt && preset ? (
                     <button
                       className="flex w-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left font-mono text-gray-600 text-xs transition hover:border-gray-300 hover:bg-gray-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/65 dark:hover:border-white/20 dark:hover:bg-white/[0.08]"
                       onClick={async () => {
-                        await copyPrompt(theme.preset);
+                        await copyPrompt(preset);
                       }}
                       type="button"
                     >

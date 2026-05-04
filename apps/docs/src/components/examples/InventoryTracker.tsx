@@ -56,8 +56,17 @@ const inventoryItems = [
 const categories = ["All", "Hardware", "Supplies", "Equipment"] as const;
 
 type InventoryItem = (typeof inventoryItems)[number];
+type EnrichedInventoryItem = Omit<InventoryItem, "stock"> & { stock: number };
 type InventoryItemId = InventoryItem["id"];
 type Category = (typeof categories)[number];
+
+function requireInventoryItem(items: EnrichedInventoryItem[]): EnrichedInventoryItem {
+  const item = items.at(0);
+  if (!item) {
+    throw new Error("Expected at least one inventory item");
+  }
+  return item;
+}
 
 interface InventoryTrackerProps {
   className?: string;
@@ -76,7 +85,7 @@ export function InventoryTracker({ className, interactive = false }: InventoryTr
   });
   const [lastAdjustment, setLastAdjustment] = useState("No adjustment in this session");
 
-  const enrichedItems = useMemo(
+  const enrichedItems = useMemo<EnrichedInventoryItem[]>(
     () => inventoryItems.map((item) => ({ ...item, stock: stockById[item.id] })),
     [stockById],
   );
@@ -92,7 +101,7 @@ export function InventoryTracker({ className, interactive = false }: InventoryTr
       return matchesCategory && matchesQuery;
     });
   }, [category, enrichedItems, query]);
-  const selectedItem = enrichedItems.find((item) => item.id === selectedItemId) ?? enrichedItems[0];
+  const selectedItem = enrichedItems.find((item) => item.id === selectedItemId) ?? requireInventoryItem(enrichedItems);
   const lowStockCount = enrichedItems.filter((item) => item.stock <= item.reorderAt).length;
   const totalUnits = enrichedItems.reduce((sum, item) => sum + item.stock, 0);
 
@@ -293,7 +302,7 @@ function Metric({ label, tone = "default", value }: { label: string; tone?: "def
   );
 }
 
-function StockBadge({ item }: { item: InventoryItem }) {
+function StockBadge({ item }: { item: EnrichedInventoryItem }) {
   if (item.stock <= item.reorderAt) {
     return (
       <Badge appearance="outline" size="sm" variant="warning">

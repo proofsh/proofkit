@@ -1,0 +1,61 @@
+---
+title: Install and Connect
+description: Install ProofKit and confirm your agent can see your FileMaker file.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+The first milestone is simple: your coding agent should be able to communicate with an open FileMaker file through ProofKit.
+
+ProofKit installs several pieces that work together: a FileMaker add-on, a FileMaker plug-in, an MCP server, and agent integrations.
+
+<Callout title="TODO: Screenshot - ProofKit installer">
+  Capture the installer screen for macOS, including any step where the agent integrations are selected or confirmed.
+</Callout>
+
+## Install ProofKit
+
+<Steps>
+  <Step>
+    **Download and run the installer.**
+
+    The installer sets up the local ProofKit tools and registers integrations for supported coding agents.
+  </Step>
+
+  <Step>
+    **Open your FileMaker file in FileMaker Pro.**
+
+    ProofKit works against an open local or hosted file. FileMaker Server is not required for the development loop.
+  </Step>
+
+  <Step>
+    **Add the ProofKit add-on to the file.**
+
+    The add-on installs the scripts, layout, table, and custom function ProofKit uses to communicate with your file and store deployed app bundles.
+  </Step>
+
+  <Step>
+    **Enable the plug-in if FileMaker asks.**
+
+    The plug-in provides the local API used by the MCP server and the WebViewer proxy used for verification.
+  </Step>
+</Steps>
+
+## Verify the connection
+
+Open your agent and ask it to confirm that ProofKit can see your FileMaker file. A good first prompt:
+
+```text
+Use ProofKit to list the FileMaker files you can see, then summarize the available layouts in the active file.
+```
+
+<Callout title="TODO: Screenshot - Connected agent">
+  Capture Cursor or another agent listing the connected FileMaker file and a few available layouts.
+</Callout>
+
+If the agent cannot see your file, confirm that FileMaker Pro is open, the file has the ProofKit add-on installed, and the plug-in is enabled.
+
+## Next step
+
+Once the connection works, continue to [Explore Your File](/docs/ai/explore-your-file).

@@ -1,0 +1,15 @@
+{
+  "title": "Hybrid Apps",
+  "description": "Modern web UI inside FileMaker WebViewers",
+  "icon": "PanelsTopLeft",
+  "root": true,
+  "pages": [
+    "index",
+    "why-webviewers",
+    "architecture",
+    "runtime-under-the-hood",
+    "data-access",
+    "filemaker-scripts-as-backend",
+    "platform-notes"
+  ]
+}

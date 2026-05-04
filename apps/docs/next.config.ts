@@ -20,9 +20,6 @@ const config: NextConfig = {
     };
     return config;
   },
-  async redirects() {
-    return [{ source: "/docs", destination: "/docs/cli", permanent: false }];
-  },
 };
 
 export default withMDX(config);

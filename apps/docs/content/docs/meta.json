@@ -1,3 +1,13 @@
 {
-  "pages": ["cli", "fmdapi", "fmodata", "webviewer", "typegen", "better-auth"]
+  "pages": [
+    "index",
+    "ai",
+    "hybrid-apps",
+    "cli",
+    "fmdapi",
+    "fmodata",
+    "webviewer",
+    "typegen",
+    "better-auth"
+  ]
 }

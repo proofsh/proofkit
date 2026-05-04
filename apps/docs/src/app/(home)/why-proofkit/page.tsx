@@ -99,7 +99,7 @@ export default function WhyProofkitPage() {
             <div className="mt-8">
               <Link
                 className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-900 bg-gray-900 px-6 font-semibold text-base text-white shadow-lg transition hover:bg-gray-800 dark:border-white/15 dark:bg-white/[0.06] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_36px_rgba(255,255,255,0.08)] dark:hover:border-white/25 dark:hover:bg-white/[0.1]"
-                href="/docs/cli/guides/getting-started"
+                href="/docs/ai/getting-started"
               >
                 <Download className="size-5" />
                 Download ProofKit

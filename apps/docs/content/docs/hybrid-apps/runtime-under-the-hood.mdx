@@ -1,0 +1,64 @@
+---
+title: Runtime Under the Hood
+description: What happens when a user opens and interacts with a ProofKit hybrid app.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+This page explains the runtime behavior of a deployed ProofKit WebViewer app: loading, communication, data fetching, caching, saving, and FileMaker-specific behavior.
+
+## Loading the app
+
+When a user opens a FileMaker layout with a ProofKit WebViewer, the WebViewer loads the deployed HTML and JavaScript bundle from the FileMaker file.
+
+<Callout title="TODO: Screenshot - WebViewer layout loading">
+  Capture a FileMaker layout with the deployed WebViewer app visible immediately after opening.
+</Callout>
+
+## Initial props
+
+Many apps start by calling a FileMaker script before rendering the full UI. That script can return user context, configuration, permissions, or startup data the web app needs.
+
+This is optional, but it is a good pattern when the app needs FileMaker context before showing a meaningful screen.
+
+## Communication bridge
+
+The WebViewer and FileMaker are separate runtimes. They communicate by passing JSON through FileMaker's script bridge:
+
+- The web app calls FileMaker.
+- A FileMaker script performs work.
+- FileMaker returns structured data to the WebViewer.
+
+ProofKit libraries hide most of the callback plumbing so app code can use modern async patterns.
+
+## Caching and reactivity
+
+ProofKit apps use TanStack Query for server state. Data can be cached locally in the browser, refreshed in the background, and invalidated after writes so the UI stays responsive without manually reloading every screen.
+
+## Saving data
+
+WebViewer apps usually use explicit save and cancel actions. They do not automatically commit records when a user exits a field the way native FileMaker layouts can.
+
+When saves need business logic, validation, or transactional behavior, send the payload to a FileMaker script and let the script perform the write.
+
+## Record locking
+
+Typing into a WebViewer form does not hold a FileMaker record lock. This is normal web app behavior, but it is different from editing directly in a FileMaker field.
+
+Common strategies include:
+
+- Check modification counts before saving.
+- Use script-mediated saves for transaction-sensitive changes.
+- Alert the user when a record changed since it was loaded.
+
+## Container data
+
+Data passed through the WebViewer bridge is JSON. Container data usually needs to be Base64-encoded before it is included in a JSON payload.
+
+## Printing and PDFs
+
+For print or PDF workflows, the web app can generate an image or document payload, pass it to FileMaker, and let FileMaker use its native printing or Save as PDF capabilities.
+
+## Next step
+
+Read [Data Access](/docs/hybrid-apps/data-access) for practical layout and Execute Data API guidance.

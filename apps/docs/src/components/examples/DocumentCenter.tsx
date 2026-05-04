@@ -74,7 +74,7 @@ export function DocumentCenter({ className, interactive = false }: DocumentCente
     const normalizedQuery = query.trim().toLowerCase();
 
     return documents.filter((document) => {
-      const matchesTag = activeTag === "All" || document.tags.includes(activeTag);
+      const matchesTag = activeTag === "All" || (document.tags as readonly string[]).includes(activeTag);
       const matchesQuery =
         !normalizedQuery ||
         [document.title, document.account, document.type, document.status].some((value) =>
