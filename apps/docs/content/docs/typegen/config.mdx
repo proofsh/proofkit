@@ -78,7 +78,7 @@ The typegen tool is configured using the `proofkit-typegen-config.jsonc` file at
     fmMcp: {
       type: "{ enabled?: boolean; scriptName?: string; baseUrl?: string; connectedFileName?: string }",
       description:
-        "Optional local FM MCP mode for metadata fetching during typegen. Generated runtime clients still use the WebViewer adapter.",
+        "Optional local FM MCP mode for metadata fetching during typegen. Generated runtime clients still use the Web Viewer adapter.",
     },
     generateClient: {
       type: "boolean",
@@ -93,10 +93,10 @@ The typegen tool is configured using the `proofkit-typegen-config.jsonc` file at
 If set to `false`, will only generate the zod schema and/or typescript types, but not the client files. Use this to customize the generated client, but still use the typegen tool to keep your schema up to date.
 
 ### `webviewerScriptName`
-If set, will generate the client using the [@proofkit/webviewer](/docs/webviewer) package. This allows all calls to run via a FileMaker script rather than a network request. For more information, see the [@proofkit/webviewer](/docs/webviewer) documentation.
+If set, will generate the client using the [@proofkit/webviewer](/docs/webviewer/package) package. This allows all calls to run via a FileMaker script rather than a network request. For more information, see the [@proofkit/webviewer](/docs/webviewer/package) documentation.
 
 ### `fmMcp`
-If set, typegen uses the local FM MCP adapter only while generating schemas and clients. The generated runtime client still uses [@proofkit/webviewer](/docs/webviewer). If `webviewerScriptName` is not set, `fmMcp.scriptName` (or `"execute_data_api"`) is used for the generated webviewer client script name.
+If set, typegen uses the local FM MCP adapter only while generating schemas and clients. The generated runtime client still uses [@proofkit/webviewer](/docs/webviewer/package). If `webviewerScriptName` is not set, `fmMcp.scriptName` (or `"execute_data_api"`) is used for the generated webviewer client script name.
 
 ### `clientSuffix` (default: `"Layout"`)
 The suffix to add to the client name.

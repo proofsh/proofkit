@@ -44,7 +44,7 @@ packages/
 ├── fmdapi/      # FileMaker Data API client (REST)
 ├── fmodata/     # FileMaker OData API client with Drizzle-like ORM
 ├── typegen/     # TypeScript type generator from FM layouts (CLI + Web UI)
-├── webviewer/   # FileMaker WebViewer utilities
+├── webviewer/   # FileMaker Web Viewer utilities
 ├── cli/         # Interactive CLI for scaffolding projects
 ├── better-auth/ # Better Auth adapter for FileMaker
 ├── registry/    # Types and templates registry

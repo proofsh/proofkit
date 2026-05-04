@@ -2,7 +2,7 @@
 name: webviewer-integration
 description: >
   webviewer fmFetch callFMScript WebViewerAdapter globalSettings setWebViewerName
-  SendCallback window.FileMaker browser-only FileMaker WebViewer script execution
+  SendCallback window.FileMaker browser-only FileMaker Web Viewer script execution
   fire-and-forget FMScriptOption PerformScript callback fetchId handleFmWVFetchCallback
 type: core
 library: proofkit
@@ -25,7 +25,7 @@ Install the package and set the webviewer name before calling any scripts.
 ```ts
 import { fmFetch, globalSettings } from "@proofkit/webviewer";
 
-// Must match the Layout Object Name of the WebViewer in FileMaker
+// Must match the Layout Object Name of the Web Viewer in FileMaker
 globalSettings.setWebViewerName("web");
 
 // Call a FM script and await the result
@@ -136,7 +136,7 @@ export async function GET() {
 
 Correct:
 ```ts
-// components/DataLoader.tsx (client component -- runs in WebViewer)
+// components/DataLoader.tsx (client component -- runs in Web Viewer)
 "use client";
 import { fmFetch } from "@proofkit/webviewer";
 
@@ -148,7 +148,7 @@ export function DataLoader() {
 }
 ```
 
-`@proofkit/webviewer` depends on `window.FileMaker`, which is only injected by FileMaker into WebViewer contexts. Importing it in server code or standard browsers will fail at runtime.
+`@proofkit/webviewer` depends on `window.FileMaker`, which is only injected by FileMaker into Web Viewer contexts. Importing it in server code or standard browsers will fail at runtime.
 Source: `packages/webviewer/src/main.ts` lines 111-115, `apps/docs/content/docs/webviewer/index.mdx`
 
 ### [CRITICAL] fmFetch promise never resolves
@@ -272,7 +272,7 @@ const result = await fmFetch("MyScript", { key: "value" });
 Calling `window.FileMaker.PerformScript` directly bypasses the callback registration system. `fmFetch` won't work because the script parameter won't contain the `callback` object with `fetchId`. The library also handles JSON serialization and the `PerformScriptWithOption` variant automatically.
 Source: `packages/webviewer/src/main.ts` lines 79-87, 92-122
 
-### [HIGH] Not accounting for single-threaded FM script execution in WebViewer
+### [HIGH] Not accounting for single-threaded FM script execution in Web Viewer
 
 Wrong:
 ```ts
@@ -303,7 +303,7 @@ const customers = await customersClient.list();
 const orders = await ordersClient.list();
 ```
 
-In WebViewer local mode, FM scripts execute single-threaded. `Promise.all` with multiple `fmFetch`-based calls does not parallelize -- each script must complete and call back before the next runs. Concurrent calls can queue up and cause UI freezes. Use sequential awaits and minimize the number of round-trips.
+In Web Viewer local mode, FM scripts execute single-threaded. `Promise.all` with multiple `fmFetch`-based calls does not parallelize -- each script must complete and call back before the next runs. Concurrent calls can queue up and cause UI freezes. Use sequential awaits and minimize the number of round-trips.
 Source: `apps/docs/content/docs/webviewer/fmdapi.mdx`, `packages/webviewer/src/main.ts`
 
 ## References

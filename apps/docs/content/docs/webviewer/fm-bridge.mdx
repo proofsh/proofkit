@@ -1,0 +1,74 @@
+---
+title: "Vite Plugin: fmBridge"
+description: Load your local development server in any browser as if it were in a FileMaker Web Viewer.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`fmBridge` is a Vite plugin shipped with `@proofkit/webviewer` that lets your local dev server talk to a real FileMaker file. With it running, code that calls `window.FileMaker` or uses `@proofkit/webviewer` works the same in `pnpm dev` as it does inside a deployed Web Viewer — no rebuild, no upload, no mock data.
+
+## Why it matters
+
+A Web Viewer app expects to live inside FileMaker. Outside of FileMaker, `window.FileMaker` does not exist and any script call throws. Without a bridge, the only way to test the real integration is to build, upload, and reopen the file every time you change a line of code.
+
+FM Bridge removes that loop:
+
+- Forwards `window.FileMaker.PerformScript*` calls from the browser to a connected FileMaker file over WebSocket.
+- Auto-discovers the connected file from the local FM MCP server, so you don't need to hard-code a file name.
+- Lets you keep using your normal Vite dev experience — HMR, source maps, fast refresh — while still hitting real FileMaker scripts and data.
+
+## Setup
+
+The Web Viewer template scaffolded by the ProofKit CLI already wires this up. If you are configuring a project by hand, add the plugin to your `vite.config.ts`:
+
+```ts
+import { fmBridge } from "@proofkit/webviewer/vite-plugins";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [fmBridge()],
+});
+```
+
+### Options
+
+```ts
+fmBridge({
+  fileName: "MyApp.fmp12", // optional — auto-discovered when omitted
+  fmMcpBaseUrl: "http://localhost:1365", // default
+  wsUrl: "ws://localhost:1365/ws", // derived from fmMcpBaseUrl when omitted
+  debug: false,
+});
+```
+
+- `fileName` — pin the bridge to a specific FileMaker file. Useful when more than one file is connected.
+- `fmMcpBaseUrl` — base URL of the local FM MCP daemon. Defaults to `http://localhost:1365`.
+- `wsUrl` — WebSocket endpoint for script forwarding. Computed from `fmMcpBaseUrl` if not set.
+- `debug` — log bridge activity to the browser console.
+
+## How to use it
+
+1. Start the FM MCP daemon locally.
+2. Open the FileMaker file you want to develop against.
+3. Run the **Connect to MCP** script in that file. It opens a small Web Viewer window that registers the file with FM MCP and proxies script calls.
+4. Run your dev server (e.g. `pnpm dev`).
+
+From the web app, call FileMaker scripts the same way you would in production:
+
+```ts
+import { fmFetch } from "@proofkit/webviewer";
+
+const result = await fmFetch("My Script", { id: 123 });
+```
+
+The plugin discovers the connected file via `GET /connectedFiles` on FM MCP, opens a WebSocket to `/ws`, and forwards each script call to FileMaker.
+
+<Callout type="warn" title="Keep the MCP connector window open">
+  The FileMaker **Connect to MCP** script opens a Web Viewer window that the bridge depends on. It must stay open and in **Browse mode** while you develop — closing the window or switching the file to Layout mode silently breaks the bridge.
+</Callout>
+
+## Troubleshooting
+
+- **"fmBridge could not reach ..."** — FM MCP is not running or is bound to a different port. Check that the daemon is up and that `fmMcpBaseUrl` matches.
+- **"fmBridge found no connected FileMaker files"** — A FileMaker file is open but has not registered with FM MCP. Run **Connect to MCP** in that file again.
+- **Script calls hang or fail at runtime** — The connector Web Viewer was closed or the file was put into Layout mode. Reopen the connector window.

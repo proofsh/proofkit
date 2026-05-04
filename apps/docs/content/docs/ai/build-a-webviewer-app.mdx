@@ -1,0 +1,68 @@
+---
+title: Build a Web Viewer App
+description: Scaffold and iterate on a FileMaker Web Viewer app with your coding agent.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+After ProofKit is connected and your agent understands the file, switch from exploration to building. The goal is a local web project that previews in the browser and can later be deployed into FileMaker.
+
+## Build loop
+
+<Steps>
+  <Step>
+    **Ask the agent to scaffold a Web Viewer project.**
+
+    The project should use the ProofKit CLI and the current ProofKit stack: React, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query, and TypeGen.
+  </Step>
+
+  <Step>
+    **Run the local preview.**
+
+    The agent should start the dev server and open the app in a browser so it can inspect the result.
+
+    <Callout title="TODO: Screenshot - Local preview">
+      Capture the generated Web Viewer app running locally in a browser with FileMaker-backed data visible.
+    </Callout>
+  </Step>
+
+  <Step>
+    **Ask for a specific screen.**
+
+    Start with one workflow: a dashboard, detail view, calendar, kanban board, rich form, or data grid.
+  </Step>
+
+  <Step>
+    **Let the agent iterate.**
+
+    The useful loop is not just code generation. The agent should typecheck, run lint/build commands, inspect browser errors, and fix issues.
+  </Step>
+</Steps>
+
+## Prompt shape
+
+```text
+Build a ProofKit Web Viewer screen for the Contacts workflow.
+Use the FileMaker layouts and fields you discovered earlier.
+Start with a read-only list and detail view, then run checks and preview it in the browser.
+```
+
+## Style and theme
+
+ProofKit projects use shadcn/ui and Tailwind, so the agent can apply a theme or preset by editing normal project files.
+
+<Callout title="TODO: Screenshot - Theme applied">
+  Capture a before/after of a generated screen after applying a shadcn/ui preset or branded theme.
+</Callout>
+
+## Reference docs
+
+- Use the [CLI docs](/docs/cli) for project setup details.
+- Use [TypeGen](/docs/typegen) when your FileMaker layout metadata changes.
+- Use [Web Viewer](/docs/webviewer/package) for lower-level bridge behavior.
+- Use [Hybrid App Data Access](/docs/webviewer/data-access) for layout and Execute Data API patterns.
+
+## Next step
+
+When the app works locally, continue to [Deploy to FileMaker](/docs/ai/deploy-to-filemaker).

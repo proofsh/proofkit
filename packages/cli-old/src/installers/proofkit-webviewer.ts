@@ -51,7 +51,7 @@ export async function checkForWebViewerLayouts(): Promise<boolean> {
 
   if (allWebViewerLayoutsExist) {
     console.log(
-      chalk.green("Successfully detected all required layouts for ProofKit WebViewer in your FileMaker file."),
+      chalk.green("Successfully detected all required layouts for ProofKit Web Viewer in your FileMaker file."),
     );
     return true;
   }

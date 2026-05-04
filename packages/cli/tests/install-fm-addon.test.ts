@@ -98,7 +98,7 @@ describe("getWebViewerAddonMessages", () => {
         status: "installed-outdated",
         addonName: "wv",
         addonDir: "ProofKitWV",
-        addonDisplayName: "ProofKit WebViewer",
+        addonDisplayName: "ProofKit Web Viewer",
         installCommand: "proofkit add addon webviewer",
         targetDir: "/tmp/AddonModules",
         installedPath: "/tmp/AddonModules/ProofKitWV",

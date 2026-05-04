@@ -1,6 +1,6 @@
 # ProofKit — Skill Spec
 
-ProofKit is a monorepo of TypeScript tools for building web applications integrated with Claris FileMaker. It provides API clients for FileMaker's Data API and OData API, a type generator that produces TypeScript types and runtime validators from FileMaker schemas, a WebViewer bridge for running JS inside FileMaker, and a Better Auth adapter for self-hosted authentication backed by FileMaker.
+ProofKit is a monorepo of TypeScript tools for building web applications integrated with Claris FileMaker. It provides API clients for FileMaker's Data API and OData API, a type generator that produces TypeScript types and runtime validators from FileMaker schemas, a Web Viewer bridge for running JS inside FileMaker, and a Better Auth adapter for self-hosted authentication backed by FileMaker.
 
 ## Domains
 
@@ -8,7 +8,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | --- | --- | --- |
 | Connecting to FileMaker | Setting up typed connections via Data API or OData, including auth, adapters, and type generation | typegen-setup, getting-started |
 | Reading and Writing Data | Querying, creating, updating, and deleting FileMaker records through either API surface | fmdapi-client, fmodata-client, odata-query-optimization |
-| Running in WebViewer | Executing JavaScript inside FileMaker WebViewer with script calls and local Data API access | webviewer-integration |
+| Running in Web Viewer | Executing JavaScript inside FileMaker Web Viewer with script calls and local Data API access | webviewer-integration |
 | Authenticating Users | Self-hosted authentication using Better Auth with FileMaker as the database backend | better-auth-setup |
 
 ## Skill Inventory
@@ -39,7 +39,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | 8 | Using FmMcpAdapter in production application code | CRITICAL | source | — |
 | 9 | Setting standard FM env vars when using fmMcp mode | HIGH | source | — |
 | 10 | Suggesting OttoFMS/FetchAdapter fallback when FM MCP fails | HIGH | maintainer | — |
-| 11 | FM MCP WebViewer window closed or in Layout mode | HIGH | maintainer | — |
+| 11 | FM MCP Web Viewer window closed or in Layout mode | HIGH | maintainer | — |
 
 ### fmdapi-client (6 failure modes)
 
@@ -74,7 +74,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | 3 | Calling FM scripts before window.FileMaker is available | HIGH | docs | — |
 | 4 | Using executeScript or containerUpload via WebViewerAdapter | HIGH | source | fmdapi-client |
 | 5 | Accessing window.FileMaker directly instead of library functions | CRITICAL | maintainer | — |
-| 6 | Not understanding single-threaded script execution in WebViewer local mode | HIGH | maintainer | fmodata-client |
+| 6 | Not understanding single-threaded script execution in Web Viewer local mode | HIGH | maintainer | fmodata-client |
 
 ### better-auth-setup (4 failure modes)
 
@@ -110,7 +110,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | --- | --- | --- |
 | Type safety vs rapid prototyping | typegen-setup ↔ fmdapi-client ↔ fmodata-client | Agent might skip typegen to move fast, losing validation and creating schema drift |
 | defaultSelect schema safety vs completeness | fmodata-client ↔ odata-query-optimization | Agent switches to "all" to fix missing data without understanding performance cost |
-| WebViewer local mode vs server-based data access | webviewer-integration ↔ fmdapi-client ↔ fmodata-client | Agent uses listAll or TanStack Query retries in WebViewer local mode, overwhelming single-threaded FM script engine |
+| Web Viewer local mode vs server-based data access | webviewer-integration ↔ fmdapi-client ↔ fmodata-client | Agent uses listAll or TanStack Query retries in Web Viewer local mode, overwhelming single-threaded FM script engine |
 
 ## Cross-References
 
@@ -141,7 +141,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | Skill | Question | Status |
 | --- | --- | --- |
 | getting-started | Recommended path for new-to-JS developers vs experienced developers? | open |
-| webviewer-integration | Most common deployment pitfalls for WebViewer apps? | open |
+| webviewer-integration | Most common deployment pitfalls for Web Viewer apps? | open |
 
 ## Recommended Skill File Structure
 

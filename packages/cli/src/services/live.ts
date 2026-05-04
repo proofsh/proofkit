@@ -371,7 +371,7 @@ const fileMakerService = {
       },
       catch: (cause) =>
         new FileMakerSetupError({
-          message: "Unable to install local ProofKit WebViewer add-on files.",
+          message: "Unable to install local ProofKit Web Viewer add-on files.",
           cause,
         }),
     }).pipe(Effect.asVoid),

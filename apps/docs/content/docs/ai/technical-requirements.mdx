@@ -1,0 +1,57 @@
+---
+title: Technical Requirements
+description: What you need to build and run ProofKit v2 apps.
+---
+
+ProofKit v2 is designed for FileMaker developers using agentic coding tools to build Web Viewer apps.
+
+## FileMaker version
+
+ProofKit v2 requires **FileMaker 22 or greater**.
+
+Future ProofKit releases will track the next major FileMaker release cycle so ProofKit can take advantage of new platform capabilities as they become available.
+
+## Development machine
+
+To build ProofKit apps, you need:
+
+- **FileMaker Pro** with the target file open.
+- **Node.js LTS** installed locally.
+- **An MCP-compatible coding agent**, such as Cursor, Claude Code, Codex, OpenCode, or another agent that supports MCP servers.
+
+FileMaker Server is not required for the development loop. ProofKit can work against a local or hosted file as long as it is open in FileMaker Pro.
+
+## Developer background
+
+You do not need to be a web developer to get started. Familiarity with React, TypeScript, a terminal, and Git will help, but the workflow is designed so the agent does much of the setup and implementation work.
+
+## Runtime environments
+
+After a Web Viewer app is bundled and deployed into FileMaker, it can run in:
+
+- FileMaker Pro on macOS and Windows.
+- FileMaker Go on iOS and iPadOS.
+- FileMaker WebDirect.
+
+See [Platform Notes](/docs/webviewer/platform-notes) for runtime caveats.
+
+## Out of scope for v2
+
+ProofKit v2 enables agentic coding of Web Viewer apps. It does not currently enable agentic editing of:
+
+- Scripts.
+- Tables and fields.
+- Layouts.
+- Value lists.
+- Other FileMaker schema or design elements.
+
+## Summary
+
+| Requirement | Value |
+| --- | --- |
+| FileMaker version | FileMaker 22 or greater |
+| Agent environment | Any MCP-compatible agent |
+| Development requirements | FileMaker Pro and Node.js LTS |
+| FileMaker Server | Not required for local development |
+| Runtime platforms | FileMaker Pro, FileMaker Go, WebDirect |
+| Agent writing scope | Web Viewer app code |

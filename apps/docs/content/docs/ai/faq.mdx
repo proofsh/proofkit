@@ -1,0 +1,48 @@
+---
+title: FAQ
+description: Common questions about ProofKit AI and v2.
+---
+
+## What is ProofKit?
+
+ProofKit is a toolbox for building FileMaker-backed applications with web technology and AI coding agents. It gives the agent access to FileMaker context, project scaffolding, type-safe data tools, Web Viewer communication, and deployment into your file.
+
+## Is ProofKit a framework?
+
+No. It is a collection of tools. A scaffolded ProofKit app is a normal web project using familiar tools such as React, TypeScript, Tailwind, shadcn/ui, and TanStack Query.
+
+## What does ProofKit produce?
+
+For the v2 launch path, ProofKit focuses on Web Viewer apps: modern web interfaces that run inside FileMaker. The broader toolchain also supports full web apps backed by FileMaker.
+
+## What does ProofKit cost?
+
+ProofKit is free to download and use. The apps you build are yours. The cost you still pay is whatever your AI coding agent or model provider charges.
+
+## Do my users need ProofKit installed?
+
+No. ProofKit is a development tool. Once the app is bundled and deployed into FileMaker, users only need the FileMaker runtime environment where the app is deployed.
+
+## Can I control the styling?
+
+Yes. ProofKit apps use normal web styling tools: Tailwind, shadcn/ui, React components, and CSS variables. You or your agent can change the theme, layout, and components in the project.
+
+## What happens when the agent writes bad code?
+
+ProofKit gives the agent feedback: TypeScript checks, generated types from FileMaker metadata, browser preview, runtime errors, and deployment verification. That does not make agents perfect, but it gives them the information they need to fix many mistakes without constant manual copying and pasting.
+
+## Can ProofKit edit FileMaker scripts, tables, or layouts?
+
+Not in the supported v2 release scope. ProofKit helps agents build Web Viewer app code. FileMaker scripts, tables, layouts, value lists, and schema design remain outside the supported agentic writing scope.
+
+## Does ProofKit work in WebDirect?
+
+Deployed Web Viewer apps can run in WebDirect, but there are platform-specific considerations around refresh behavior and runtime context. See [Platform Notes](/docs/webviewer/platform-notes).
+
+## How does team workflow work?
+
+For the web project, use normal web development practices: Git, branches, pull requests, CI, and code review. For the FileMaker file, ProofKit does not replace FileMaker's existing shared development model.
+
+## Where do I get help?
+
+Join the [ProofKit community](https://community.ottomatic.cloud/c/proofkit) to ask questions, share what you build, and get unstuck.

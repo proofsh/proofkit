@@ -502,7 +502,7 @@ function resolveFileMakerInputs({
             return yield* Effect.fail(
               new NonInteractiveInputError({
                 message:
-                  "ProofKit plugin was detected, but no FileMaker file is connected. Install the ProofKit plugin, install the ProofKit WebViewer add-on in your FileMaker file, then run the add-on connection script and rerun. Or pass --server.",
+                  "ProofKit plugin was detected, but no FileMaker file is connected. Install the ProofKit plugin, install the ProofKit Web Viewer add-on in your FileMaker file, then run the add-on connection script and rerun. Or pass --server.",
               }),
             );
           }
@@ -518,7 +518,7 @@ function resolveFileMakerInputs({
         const fallbackAction = yield* promptEffect("Unable to choose FileMaker setup fallback.", () =>
           prompt.select({
             message: localFmMcp.healthy
-              ? "ProofKit plugin is installed, but no FileMaker file is connected yet. Install the ProofKit WebViewer add-on in your FileMaker file, run the add-on connection script, then choose how to continue."
+              ? "ProofKit plugin is installed, but no FileMaker file is connected yet. Install the ProofKit Web Viewer add-on in your FileMaker file, run the add-on connection script, then choose how to continue."
               : "ProofKit plugin was not detected. How would you like to continue?",
             options: [
               {

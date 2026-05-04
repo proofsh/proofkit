@@ -7,7 +7,7 @@ import { PKG_ROOT } from "~/consts.js";
 import { logger } from "~/utils/logger.js";
 
 export async function installFmAddon({ addonName }: { addonName: "auth" | "wv" }) {
-  const addonDisplayName = addonName === "auth" ? "FM Auth Add-on" : "ProofKit WebViewer";
+  const addonDisplayName = addonName === "auth" ? "FM Auth Add-on" : "ProofKit Web Viewer";
 
   let targetDir: string | null = null;
   if (process.platform === "win32") {
@@ -38,7 +38,7 @@ export async function installFmAddon({ addonName }: { addonName: "auth" | "wv" }
   } else {
     console.log(
       `${chalk.yellowBright(
-        "You must install the ProofKit WebViewer addon in your FileMaker file to continue.",
+        "You must install the ProofKit Web Viewer addon in your FileMaker file to continue.",
       )} ${chalk.dim("(Learn more: https://proofkit.proof.sh/webviewer)")}`,
     );
   }

@@ -1,15 +1,25 @@
 {
-  "title": "Webviewer",
-  "description": "@proofkit/webviewer",
+  "title": "Web Viewer Apps",
+  "description": "Modern web UI inside FileMaker WebViewers",
   "icon": "Globe",
+  "root": true,
   "pages": [
-    "---Introduction---",
     "index",
-    "---Usage---",
+    "---Concepts---",
+    "why-webviewers",
+    "architecture",
+    "runtime-under-the-hood",
+    "data-access",
+    "filemaker-scripts-as-backend",
+    "platform-notes",
+    "deployment-methods",
+    "---@proofkit/webviewer---",
+    "package",
+    "---Reference---",
     "fmFetch",
     "callFmScript",
+    "fm-bridge",
     "fmdapi",
     "troubleshooting"
-  ],
-  "root": true
+  ]
 }

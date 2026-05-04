@@ -1,3 +1,3 @@
 {
-  "pages": ["cli", "fmdapi", "fmodata", "webviewer", "typegen", "better-auth"]
+  "pages": ["ai", "webviewer", "fmdapi", "fmodata", "typegen", "better-auth"]
 }

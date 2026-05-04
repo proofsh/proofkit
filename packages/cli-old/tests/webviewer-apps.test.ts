@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 const nonInteractiveDirectoryError = /already exists and isn't empty/;
 
-describe("WebViewer CLI Tests", () => {
+describe("Web Viewer CLI Tests", () => {
   const testDir = join(__dirname, "..", "..", "tmp", "cli-tests");
   const cliPath = join(__dirname, "..", "dist", "index.js");
   const projectName = "test-webviewer-project";

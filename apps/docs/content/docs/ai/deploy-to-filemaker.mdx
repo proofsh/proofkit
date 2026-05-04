@@ -1,0 +1,51 @@
+---
+title: Deploy to FileMaker
+description: Bundle your Web Viewer app and deploy it into a FileMaker file.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+Deployment for a ProofKit Web Viewer app means bundling the web app and storing it in your FileMaker file so it can load inside a Web Viewer layout.
+
+This is different from deploying a browser app to a hosting provider. The deployed artifact is HTML and JavaScript living in the FileMaker file.
+
+## Deploy the app
+
+<Steps>
+  <Step>
+    **Run checks before deployment.**
+
+    Ask the agent to run the project checks it has available, such as typechecking, linting, and a production build.
+  </Step>
+
+  <Step>
+    **Bundle the Web Viewer app.**
+
+    The project build should produce a deployable single-file bundle for the FileMaker Web Viewer.
+  </Step>
+
+  <Step>
+    **Deploy through ProofKit.**
+
+    ProofKit sends the bundle through the local bridge and stores it in the FileMaker file.
+  </Step>
+
+  <Step>
+    **Verify inside FileMaker.**
+
+    Navigate to the Web Viewer layout and confirm the deployed app loads with real data.
+
+    <Callout title="TODO: Screenshot - Deployed app in FileMaker">
+      Capture the finished app running inside a FileMaker Web Viewer layout.
+    </Callout>
+  </Step>
+</Steps>
+
+## End-user requirements
+
+Users of the deployed app do not need ProofKit installed. ProofKit is needed during development. The deployed app runs inside FileMaker.
+
+## Next step
+
+Read [Agent Workflow](/docs/ai/agent-workflow) to understand how deployment fits into the larger read, write, verify, and fix loop.

@@ -1,0 +1,59 @@
+---
+title: FileMaker Scripts as Backend
+description: Use FileMaker scripts for secure business logic behind Web Viewer apps.
+---
+
+FileMaker scripts are the backend for many hybrid app workflows. The Web Viewer handles the interface, while scripts perform privileged work inside FileMaker.
+
+## When to use a script
+
+Use a custom FileMaker script when the operation needs:
+
+- Business rules that already live in FileMaker.
+- Validation before creating, updating, or deleting records.
+- Transaction-style workflows.
+- External API calls with secrets that should not be in browser code.
+- File system access.
+- Printing, PDF generation, or container handling.
+
+## Request and response pattern
+
+Keep the bridge contract simple: send JSON in, return JSON out.
+
+```json title="Request"
+{
+  "action": "approveInvoice",
+  "invoiceId": "123",
+  "notes": "Approved from Web Viewer"
+}
+```
+
+```json title="Response"
+{
+  "ok": true,
+  "invoiceId": "123",
+  "status": "Approved"
+}
+```
+
+If an operation fails, return a structured error the web app can display.
+
+```json title="Error response"
+{
+  "ok": false,
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "This invoice cannot be approved until it has at least one line item."
+  }
+}
+```
+
+## Why scripts are powerful here
+
+Scripts run inside the FileMaker security and data model. That means the web app can ask FileMaker to do work without moving privileged logic, credentials, or platform-specific behavior into browser JavaScript.
+
+## Related docs
+
+- [Runtime Under the Hood](/docs/webviewer/runtime-under-the-hood)
+- [Data Access](/docs/webviewer/data-access)
+- [Web Viewer package docs](/docs/webviewer/package)

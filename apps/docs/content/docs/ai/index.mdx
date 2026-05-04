@@ -1,0 +1,69 @@
+---
+title: Introduction
+description: Build modern FileMaker apps with coding agents, WebViewers, and TypeScript tools.
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
+
+ProofKit helps you build modern web interfaces for FileMaker while keeping your FileMaker file at the center of the app. It connects your AI coding agent to your FileMaker file so it can understand your schema, build a modern Web Viewer app, run checks, preview the result, and deploy the bundle back into FileMaker.
+
+If you're new, follow the guided path below. The package docs are here when you need API details, but the pages in this section walk from first install to a deployed FileMaker app.
+
+## Start Here
+
+<Cards>
+  <Card href="/docs/ai/getting-started" title="Getting Started">
+    Install ProofKit, connect your file, build an app, and deploy it into FileMaker.
+  </Card>
+  <Card href="/docs/ai/agent-workflow" title="Understand the agent loop">
+    See how ProofKit helps agents read, write, verify, and fix FileMaker-backed apps.
+  </Card>
+  <Card href="/docs/webviewer" title="Web Viewer Apps">
+    Learn how modern web UI runs inside FileMaker while keeping FileMaker's platform strengths.
+  </Card>
+  <Card href="/docs/cli" title="CLI">
+    Scaffold, build, and deploy ProofKit projects from the command line.
+  </Card>
+</Cards>
+
+## What ProofKit gives the agent
+
+- Metadata access to your open FileMaker file.
+- Type-safe project scaffolding for a modern web stack.
+- A bridge for FileMaker scripts, data, and Web Viewer communication.
+- Deployment tooling that bundles the app into the FileMaker file.
+- Feedback loops so the agent can inspect errors and iterate.
+
+<Callout title="New to the package docs?">
+  Start here first, then use the CLI, Web Viewer, TypeGen, and FMDAPI sections as reference material when a guide points you there.
+</Callout>
+
+## Recommended path
+
+1. Read [Getting Started](/docs/ai/getting-started) for the full journey.
+2. Confirm your machine and file meet the [technical requirements](/docs/ai/technical-requirements).
+3. Learn why ProofKit starts with [hybrid Web Viewer apps](/docs/webviewer/why-webviewers).
+4. Keep the [FAQ](/docs/ai/faq) nearby for scope, runtime, and team workflow questions.
+
+## Tools and Packages
+
+The CLI installs the packages you need for most projects, but each part is documented separately if you want to understand or use it directly.
+
+<Cards>
+  <Card href="/docs/typegen" title="@proofkit/typegen">
+    Generate TypeScript types and validation schemas from FileMaker layouts.
+  </Card>
+  <Card href="/docs/webviewer/package" title="@proofkit/webviewer">
+    Use the Web Viewer bridge to communicate between FileMaker and your app.
+  </Card>
+  <Card href="/docs/fmdapi" title="@proofkit/fmdapi">
+    Work with the FileMaker Data API from TypeScript.
+  </Card>
+  <Card href="/docs/fmodata" title="@proofkit/fmodata">
+    Use a strongly typed FileMaker OData client.
+  </Card>
+  <Card href="/docs/better-auth" title="@proofkit/better-auth">
+    Add self-hosted auth backed by your FileMaker database.
+  </Card>
+</Cards>

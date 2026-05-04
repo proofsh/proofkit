@@ -1,0 +1,49 @@
+---
+title: Explore Your File
+description: Use chat mode to understand your FileMaker schema before building.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Before you build a Web Viewer app, use your agent to explore the FileMaker file. This gives you immediate value from ProofKit and confirms that the agent has useful context.
+
+## Useful first prompts
+
+```text
+Summarize the tables, layouts, and relationships in this FileMaker file.
+```
+
+```text
+Which layouts look appropriate for building a customer dashboard?
+```
+
+```text
+Show me the fields available on the Contacts layout and suggest a good card layout for them.
+```
+
+```text
+Inspect sample data and suggest three Web Viewer screens that would improve this workflow.
+```
+
+<Callout title="TODO: Screenshot - Schema exploration in chat">
+  Capture an agent conversation where ProofKit metadata tools are used to summarize layouts, fields, and relationships.
+</Callout>
+
+## What the agent can learn
+
+- Layout and field names.
+- Table occurrence and relationship context.
+- Script names and the likely workflows they support.
+- Data shapes the future Web Viewer app can use.
+
+## Keep exploration grounded
+
+Ask the agent to cite the FileMaker layouts and fields it is using. That keeps ideas tied to real schema instead of generic app suggestions.
+
+<Callout type="info" title="Exploration is not schema editing">
+  ProofKit v2 helps agents understand your FileMaker file and build Web Viewer apps. It does not agentically edit tables, fields, layouts, scripts, or value lists in this release.
+</Callout>
+
+## Next step
+
+When you know the screen you want to build, continue to [Build a Web Viewer App](/docs/ai/build-a-webviewer-app).

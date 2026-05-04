@@ -20,7 +20,7 @@ async function resolveAddonTarget(name?: string): Promise<AddonTarget> {
     await select({
       message: "Which add-on do you want to install locally?",
       options: [
-        { value: "webviewer", label: "WebViewer", hint: "ProofKit WebViewer add-on" },
+        { value: "webviewer", label: "Web Viewer", hint: "ProofKit Web Viewer add-on" },
         { value: "auth", label: "Auth", hint: "ProofKit Auth add-on" },
       ],
     }),

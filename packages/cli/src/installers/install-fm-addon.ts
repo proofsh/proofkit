@@ -27,7 +27,7 @@ const FM_ADDON_VERSION_REGEX = /<FMAdd_on[^>]*\bversion="([^"]+)"/i;
 const NUMERIC_VERSION_PART_REGEX = /^\d+$/;
 
 function getAddonDisplayName(addonName: FmAddonName) {
-  return addonName === "auth" ? "FM Auth Add-on" : "ProofKit WebViewer";
+  return addonName === "auth" ? "FM Auth Add-on" : "ProofKit Web Viewer";
 }
 
 function getAddonDir(addonName: FmAddonName) {
@@ -253,7 +253,7 @@ export async function installFmAddonExplicitly({ addonName }: { addonName: FmAdd
   } else {
     console.log(
       `${chalk.yellowBright(
-        "You must install the ProofKit WebViewer addon in your FileMaker file to continue.",
+        "You must install the ProofKit Web Viewer addon in your FileMaker file to continue.",
       )} ${chalk.dim("(Learn more: https://proofkit.proof.sh/webviewer)")}`,
     );
   }

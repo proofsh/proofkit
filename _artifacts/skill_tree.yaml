@@ -20,7 +20,7 @@ skills:
       ENTRY POINT for @proofkit/fmdapi projects. Generate TypeScript types and
       Zod validators from FileMaker layouts using @proofkit/typegen. Covers
       proofkit-typegen-config.jsonc for Data API mode, npx setup, OttoAdapter
-      and FetchAdapter env vars, FM MCP mode for local WebViewer development,
+      and FetchAdapter env vars, FM MCP mode for local Web Viewer development,
       generated vs override file structure, Standard Schema validation, and
       InferZodPortals.
     requires: []
@@ -117,7 +117,7 @@ skills:
       - 'references/filter-operators.md'
       - 'references/error-types.md'
 
-  - name: 'WebViewer Integration'
+  - name: 'Web Viewer Integration'
     slug: 'webviewer-integration'
     type: 'core'
     domain: 'webviewer'
@@ -125,7 +125,7 @@ skills:
     package: 'packages/webviewer'
     description: >
       Use @proofkit/webviewer to call FileMaker scripts and access the Data API
-      from JavaScript running inside a FileMaker WebViewer. Covers fmFetch()
+      from JavaScript running inside a FileMaker Web Viewer. Covers fmFetch()
       (call FM script and await result via callback), callFMScript() (fire-and-forget),
       WebViewerAdapter for @proofkit/fmdapi integration, globalSettings.setWebViewerName(),
       browser-only runtime constraints, and single-threaded FM script execution

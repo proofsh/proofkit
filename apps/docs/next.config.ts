@@ -20,9 +20,28 @@ const config: NextConfig = {
     };
     return config;
   },
-  async redirects() {
-    return [{ source: "/docs", destination: "/docs/cli", permanent: false }];
-  },
+  redirects: async () => [
+    {
+      source: "/docs",
+      destination: "/docs/ai",
+      permanent: false,
+    },
+    {
+      source: "/docs/hybrid-apps/:path*",
+      destination: "/docs/webviewer/:path*",
+      permanent: true,
+    },
+    {
+      source: "/docs/cli/webviewer/overview",
+      destination: "/docs/webviewer/faq",
+      permanent: true,
+    },
+    {
+      source: "/docs/cli/webviewer/:path*",
+      destination: "/docs/webviewer/:path*",
+      permanent: true,
+    },
+  ],
 };
 
 export default withMDX(config);
