@@ -1,16 +1,4 @@
-import {
-  ArrowRight,
-  Code,
-  Eye,
-  Gift,
-  Layers,
-  LayoutGrid,
-  RefreshCw,
-  Route,
-  Server,
-  Shield,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Code, Eye, Gift, Layers, LayoutGrid, RefreshCw, Route, Server, Shield, Zap } from "lucide-react";
 import Link from "next/link";
 import DarkVeil from "@/components/DarkVeil";
 import { DownloadButton } from "@/components/DownloadButton";

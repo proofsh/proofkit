@@ -1,6 +1,6 @@
+import { DownloadButton } from "@/components/DownloadButton";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
-import { DownloadButton } from "@/components/DownloadButton";
 
 export default function WhyProofkitPage() {
   return (

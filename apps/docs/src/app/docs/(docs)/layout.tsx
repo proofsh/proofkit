@@ -8,7 +8,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <Banner id="docs-preview" variant="rainbow">
-        <strong>Early Preview:</strong>&nbsp;🚧&nbsp;<strong>These docs are still a work in progress.</strong>&nbsp;🚧&nbsp;Keep checking back for updates!
+        <strong>Early Preview:</strong>&nbsp;🚧&nbsp;<strong>These docs are still a work in progress.</strong>
+        &nbsp;🚧&nbsp;Keep checking back for updates!
       </Banner>
       <DocsLayout
         tree={source.pageTree}

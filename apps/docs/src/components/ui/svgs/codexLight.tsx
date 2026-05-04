@@ -1,13 +1,7 @@
 import type { SVGProps } from "react";
 
 const CodexLight = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    {...props}
-    fill="#111"
-    fillRule="evenodd"
-    style={{ flex: "none", lineHeight: "1" }}
-    viewBox="0 0 24 24"
-  >
+  <svg {...props} fill="#111" fillRule="evenodd" style={{ flex: "none", lineHeight: "1" }} viewBox="0 0 24 24">
     <title>Codex</title>
     <path
       clipRule="evenodd"

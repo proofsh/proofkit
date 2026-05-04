@@ -25,11 +25,7 @@ const platformOptions: Record<Platform, { label: string; href: string; icon: Rea
     href: "/download/win",
     icon: (
       <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
-        <path
-          d="M4 5.5h7v6H4zM13 5.5h7v6h-7zM4 13h7v5.5H4zM13 13h7v5.5h-7z"
-          stroke="currentColor"
-          strokeWidth="1.8"
-        />
+        <path d="M4 5.5h7v6H4zM13 5.5h7v6h-7zM4 13h7v5.5H4zM13 13h7v5.5h-7z" stroke="currentColor" strokeWidth="1.8" />
       </svg>
     ),
   },
@@ -83,10 +79,7 @@ export function DownloadButton({ variant = "light", className }: DownloadButtonP
   return (
     <ButtonGroup className={className}>
       <Link
-        className={cn(
-          "inline-flex items-center gap-3 rounded-l-full font-semibold text-base",
-          styles.primary,
-        )}
+        className={cn("inline-flex items-center gap-3 rounded-l-full font-semibold text-base", styles.primary)}
         href={primary.href}
       >
         {primary.icon}
