@@ -1,5 +1,11 @@
 # @proofgeist/kit
 
+## 2.0.0-beta.34
+
+### Patch Changes
+
+- bacdb7d: Make initial git commit failures non-blocking during CLI init.
+
 ## 2.0.0-beta.33
 
 ### Patch Changes
