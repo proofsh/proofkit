@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 863e1e8: Update tooling to Biome
+- Maintenance release: internal tooling updates.
 
 ## 1.0.1-beta.0
 

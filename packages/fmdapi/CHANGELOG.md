@@ -4,19 +4,12 @@
 
 ### Minor Changes
 
-- b73b0d7: Rebrand FM HTTP → FM MCP across the stack. The adapter, config fields, and all references now use `fm-mcp` / `FmMcp` naming to reflect the FileMaker MCP server branding.
-- b73b0d7: Add FM MCP adapter support for type generation, including local FM MCP metadata fetch flow, env name handling, and improved adapter error parsing.
+- b73b0d7: Rebrand FM HTTP → FM MCP across the stack to reflect the FileMaker MCP server branding. The adapter, config fields, and all references now use `fm-mcp` / `FmMcp`. Adds FM MCP adapter support for type generation, including local FM MCP metadata fetch flow, env name handling, and improved adapter error parsing.
 
 ### Patch Changes
 
-- 7c7f70a: swap docs domain to proofkit.proof.sh
-- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
-  - cli: Install typegen skills locally when scaffolding projects.
-  - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
-  - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
-- f3980b1: Update agent skill content: add warnings to prevent manually adding fields or inventing entity IDs in generated schema files, deduplicate common mistakes across skills with cross-refs to typegen-setup, and refresh remaining skill copy.
-- 863e1e8: Update tooling to Biome
-- 78cbab1: Update removeFMTableNames function for proper type-safety
+- f3980b1: Update agent skill content: add warnings to prevent manually adding fields or inventing entity IDs in generated schema files. Initial Codex skills for fmdapi client workflows.
+- 78cbab1: Improve type-safety of `removeFMTableNames`.
 
 ## 5.1.0-beta.5
 

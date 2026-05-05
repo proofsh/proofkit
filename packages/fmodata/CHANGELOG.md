@@ -30,31 +30,21 @@
 
 ### Patch Changes
 
-- 69fd3fb: BREAKING(@proofkit/better-auth): Use an fmodata `Database` instance instead of a raw OData config. Config now requires `database` (a fmodata `Database`) instead of `odata: { serverUrl, auth, database }`. This enables fetch overrides via `FMServerConnection`'s `fetchClientOptions`. Adapter and migration types are also made resilient to upstream Better Auth changes.
-- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
-  - cli: Install typegen skills locally when scaffolding projects.
-  - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
-  - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
 - b075656: Fix OData batch requests:
   - Use canonical FileMaker OData path format for batch sub-request URLs by stripping the Otto proxy prefix (`/otto/`) and `.fmp12` extension from database names inside multipart batch bodies (FileMaker's OData engine processes those directly).
   - Preserve caller-supplied `Content-Type` headers so the multipart boundary required by OData batch requests isn't overwritten.
   - Handle missing `Location` headers in batch insert/update sub-responses gracefully (return ROWID -1 instead of throwing `InvalidLocationHeaderError`).
 
-- 840c7c1: Fix unquoted date/time/timestamp values in OData filters and fix `Database.from()` mutating shared `_useEntityIds` state
 - 3d8cd82: Fix `insert()` and `update(..., { returnFullRecord: true })` to preserve merged `Prefer` headers for `fmodata.include-specialcolumns` and `fmodata.entity-ids`, and return special columns in typed full-record mutation responses.
-- 638f432: Fix `_makeRequestEffect` unconditionally overwriting the caller-supplied `Accept` header. `getMetadata({ format: "xml" })` was setting `Accept: application/xml` which got clobbered with `application/json`, causing the server to return JSON metadata that was then mis-cast to a string and handed to fast-xml-parser. Now the default Accept is only applied when the caller hasn't specified one. This unblocks `@proofkit/typegen` for fmodata configs.
-- e0a9443: Return structured query errors for invalid entity-id table refs and unresolved filter operands instead of throwing or sending malformed OData filters
-- 2cddedf: Fix `getMetadata()` key lookup when FileMaker Server returns the database name without `.fmp12` extension. Upgrade better-auth to 1.5.x (`createAdapter` → `createAdapterFactory`, removed `getAdapter`).
+- 840c7c1: Quote date/time/timestamp values correctly in OData filters, and fix `Database.from()` mutating shared `_useEntityIds` state.
+- c72543a: Allow `Date` objects as the second parameter for date, time, and timestamp filter operators (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`). Values are serialized to OData-friendly ISO strings (`YYYY-MM-DD` for date, `HH:mm:ss` for time, full ISO 8601 for timestamp).
 - b727425: Fix `navigate()` to include the parent table in the URL when `defaultSelect` is `"schema"` or an object (#107), and to preserve per-table `useEntityIds` settings.
-- f3980b1: Update agent skill content: add warnings to prevent manually adding fields or inventing entity IDs in generated schema files, deduplicate common mistakes across skills with cross-refs to typegen-setup, and refresh remaining skill copy.
-- c72543a: Allow Date objects as the second parameter for date, time, and timestamp filter operators (eq, ne, gt, gte, lt, lte). Date values are serialized to OData-friendly ISO strings (YYYY-MM-DD for date, HH:mm:ss for time, full ISO 8601 for timestamp).
-- e229b35: Add configurable database name normalization for OData and webhook requests.
-- 4072415: Add `useEntityIds` override parameter to `getQueryString()` methods in QueryBuilder and RecordBuilder, allowing users to override entity ID usage when inspecting query strings without executing requests.
+- 638f432: Stop overwriting caller-supplied `Accept` headers. `getMetadata({ format: "xml" })` previously had `Accept: application/xml` clobbered with `application/json`. The default is now only applied when the caller hasn't specified one — this also unblocks `@proofkit/typegen` for fmodata configs.
+- e229b35: Add configurable database name normalization for OData and webhook requests, and fix `getMetadata()` key lookup when FileMaker Server returns the database name without the `.fmp12` extension.
+- e0a9443: Return structured query errors for invalid entity-id table refs and unresolved filter operands instead of throwing or sending malformed OData filters.
 - c0ab6fd: Quote reserved `ID` field names case-insensitively in OData selects and filters.
-- 863e1e8: Update tooling to Biome
-- 1acca57: Update docs AI agent integration instructions
-
-  Updated quick-start and index docs to reference npx @tanstack/intent@latest instead of npx skills
+- 4072415: Add `useEntityIds` override parameter to `getQueryString()` on `QueryBuilder` and `RecordBuilder`, allowing users to override entity ID usage when inspecting query strings without executing requests.
+- f3980b1: Update agent skill content: add warnings to prevent manually adding fields or inventing entity IDs in generated schema files.
 
 ## 0.1.0-beta.42
 

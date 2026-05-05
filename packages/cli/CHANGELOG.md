@@ -5,31 +5,22 @@
 ### Major Changes
 
 - d3c7979: ProofKit CLI v2
-
-  Learn more in the docs: [https://proofkit.com/docs/cli/v2](https://proofkit.com/docs/cli/v2)
   - Rewrite the CLI internals on Effect for tagged errors, observability, composability, and cleaner top-level error output. User cancellations are unified and rendered consistently.
   - Refocus the CLI around project bootstrap and diagnostics: new `doctor` and placeholder `prompt` commands, updated default guidance and docs, and scaffolded typegen scripts now use the package-native `@proofkit/typegen` commands.
   - Default new projects to shadcn/ui. The legacy Mantine scaffold (`nextjs-mantine`) and the `--ui` init flag have been removed; existing Mantine projects are not actively supported.
-  - Limit `proofkit add` to supported ProofKit add-ons (the unused registry-backed install path is removed). To add new pages or auth, pass the component name (e.g. `proofkit add table/basic`); see the templates docs.
+  - Limit `proofkit add` to supported ProofKit add-ons (the unused registry-backed install path is removed). To add new pages or auth, pass the component name (e.g. `proofkit add table/basic`).
 
 ### Minor Changes
 
-- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
-  - cli: Install typegen skills locally when scaffolding projects.
-  - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
-  - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
-- b73b0d7: Rebrand FM HTTP → FM MCP across the stack. The adapter, config fields, and all references now use `fm-mcp` / `FmMcp` naming to reflect the FileMaker MCP server branding.
+- b73b0d7: Rebrand FM HTTP → FM MCP across the stack: adapter, config fields, and all references now use `fm-mcp` / `FmMcp` to reflect the FileMaker MCP server branding. Adds an optional `fmMcp` typegen config for using an FM MCP proxy during metadata fetching, revamps the Web Viewer Vite template, hardens `proofkit init` (ignores hidden files, improves non-interactive prompts, stops generating Cursor rules), installs typegen skills locally when scaffolding, and ships initial Codex skills for fmdapi/fmodata/webviewer.
 
 ### Patch Changes
 
-- c71b0d4: Add utils/fmdapi to registry
-- 7c7f70a: swap docs domain to proofkit.proof.sh
 - 41c07ba: Auto-detect non-interactive terminals for CLI commands in CI, scripted runs, and coding-agent environments.
 - 03294e5: Init now writes `CLAUDE.md` as `@AGENTS.md` and adds `.cursorignore` to keep `CLAUDE.md` out of Cursor scans.
 - bacdb7d: Make initial git commit failures non-blocking during CLI init.
 - 8818805: Fix `proofkit add addon` so it works outside an existing ProofKit project.
 - 63d309b: Fix browser FileMaker scaffolds to install `@proofkit/typegen` and run the local `typegen` bin during initial codegen.
-- 863e1e8: Update tooling to Biome
 - e6d0c55: Improve the local ProofKit MCP / FileMaker setup flow during webviewer init:
   - Install the local addon files before prompting that no FileMaker file is open.
   - After retry, report the connected FileMaker file and prompt to choose when multiple files are open.
@@ -38,11 +29,11 @@
   - Clarify the wording of the local FileMaker / ProofKit plugin setup prompts.
 
 - d5ca0e5: Preserve typed cancellation errors in the default project menu and wrap add/remove menu failures with stable error messages.
-- 9add5ca: Project name parsing for `proofkit init`: normalize whitespace to dashes, lowercase `.`-derived names from the current directory, clarify that `.` means the current directory, and preserve leading directory segments verbatim in `parseNameAndPath` (only the final segment is normalized, scoped names and `.` still work).
+- 9add5ca: Project name parsing for `proofkit init`: normalize whitespace to dashes, lowercase `.`-derived names from the current directory, clarify that `.` means the current directory, and preserve leading directory segments verbatim in `parseNameAndPath`.
 - be34116: Make scaffolded Web Viewer upload scripts use `deploy_html` as the canonical FileMaker script, with bridge-first and FMP URL fallback deployment.
-- 9efea04: Fix version warning
 - d7f86a4: Update newly scaffolded apps to use Ultracite for linting and formatting by default, including the generated `lint` and `format` scripts and CLI formatting flow.
-- e0ea042: updated addon to fix a bug in the SendCallback script
+- e0ea042: Update bundled FileMaker addon to fix a bug in the SendCallback script.
+- c71b0d4: Add `utils/fmdapi` helper to the ProofKit registry.
 - Updated dependencies 
   - @proofkit/typegen@1.1.0
   - @proofkit/fmdapi@5.1.0
