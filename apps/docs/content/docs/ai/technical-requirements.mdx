@@ -3,6 +3,8 @@ title: Technical Requirements
 description: What you need to build and run ProofKit v2 apps.
 ---
 
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
 ProofKit v2 is designed for FileMaker developers using agentic coding tools to build Web Viewer apps.
 
 ## FileMaker version
@@ -16,10 +18,51 @@ Future ProofKit releases will track the next major FileMaker release cycle so Pr
 To build ProofKit apps, you need:
 
 - **FileMaker Pro** with the target file open.
-- **Node.js LTS** installed locally.
+- **Node.js LTS** installed locally. Choose a release that is explicitly marked LTS. Today that means **Node.js 22** or **Node.js 24**.
 - **An MCP-compatible coding agent**, such as Cursor, Claude Code, Codex, OpenCode, or another agent that supports MCP servers.
 
 FileMaker Server is not required for the development loop. ProofKit can work against a local or hosted file as long as it is open in FileMaker Pro.
+
+## Node.js
+
+ProofKit projects use Node.js for the local development tools that scaffold, build, preview, and deploy Web Viewer apps. Pick an LTS release rather than the newest "Current" release. Node's odd-numbered releases are short-lived, and not every even-numbered release is the right choice forever; use a version that [nodejs.org marks as LTS](https://nodejs.org/en/download/).
+
+If you are not already managing Node versions, the native installer from nodejs.org is the simplest option.
+
+<Tabs items={["Native installer", "Homebrew", "Version manager"]}>
+  <Tab value="Native installer">
+    Download the LTS installer for macOS or Windows from [nodejs.org/download](https://nodejs.org/en/download/). Choose Node.js 24 LTS when available, or Node.js 22 LTS if your environment standardizes on it.
+
+    After installing, verify the version:
+
+    ```sh
+    node -v
+    npm -v
+    ```
+  </Tab>
+
+  <Tab value="Homebrew">
+    On macOS, Homebrew is convenient if you already use it. Install a versioned LTS formula instead of the unversioned `node` formula, which may track a newer non-LTS release.
+
+    ```sh
+    brew install node@24
+    node -v
+    ```
+
+    If `node` is not found after installation, run `brew info node@24` and follow Homebrew's PATH instructions.
+  </Tab>
+
+  <Tab value="Version manager">
+    Use a version manager if you switch between projects with different Node requirements.
+
+    ```sh
+    nvm install --lts
+    nvm use --lts
+    ```
+
+    `fnm` and Volta are good alternatives. The important part is pinning your project to an LTS line such as Node.js 24 or Node.js 22.
+  </Tab>
+</Tabs>
 
 ## Developer background
 
@@ -51,7 +94,7 @@ ProofKit v2 enables agentic coding of Web Viewer apps. It does not currently ena
 | --- | --- |
 | FileMaker version | FileMaker 22 or greater |
 | Agent environment | Any MCP-compatible agent |
-| Development requirements | FileMaker Pro and Node.js LTS |
+| Development requirements | FileMaker Pro and Node.js 22 or 24 LTS |
 | FileMaker Server | Not required for local development |
 | Runtime platforms | FileMaker Pro, FileMaker Go, WebDirect |
 | Agent writing scope | Web Viewer app code |
