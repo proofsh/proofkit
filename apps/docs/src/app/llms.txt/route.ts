@@ -1,5 +1,20 @@
 export const revalidate = false;
 
+const BASE_URL = "https://proofkit.proof.sh";
+
+const START_HERE = [
+  {
+    title: "ProofKit AI",
+    url: "/docs/ai",
+    desc: "Agent-focused guide for building FileMaker apps with ProofKit",
+  },
+  {
+    title: "Web Viewer Apps",
+    url: "/docs/webviewer",
+    desc: "Hybrid app model and FileMaker Web Viewer architecture",
+  },
+] as const;
+
 const PACKAGES = [
   { name: "fmdapi", desc: "FileMaker Data API client (REST)" },
   { name: "fmodata", desc: "FileMaker OData API client with Drizzle-like ORM" },
@@ -15,23 +30,23 @@ export function GET() {
     "",
     "> TypeScript tools and libraries for building web applications integrated with Claris FileMaker",
     "",
-    "## Packages",
+    "## Start Here",
     "",
   ];
 
-  for (const pkg of PACKAGES) {
-    lines.push(`- [${pkg.name}](https://proofkit.proof.sh/llms/${pkg.name}): ${pkg.desc}`);
+  for (const guide of START_HERE) {
+    lines.push(`- [${guide.title}](${BASE_URL}${guide.url}): ${guide.desc}`);
   }
 
   lines.push("");
   lines.push("## Full Documentation");
   lines.push("");
-  lines.push("- [/llms-full.txt](https://proofkit.proof.sh/llms-full.txt): Complete documentation (all packages)");
+  lines.push(`- [/llms-full.txt](${BASE_URL}/llms-full.txt): Complete documentation`);
   lines.push("");
-  lines.push("## Per-Package Documentation");
+  lines.push("## Package Documentation");
   lines.push("");
   for (const pkg of PACKAGES) {
-    lines.push(`- [/llms/${pkg.name}](https://proofkit.proof.sh/llms/${pkg.name})`);
+    lines.push(`- [${pkg.name}](${BASE_URL}/llms/${pkg.name}): ${pkg.desc}`);
   }
 
   return new Response(lines.join("\n"), {
