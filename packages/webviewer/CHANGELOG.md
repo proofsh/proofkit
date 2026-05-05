@@ -1,5 +1,20 @@
 # @proofkit/webviewer
 
+## 3.0.7
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- 8818805: Document the `proofkit add addon webviewer` command in the Web Viewer skill and setup docs.
+- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
+  - cli: Install typegen skills locally when scaffolding projects.
+  - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
+  - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
+- 5dda815: Soften the Vite FM bridge startup path when FM MCP responds but has no connected files. The dev server now logs a warning, injects a fallback bridge shim, and logs runtime errors if bridge calls are made before a file connects. Unreachable or unhealthy FM MCP still fails setup.
+- b73b0d7: Rebrand FM HTTP → FM MCP across the stack. The adapter, config fields, and all references now use `fm-mcp` / `FmMcp` naming to reflect the FileMaker MCP server branding.
+- 863e1e8: Update tooling to Biome
+- e6889d0: Update skill content
+
 ## 3.0.7-beta.5
 
 ### Patch Changes

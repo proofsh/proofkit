@@ -1,5 +1,50 @@
 # @proofkit/better-auth
 
+## 0.4.0
+
+### Minor Changes
+
+- 69fd3fb: BREAKING(@proofkit/better-auth): Use fmodata Database object instead of raw OData config.
+  Config now requires `database` (fmodata Database instance) instead of
+  `odata: { serverUrl, auth, database }`.
+  Enables fetch override via FMServerConnection's fetchClientOptions.
+- 2cddedf: Fix `getMetadata()` key lookup when FileMaker Server returns the database name without `.fmp12` extension. Upgrade better-auth to 1.5.x (`createAdapter` → `createAdapterFactory`, removed `getAdapter`).
+
+### Patch Changes
+
+- 2858f6a: Fix TypeScript build errors by making adapter/migration types resilient to upstream Better Auth changes.
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- 863e1e8: Update tooling to Biome
+- Updated dependencies [69fd3fb]
+- Updated dependencies [b73b0d7]
+- Updated dependencies [2f0f8f3]
+- Updated dependencies [b075656]
+- Updated dependencies [840c7c1]
+- Updated dependencies [ee4c951]
+- Updated dependencies [3d8cd82]
+- Updated dependencies [638f432]
+- Updated dependencies [e0a9443]
+- Updated dependencies [2cddedf]
+- Updated dependencies [b727425]
+- Updated dependencies [6c6b569]
+- Updated dependencies [f3980b1]
+- Updated dependencies [c5efdbd]
+- Updated dependencies [78a9f70]
+- Updated dependencies [c72543a]
+- Updated dependencies [e229b35]
+- Updated dependencies [7906ee8]
+- Updated dependencies [4072415]
+- Updated dependencies [c0ab6fd]
+- Updated dependencies [863e1e8]
+- Updated dependencies [ce73357]
+- Updated dependencies [553d386]
+- Updated dependencies [2c786d3]
+- Updated dependencies [e6889d0]
+- Updated dependencies [de21bbe]
+- Updated dependencies [ac7c9f4]
+- Updated dependencies [1acca57]
+  - @proofkit/fmodata@0.1.0
+
 ## 0.4.0-beta.18
 
 ### Patch Changes

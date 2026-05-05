@@ -1,5 +1,86 @@
 # @proofgeist/kit
 
+## 2.0.0
+
+### Major Changes
+
+- d3c7979: Rewrite the CLI package for better observability, composability, and error tracing.
+- d315ad9: Learn more about v2 in the docs: [https://proofkit.com/docs/cli/v2](https://proofkit.com/docs/cli/v2)
+
+  CLI now defaults to shadcn/ui for new projects. Legacy Mantine templates are still available via a hidden `--ui mantine` flag during `init`. The selected UI is persisted in `proofkit.json` as `ui`. Existing projects using Mantine may not be fully supported.
+
+  For adding new pages or auth via `proofkit add`, you will need to pass the name of the component you want to add, such as `proofkit add table/basic`. See new templates in the [docs](/docs/templates).
+
+### Minor Changes
+
+- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
+  - cli: Install typegen skills locally when scaffolding projects.
+  - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
+  - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
+- b73b0d7: Rebrand FM HTTP → FM MCP across the stack. The adapter, config fields, and all references now use `fm-mcp` / `FmMcp` naming to reflect the FileMaker MCP server branding.
+
+### Patch Changes
+
+- 5bc5504: Init(webviewer): if local FM MCP reports exactly 1 connected file, persist it to `proofkit-typegen.config.jsonc` as `fmMcp.connectedFileName` during scaffold.
+- c71b0d4: Add utils/fmdapi to registry
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- ee4c951: Clarify local FileMaker setup prompts for the ProofKit plugin flow.
+- 41c07ba: Auto-detect non-interactive terminals for CLI commands in CI, scripted runs, and coding-agent environments.
+- 1096f3b: Improve `proofkit init` error handling by using tagged Effect-based CLI errors for expected failures, unifying user cancellation, and rendering cleaner top-level error output.
+- 03294e5: Init now writes `CLAUDE.md` as `@AGENTS.md` and adds `.cursorignore` to keep `CLAUDE.md` out of Cursor scans.
+- bacdb7d: Make initial git commit failures non-blocking during CLI init.
+- 8818805: Fix `proofkit add addon` so it works outside an existing ProofKit project.
+- c79f183: Fix FileMaker webviewer init flow to install local addon files before prompting that no FileMaker file is open in the local MCP server.
+- 63d309b: Fix browser FileMaker scaffolds to install `@proofkit/typegen` and run the local `typegen` bin during initial codegen.
+- 4f40bfe: Normalize and validate `.`-derived CLI project names from the current directory consistently, including whitespace-to-dash conversion and lowercasing
+- db11fda: Normalize only the final path segment in `parseNameAndPath`, preserving leading directory segments verbatim while keeping scoped-name parsing and `.` handling intact
+- d8fba3f: Normalize non-interactive FileMaker layout names against live layout casing so hosted init and release smoke tests do not fail on case-only layout drift.
+- e3b25c3: Refocus the ProofKit CLI around project bootstrap and diagnostics by adding `doctor` and placeholder `prompt` commands, updating default guidance and docs, and switching scaffolded typegen scripts to package-native `@proofkit/typegen` commands.
+- 863e1e8: Update tooling to Biome
+- e6d0c55: Improve local ProofKit MCP setup messaging during webviewer init by reporting the connected FileMaker file after retry and prompting to choose a file when multiple files are open.
+- fe43be6: Drop the unused `nextjs-mantine` scaffold from the current CLI and always scaffold browser apps from `nextjs-shadcn`.
+- 46696e4: Require `proofkit init` to use an explicit local FileMaker file selection in non-interactive multi-file setups, and save the selected local file into the generated typegen config.
+- d5ca0e5: Preserve typed cancellation errors in the default project menu and wrap add/remove menu failures with stable error messages.
+- 9add5ca: Remove the `--ui` init flag. ProofKit now only scaffolds shadcn.
+- ee4c951: Restore the interactive project menu when running `proofkit` inside an existing ProofKit project.
+- 9add5ca: Allow spaces in project names by normalizing them to dashes
+- 18ade4d: Limit `proofkit add` to supported ProofKit add-ons and remove the unused registry-backed install path.
+- 9add5ca: Clarify that `.` uses the current directory for `proofkit init`
+- be34116: Make scaffolded Web Viewer upload scripts use `deploy_html` as the canonical FileMaker script, with bridge-first and FMP URL fallback deployment.
+- 9efea04: Fix version warning
+- d7f86a4: Update newly scaffolded apps to use Ultracite for linting and formatting by default, including the generated `lint` and `format` scripts and CLI formatting flow.
+- e0ea042: updated addon to fix a bug in the SendCallback script
+- Updated dependencies [7dbfd63]
+- Updated dependencies [ae07372]
+- Updated dependencies [7c7f70a]
+- Updated dependencies [c85574f]
+- Updated dependencies [b73b0d7]
+- Updated dependencies [2f0f8f3]
+- Updated dependencies [2df365d]
+- Updated dependencies [6da0c9a]
+- Updated dependencies [4e048d1]
+- Updated dependencies [f3980b1]
+- Updated dependencies [3b55d14]
+- Updated dependencies [23639ec]
+- Updated dependencies [4928637]
+- Updated dependencies [8ca7a1e]
+- Updated dependencies [7b46a23]
+- Updated dependencies [0643ddd]
+- Updated dependencies [b73b0d7]
+- Updated dependencies [b73b0d7]
+- Updated dependencies [863e1e8]
+- Updated dependencies [c031d74]
+- Updated dependencies [eb7d751]
+- Updated dependencies [dfe52a7]
+- Updated dependencies [e216e07]
+- Updated dependencies [4d9d0e9]
+- Updated dependencies [e6889d0]
+- Updated dependencies [c0c386e]
+- Updated dependencies [88242c2]
+- Updated dependencies [78cbab1]
+  - @proofkit/typegen@1.1.0
+  - @proofkit/fmdapi@5.1.0
+
 ## 2.0.0-beta.34
 
 ### Patch Changes
