@@ -1,8 +1,53 @@
+import type { Node, Root } from "fumadocs-core/page-tree";
 import { Banner } from "fumadocs-ui/components/banner";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
+import { BrainCircuit, Leaf } from "lucide-react";
 import type { ReactNode } from "react";
 import { baseOptions } from "@/app/layout.config";
 import { source } from "@/lib/source";
+
+const llmSidebarNodes: Node[] = [
+  {
+    type: "separator",
+    name: "For LLMs",
+  },
+  {
+    type: "page",
+    name: "llms.txt",
+    url: "/llms.txt",
+    external: true,
+    icon: <Leaf />,
+  },
+  {
+    type: "page",
+    name: "llms-full.txt",
+    url: "/llms-full.txt",
+    external: true,
+    icon: <BrainCircuit />,
+  },
+];
+
+const docsTree = appendLlmLinks(source.pageTree);
+
+function appendLlmLinks(tree: Root): Root {
+  return {
+    ...tree,
+    children: [...tree.children.map(appendLlmLinksToNode), ...llmSidebarNodes],
+  };
+}
+
+function appendLlmLinksToNode(node: Node): Node {
+  if (node.type !== "folder") {
+    return node;
+  }
+
+  const children = node.children.map(appendLlmLinksToNode);
+
+  return {
+    ...node,
+    children: node.root ? [...children, ...llmSidebarNodes] : children,
+  };
+}
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -12,7 +57,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         &nbsp;🚧&nbsp;Keep checking back for updates!
       </Banner>
       <DocsLayout
-        tree={source.pageTree}
+        tree={docsTree}
         {...baseOptions}
         containerProps={{
           className: "[--fd-layout-width:100%]",

@@ -1,6 +1,7 @@
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
 import { notFound } from "next/navigation";
+import { LLMCopyButton, ViewOptions } from "@/components/ai/page-actions";
 import { source } from "@/lib/source";
 import { getMDXComponents } from "@/mdx-components";
 
@@ -12,6 +13,8 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
   }
 
   const { body: MDXContent, toc } = await page.data.load();
+  const githubUrl = `https://github.com/proofsh/proofkit/blob/main/apps/docs/content/docs/${page.path}`;
+  const markdownUrl = `${page.url}.mdx`;
 
   return (
     <DocsPage
@@ -26,6 +29,10 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
     >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
+      <div className="flex flex-row items-center gap-2 border-b pt-2 pb-6">
+        <LLMCopyButton markdownUrl={markdownUrl} />
+        <ViewOptions githubUrl={githubUrl} markdownUrl={markdownUrl} />
+      </div>
       <DocsBody>
         <MDXContent
           components={getMDXComponents({
