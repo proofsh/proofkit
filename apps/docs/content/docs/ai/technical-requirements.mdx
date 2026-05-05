@@ -18,7 +18,7 @@ Future ProofKit releases will track the next major FileMaker release cycle so Pr
 To build ProofKit apps, you need:
 
 - **FileMaker Pro** with the target file open.
-- **Node.js LTS** installed locally. Choose a release that is explicitly marked LTS. Today that means **Node.js 22** or **Node.js 24**.
+- **Node.js LTS** installed locally. Choose a release that is explicitly marked LTS. Today that means **Node.js 22**, **Node.js 24**, or **Node.js 26**.
 - **An MCP-compatible coding agent**, such as Cursor, Claude Code, Codex, OpenCode, or another agent that supports MCP servers.
 
 FileMaker Server is not required for the development loop. ProofKit can work against a local or hosted file as long as it is open in FileMaker Pro.
@@ -31,7 +31,7 @@ If you are not already managing Node versions, the native installer from nodejs.
 
 <Tabs items={["Native installer", "Homebrew", "Version manager"]}>
   <Tab value="Native installer">
-    Download the LTS installer for macOS or Windows from [nodejs.org/download](https://nodejs.org/en/download/). Choose Node.js 24 LTS when available, or Node.js 22 LTS if your environment standardizes on it.
+    Download the LTS installer for macOS or Windows from [nodejs.org/download](https://nodejs.org/en/download/). Choose Node.js 26 LTS when available, or Node.js 24 LTS or Node.js 22 LTS if your environment standardizes on one of those versions.
 
     After installing, verify the version:
 
@@ -60,7 +60,7 @@ If you are not already managing Node versions, the native installer from nodejs.
     nvm use --lts
     ```
 
-    `fnm` and Volta are good alternatives. The important part is pinning your project to an LTS line such as Node.js 24 or Node.js 22.
+    `fnm` and Volta are good alternatives. The important part is pinning your project to an LTS line such as Node.js 26, Node.js 24, or Node.js 22.
   </Tab>
 </Tabs>
 
@@ -94,7 +94,7 @@ ProofKit v2 enables agentic coding of Web Viewer apps. It does not currently ena
 | --- | --- |
 | FileMaker version | FileMaker 22 or greater |
 | Agent environment | Any MCP-compatible agent |
-| Development requirements | FileMaker Pro and Node.js 22 or 24 LTS |
+| Development requirements | FileMaker Pro and Node.js 22, 24, or 26 LTS |
 | FileMaker Server | Not required for local development |
 | Runtime platforms | FileMaker Pro, FileMaker Go, WebDirect |
 | Agent writing scope | Web Viewer app code |
