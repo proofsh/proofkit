@@ -14,15 +14,14 @@ const WHITESPACE_RE = /\s+/;
 
 /**
  * Renders a tabbed package install command.
- * Automatically appends @{cliVersion} to @proofkit/* packages unless version is already specified.
+ * Appends @{cliVersion} to @proofkit/* packages when configured unless version is already specified.
  */
 export function PackageInstall({ packages, global: isGlobal }: { packages: string; global?: boolean }) {
   const pkgs = packages
     .trim()
     .split(WHITESPACE_RE)
     .map((pkg) => {
-      // If it's a @proofkit package without a version, append the cliVersion
-      if (pkg.startsWith("@proofkit/") && !pkg.includes("@", 1)) {
+      if (cliVersion && pkg.startsWith("@proofkit/") && !pkg.includes("@", 1)) {
         return `${pkg}@${cliVersion}`;
       }
       return pkg;

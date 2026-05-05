@@ -1,2 +1,2 @@
-// which version of the CLI to use in the docs
-export const cliVersion: "latest" | "beta" = "beta";
+// Optional npm dist-tag to pin in docs commands.
+export const cliVersion: "latest" | "beta" | undefined = undefined;

@@ -2,10 +2,12 @@ import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { cliVersion } from "@/lib/constants";
 
+const versionSuffix = cliVersion ? `@${cliVersion}` : "";
+
 const MANAGERS = [
-  { key: "pnpm", label: "pnpm", command: `pnpm create proofkit@${cliVersion}` },
-  { key: "npm", label: "npm", command: `npx create-proofkit@${cliVersion}` },
-  { key: "yarn", label: "yarn", command: `yarn create proofkit@${cliVersion}` },
+  { key: "pnpm", label: "pnpm", command: `pnpm create proofkit${versionSuffix}` },
+  { key: "npm", label: "npm", command: `npx create-proofkit${versionSuffix}` },
+  { key: "yarn", label: "yarn", command: `yarn create proofkit${versionSuffix}` },
 ];
 
 export function InitCommand() {

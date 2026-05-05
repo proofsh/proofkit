@@ -7,10 +7,6 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 The typegen tool supports OData-based type generation using the `fmodata` config type. This is configured using the `proofkit-typegen-config.jsonc` file at the root of your project.
 
-<Callout type="warn">
-The `@proofkit/fmodata` package is still in beta. Some of these options may change.
-</Callout>
-
 The config key can also be an array of configs, which is useful if you need to connect to multiple databases, or with different settings for different sets of tables.
 
 ```jsonc title="proofkit-typegen-config.jsonc" tab="Single OData config"
@@ -291,4 +287,3 @@ Here's a complete example of an OData configuration:
   }
 }
 ```
-

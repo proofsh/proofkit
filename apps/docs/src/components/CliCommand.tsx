@@ -50,7 +50,7 @@ export function CliCommand({
     return pkg.includes("@");
   };
   const shouldAppendVersion = packageName.startsWith("@proofkit/") && !hasVersionSpecifier(packageName);
-  const pkg = execPackage ?? (shouldAppendVersion ? `${packageName}@${cliVersion}` : packageName);
+  const pkg = execPackage ?? (shouldAppendVersion && cliVersion ? `${packageName}@${cliVersion}` : packageName);
   return (
     <Tabs groupId="package-manager" id="package-manager" items={MANAGERS.map((m) => m.label)} persist>
       {MANAGERS.map((manager) => (
