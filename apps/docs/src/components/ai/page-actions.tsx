@@ -32,7 +32,12 @@ export function LLMCopyButton({
     setLoading(true);
 
     try {
-      const promise = fetch(markdownUrl).then((res) => res.text());
+      const promise = fetch(markdownUrl)
+        .then((res) => res.text())
+        .catch((error) => {
+          cache.delete(markdownUrl);
+          throw error;
+        });
       cache.set(markdownUrl, promise);
       await navigator.clipboard.write([
         new ClipboardItem({
