@@ -3,34 +3,23 @@ title: Agent Workflow
 description: How ProofKit closes the loop for coding agents building FileMaker apps.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
+import { AgentWorkflowLoop } from "@/components/AgentWorkflowLoop";
 
 ProofKit is designed for agents that can do more than produce snippets. The workflow gives the agent real FileMaker context, a project it can edit, and feedback it can use to fix mistakes.
 
 ## The loop
 
-```mermaid
-flowchart LR
-  readSchema["Read FileMaker schema"] --> writeCode["Write app code"]
-  writeCode --> runChecks["Run typecheck and lint"]
-  runChecks --> previewApp["Preview in browser"]
-  previewApp --> fixIssues["Fix issues"]
-  fixIssues --> deployApp["Deploy to FileMaker"]
-  fixIssues --> writeCode
-```
+<AgentWorkflowLoop />
 
 ## What each step needs
 
+- **Next change**: the user asks for a new screen, behavior, or refinement.
 - **Read FileMaker schema**: the MCP server exposes file metadata and data context to the agent.
 - **Write app code**: the agent edits a normal web project using React, TypeScript, Tailwind, and shadcn/ui.
 - **Run checks**: TypeGen and TypeScript catch many schema and field-name mistakes before runtime.
 - **Preview in browser**: the agent can inspect the app as it runs, not just reason about code.
 - **Fix issues**: errors, screenshots, and build output become feedback for the next edit.
 - **Deploy to FileMaker**: the final bundle is pushed into the file and loaded by the Web Viewer.
-
-<Callout title="TODO: Diagram - Agent workflow">
-  Replace or polish the Mermaid diagram with the final agent workflow visual if a branded SVG or React component is created.
-</Callout>
 
 ## Why this matters
 

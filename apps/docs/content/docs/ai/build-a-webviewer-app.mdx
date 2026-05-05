@@ -3,7 +3,6 @@ title: Build a Web Viewer App
 description: Scaffold and iterate on a FileMaker Web Viewer app with your coding agent.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
 After ProofKit is connected and your agent understands the file, switch from exploration to building. The goal is a local web project that previews in the browser and can later be deployed into FileMaker.
@@ -14,23 +13,39 @@ After ProofKit is connected and your agent understands the file, switch from exp
   <Step>
     **Ask the agent to scaffold a Web Viewer project.**
 
+    Open your coding agent, such as Cursor, Claude Code, Codex, OpenCode, or another MCP-compatible agent, in an empty project folder before you start.
+
+    Copy this prompt into your agent:
+
+    ```text title="Prompt"
+    Set up a ProofKit Web Viewer project in this folder.
+    ```
+
     The project should use the ProofKit CLI and the current ProofKit stack: React, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query, and TypeGen.
   </Step>
 
   <Step>
     **Run the local preview.**
 
-    The agent should start the dev server and open the app in a browser so it can inspect the result.
+    The agent should start the dev server and open the app in a browser so it can inspect the result. Agents also have embedded browsers, so they can inspect the result without leaving the agentic loop. If the agent doesn't open a browser, ask it to use it's preview browser.
 
-    <Callout title="TODO: Screenshot - Local preview">
-      Capture the generated Web Viewer app running locally in a browser with FileMaker-backed data visible.
-    </Callout>
+    ```text title="Prompt"
+    Use your embedded browser or preview browser to inspect and monitor your work.
+    ```
   </Step>
 
   <Step>
     **Ask for a specific screen.**
 
     Start with one workflow: a dashboard, detail view, calendar, kanban board, rich form, or data grid.
+
+    ```text title="Prompt"
+    Build a customer viewer with a searchable list view.
+    ```
+
+    ![Local preview of a generated ProofKit Web Viewer app showing FileMaker-backed customer data.](/screenshots/ai/local-preview-filemaker-webviewer.png)
+
+    _After you ask the agent to build a screen, the desktop session can look like this: agent messages on the left and an embedded browser preview on the right, showing FileMaker data from the connected FileMaker file._
   </Step>
 
   <Step>
@@ -40,21 +55,19 @@ After ProofKit is connected and your agent understands the file, switch from exp
   </Step>
 </Steps>
 
-## Prompt shape
-
-```text
-Build a ProofKit Web Viewer screen for the Contacts workflow.
-Use the FileMaker layouts and fields you discovered earlier.
-Start with a read-only list and detail view, then run checks and preview it in the browser.
-```
-
 ## Style and theme
 
 ProofKit projects use shadcn/ui and Tailwind, so the agent can apply a theme or preset by editing normal project files.
 
-<Callout title="TODO: Screenshot - Theme applied">
-  Capture a before/after of a generated screen after applying a shadcn/ui preset or branded theme.
-</Callout>
+Use [shadcn/ui Create](https://ui.shadcn.com/create?) to explore visual presets. Copy a preset code, then ask your agent to apply it to the project to quickly change colors, typography, icons, and component styling.
+
+```text title="Prompt"
+Apply this shadcn/ui preset to the project: <preset-code>
+```
+
+![The same generated customer viewer after applying a different visual preset.](/screenshots/ai/theme-preset-filemaker-webviewer.png)
+
+_The same generated screen after applying a different preset, with updated colors, typography, and corner radiuses._
 
 ## Reference docs
 

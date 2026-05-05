@@ -3,32 +3,45 @@ title: Deploy to FileMaker
 description: Bundle your Web Viewer app and deploy it into a FileMaker file.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
 Deployment for a ProofKit Web Viewer app means bundling the web app and storing it in your FileMaker file so it can load inside a Web Viewer layout.
 
 This is different from deploying a browser app to a hosting provider. The deployed artifact is HTML and JavaScript living in the FileMaker file.
 
+## Ask the agent to deploy
+
+Once the app works locally and FileMaker is connected to ProofKit, you can ask the agent to handle deployment for you:
+
+```text title="Prompt"
+Deploy the app to my connected file maker file.
+```
+
+The agent should treat deployment as a release step, not just a file copy. It should run available checks, build the production bundle, deploy the generated HTML through ProofKit, and then verify the result inside FileMaker.
+
+Because `deploy_html` writes the bundled app into the connected FileMaker file, only run it against the file you mean to update. If users are connected to a production file, they may see the change immediately, so prefer a development file or a controlled deployment window. Most MCP clients let you disable tools or toggle automatic prompting for individual tools; keep deployment approval on unless you are intentionally working in a safe dev environment.
+
 ## Deploy the app
+
+When you ask the agent to deploy the app, it should run through these steps for you. The final verification step is the one you should review yourself inside FileMaker.
 
 <Steps>
   <Step>
     **Run checks before deployment.**
 
-    Ask the agent to run the project checks it has available, such as typechecking, linting, and a production build.
+    The agent runs the project checks it has available, such as typechecking, linting, and a production build.
   </Step>
 
   <Step>
     **Bundle the Web Viewer app.**
 
-    The project build should produce a deployable single-file bundle for the FileMaker Web Viewer.
+    The agent builds the project into a deployable single-file bundle for the FileMaker Web Viewer.
   </Step>
 
   <Step>
     **Deploy through ProofKit.**
 
-    ProofKit sends the bundle through the local bridge and stores it in the FileMaker file.
+    The agent uses ProofKit to send the bundle through the local bridge and store it in the FileMaker file.
   </Step>
 
   <Step>
@@ -36,9 +49,9 @@ This is different from deploying a browser app to a hosting provider. The deploy
 
     Navigate to the Web Viewer layout and confirm the deployed app loads with real data.
 
-    <Callout title="TODO: Screenshot - Deployed app in FileMaker">
-      Capture the finished app running inside a FileMaker Web Viewer layout.
-    </Callout>
+    ![A deployed ProofKit dashboard running inside a FileMaker Web Viewer layout.](/screenshots/ai/deployed-filemaker-webviewer.png)
+
+    _A deployed ProofKit app running inside FileMaker, with FileMaker's layout chrome around the Web Viewer and live FileMaker data rendered in the dashboard._
   </Step>
 </Steps>
 

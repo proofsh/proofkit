@@ -10,7 +10,7 @@ ProofKit has two related architectures: the development loop that lets an agent 
 ## Development architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
   agent["Coding agent"] <-->|"MCP"| mcp["ProofKit MCP server"]
   mcp <-->|"Local API"| plugin["FileMaker plug-in"]
   plugin <-->|"Script calls"| addon["ProofKit add-on"]
@@ -20,30 +20,35 @@ flowchart LR
   bundle --> file
 ```
 
-<Callout title="TODO: Diagram - Development architecture">
-  Replace or polish this Mermaid diagram with the final branded architecture visual if needed.
+<Callout title="Connection labels">
+  - **MCP**: Model Context Protocol, the tool protocol the coding agent uses to talk to the ProofKit MCP server.
+  - **Local API**: The local bridge between the ProofKit MCP server and the FileMaker plug-in.
+  - **Script calls**: FileMaker script execution used by the plug-in and add-on to work with your FileMaker file.
 </Callout>
 
 ## Runtime architecture
 
 ```mermaid
 flowchart LR
-  user["User"] <--> webviewer["Web Viewer React app"]
-  webviewer <-->|"JSON through script bridge"| scripts["FileMaker scripts"]
-  scripts <--> database["FileMaker database"]
+  webviewer["Web Viewer app"]
+  webviewer -->|"ProofKit type safe<br/>client"| executeDataApi["Execute Data<br/>API Step"]
+  webviewer -->|"fmFetch()"| scripts["FileMaker scripts"]
+  executeDataApi --> database["FileMaker database"]
+  scripts --> database
   scripts --> externalApis["External APIs"]
   scripts --> fileSystem["File system"]
   scripts --> printing["Printing and PDF"]
 ```
 
-<Callout title="TODO: Diagram - Runtime architecture">
-  Replace or polish this Mermaid diagram with the final runtime/data-flow visual.
+<Callout title="Connection labels">
+  - **ProofKit type safe client**: Generated client code that calls FileMaker's Data API through the Execute Data API script step.
+  - **fmFetch()**: A lightweight script bridge for calling FileMaker scripts from the Web Viewer app.
 </Callout>
 
 ## How to think about it
 
 - During development, the agent uses ProofKit tools to understand the FileMaker file and deploy bundles.
-- At runtime, the deployed web app talks to FileMaker scripts through the Web Viewer bridge.
+- At runtime, the deployed web app talks to FileMaker through fmFetch scripts and the type-safe Data API path.
 - FileMaker scripts remain the secure place for privileged operations, external API secrets, filesystem work, and print/PDF flows.
 
 ## Related pages

@@ -178,3 +178,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .prose img {
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+}
