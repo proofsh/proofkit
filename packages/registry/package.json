@@ -1,6 +1,6 @@
 {
   "name": "@proofkit/registry",
-  "version": "1.0.1-beta.0",
+  "version": "1.0.1",
   "private": true,
   "description": "ProofKit registry containing types and templates",
   "type": "module",

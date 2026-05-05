@@ -1,5 +1,47 @@
 # @proofkit/typegen
 
+## 1.1.0
+
+### Minor Changes
+
+- 7dbfd63: Add optional `postGenerateCommand` config option to run a custom formatter after typegen completes. Specify any CLI command (e.g., `pnpm biome format --write` or `npx prettier --write`) and the generated output paths are appended as arguments. Configurable in the typegen UI under Global Settings. The command runs once after all configs (not per config).
+- b73b0d7: - cli: Revamp the Web Viewer Vite template and harden `proofkit init` (ignore hidden files, improve non-interactive prompts, stop generating Cursor rules).
+  - cli: Install typegen skills locally when scaffolding projects.
+  - typegen: Add optional `fmMcp` config for using an FM MCP proxy during metadata fetching.
+  - fmdapi/fmodata/webviewer: Add initial Codex skills for client and integration workflows.
+- 2f0f8f3: Add Claris ID auth support for `fmodata` FileMaker Cloud connections, including CLI and typegen env/config support.
+- b73b0d7: Rebrand FM HTTP → FM MCP across the stack. The adapter, config fields, and all references now use `fm-mcp` / `FmMcp` naming to reflect the FileMaker MCP server branding.
+- b73b0d7: Add FM MCP adapter support for type generation, including local FM MCP metadata fetch flow, env name handling, and improved adapter error parsing.
+- c0c386e: New command: `npx @proofkit/typegen@latest ui` will launch a web UI for configuring and running your typegen config.
+  (beta) support for @proofkit/fmodata typegen config.
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- c85574f: Lazy-load `@proofkit/fmdapi` and `@proofkit/fmodata` inside `@proofkit/typegen` so fmdapi-only and fmodata-only setups do not hard-require the other package at runtime. Both remain regular dependencies (not optional peers) to avoid `ERR_MODULE_NOT_FOUND` when running typegen via `npx`.
+- 2df365d: Export `buildSchema` from the root `@proofkit/typegen` entrypoint so consumers can call it directly without importing internal package paths.
+- 6da0c9a: Widen OData client error typing to include message and details payloads from env/config validation.
+- 4e048d1: Fix fmodata type generation to preserve existing field-level customizations even when `clearOldFiles` is enabled.
+
+  Stale files in the output directory are now removed after regeneration, so dead generated files are still cleaned up without discarding validator customizations from existing schemas.
+
+- f3980b1: Update agent skill content: add warnings to prevent manually adding fields or inventing entity IDs in generated schema files, deduplicate common mistakes across skills with cross-refs to typegen-setup, and refresh remaining skill copy.
+- 3b55d14: Web UI improvements:
+  - Fix 431 "Request Header Fields Too Large" errors by omitting cookies from API requests and converting the `list-tables` endpoint from GET to POST.
+  - Add a retry button to the error state, highlight matching text in table search, and allow closing all accordions.
+
+- 23639ec: Fix generated client authentication type detection to use OttoAdapter when OTTO_API_KEY environment variable is set with default names
+- 4928637: Fix odata generated client validators: correct boolean transformations on `Edm.Boolean` fields, stop duplicating `readValidator`/`writeValidator` for those fields on regeneration, and preserve inline validator helpers in generated odata files.
+- 8ca7a1e: Fix overflow in metadata fields dialog where bottom settings form overlapped with data grid
+- 7b46a23: Fix typegen client index generation when multiple fmdapi configs write to the same output path
+- 863e1e8: Update tooling to Biome
+- c031d74: Improve `parseMetadata` error messages: when the OData metadata response is missing `<edmx:Edmx>`, surface a response excerpt and recognize common failure modes (empty body, JSON error payload, HTML login redirect) instead of throwing the opaque "No Edmx element found in XML".
+- e216e07: UI updates
+- 4d9d0e9: Add type import to the `InferZodPortals` import
+- Updated dependencies 
+  - @proofkit/fmodata@0.1.0
+  - @proofkit/fmdapi@5.1.0
+
 ## 1.1.0-beta.27
 
 ### Patch Changes

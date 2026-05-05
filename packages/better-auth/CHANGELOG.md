@@ -1,5 +1,19 @@
 # @proofkit/better-auth
 
+## 0.4.0
+
+### Minor Changes
+
+- 69fd3fb: BREAKING(@proofkit/better-auth): Use an fmodata `Database` instance instead of a raw OData config. Config now requires `database` (a fmodata `Database`) instead of `odata: { serverUrl, auth, database }`. This enables fetch overrides via `FMServerConnection`'s `fetchClientOptions`. Adapter and migration types are also made resilient to upstream Better Auth changes.
+- 2cddedf: Fix `getMetadata()` key lookup when FileMaker Server returns the database name without `.fmp12` extension. Upgrade better-auth to 1.5.x (`createAdapter` → `createAdapterFactory`, removed `getAdapter`).
+
+### Patch Changes
+
+- 7c7f70a: swap docs domain to proofkit.proof.sh
+- 863e1e8: Update tooling to Biome
+- Updated dependencies
+  - @proofkit/fmodata@0.1.0
+
 ## 0.4.0-beta.18
 
 ### Patch Changes

@@ -107,4 +107,16 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - run: pnpm dlx pkg-pr-new publish './packages/*' --packageManager=pnpm
+      - name: Publish preview packages
+        run: |
+          for attempt in 1 2 3; do
+            if pnpm dlx pkg-pr-new publish './packages/*' --packageManager=pnpm; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+
+            sleep $((attempt * 15))
+          done
