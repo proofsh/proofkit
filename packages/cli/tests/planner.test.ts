@@ -14,8 +14,8 @@ describe("planInit", () => {
     expect(plan.templateDir).toBe("/templates/browser");
     expect(plan.packageJson.name).toBe("demo-app");
     expect(plan.settings.appType).toBe("browser");
-    expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe("beta");
-    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
+    expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe("latest");
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
     expect(plan.tasks.runInstall).toBe(true);
     expect(plan.tasks.initializeGit).toBe(true);
     expect(plan.tasks.bootstrapFileMaker).toBe(false);
@@ -35,8 +35,8 @@ describe("planInit", () => {
       },
     );
 
-    expect(plan.packageJson.dependencies["@proofkit/webviewer"]).toBe("beta");
-    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
+    expect(plan.packageJson.dependencies["@proofkit/webviewer"]).toBe("latest");
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
     expect(plan.tasks.runInstall).toBe(false);
     expect(plan.tasks.initializeGit).toBe(false);
     expect(plan.tasks.checkWebViewerAddon).toBe(true);
@@ -53,9 +53,9 @@ describe("planInit", () => {
       },
     );
 
-    expect(plan.packageJson.dependencies["@proofkit/fmdapi"]).toBe("beta");
+    expect(plan.packageJson.dependencies["@proofkit/fmdapi"]).toBe("latest");
     expect(plan.packageJson.dependencies.zod).toBe("^4");
-    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
   });
 
   it("plans filemaker bootstrap and initial codegen when inputs are explicit", () => {

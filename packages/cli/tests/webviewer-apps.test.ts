@@ -44,7 +44,7 @@ describe("Web Viewer CLI Tests", () => {
     const packageJson = JSON.parse(readFileSync(join(projectDir, "package.json"), "utf-8"));
     expect(packageJson.scripts.typegen).toBe("npx @proofkit/typegen");
     expect(packageJson.scripts["typegen:ui"]).toBe("npx @proofkit/typegen ui");
-    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("beta");
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
 
     const proofkitConfig = JSON.parse(readFileSync(join(projectDir, "proofkit.json"), "utf-8"));
     expect(proofkitConfig.appType).toBe("webviewer");

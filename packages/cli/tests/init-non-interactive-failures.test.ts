@@ -187,7 +187,7 @@ describe("Init Non-Interactive Failure Paths", () => {
       devDependencies?: Record<string, string>;
     };
     expect(packageJson.scripts?.typegen).toBe("typegen");
-    expect(packageJson.devDependencies?.["@proofkit/typegen"]).toBe("beta");
+    expect(packageJson.devDependencies?.["@proofkit/typegen"]).toBe("latest");
     expect(output).not.toMatch(typegenCommandPattern);
   });
 });

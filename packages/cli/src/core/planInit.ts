@@ -3,7 +3,8 @@ import type { PackageJson } from "type-fest";
 
 import type { InitPlan, InitRequest, ProofKitSettings } from "~/core/types.js";
 import { formatPackageManagerCommand, getScaffoldVersion, getTemplatePackageCommand } from "~/utils/projectFiles.js";
-import { getNodeMajorVersion, getProofkitReleaseTag } from "~/utils/versioning.js";
+import { getProofkitReleaseTag } from "~/utils/proofkitReleaseChannel.js";
+import { getNodeMajorVersion } from "~/utils/versioning.js";
 
 function createDefaultSettings(request: InitRequest): ProofKitSettings {
   return {
