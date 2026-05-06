@@ -33,11 +33,13 @@ const MANAGERS = [
 export function CliCommand({
   command,
   exec,
+  script,
   execPackage,
   packageName = "@proofkit/cli",
 }: {
   command: string;
   exec?: boolean;
+  script?: boolean;
   /** @deprecated Use packageName instead */
   execPackage?: string;
   packageName?: string;
@@ -51,11 +53,31 @@ export function CliCommand({
   };
   const shouldAppendVersion = packageName.startsWith("@proofkit/") && !hasVersionSpecifier(packageName);
   const pkg = execPackage ?? (shouldAppendVersion && cliVersion ? `${packageName}@${cliVersion}` : packageName);
+  const getCommand = (manager: (typeof MANAGERS)[number]) => {
+    if (exec) {
+      return `${manager.execPrefix} ${pkg} ${command}`;
+    }
+
+    if (script) {
+      if (manager.key === "npm") {
+        return `${manager.prefix} ${command}`;
+      }
+
+      if (manager.key === "bun") {
+        return `${manager.prefix} run ${command}`;
+      }
+
+      return `${manager.prefix} ${command}`;
+    }
+
+    return `${manager.prefix} ${command}`;
+  };
+
   return (
     <Tabs groupId="package-manager" id="package-manager" items={MANAGERS.map((m) => m.label)} persist>
       {MANAGERS.map((manager) => (
         <Tab key={manager.key} value={manager.label}>
-          <DynamicCodeBlock code={`${exec ? `${manager.execPrefix} ${pkg}` : manager.prefix} ${command}`} lang="bash" />
+          <DynamicCodeBlock code={getCommand(manager)} lang="bash" />
         </Tab>
       ))}
     </Tabs>

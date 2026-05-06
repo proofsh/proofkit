@@ -1,0 +1,65 @@
+---
+title: Updating ProofKit
+description: Re-run the installer, then reconnect FileMaker, reinstall the add-on, and redeploy your apps.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { CliCommand } from "@/components/CliCommand";
+
+To update ProofKit, simply run the latest installer on your system. Sometimes this is all you need to do. If, however, you also want to update the add-on that was installed in your FileMaker file, you'll need to follow a few extra steps.
+
+## Download the latest installer
+
+- [Download for macOS](/download/mac)
+- [Download for Windows](/download/win)
+
+## Updating the Add-on in FileMaker
+
+<Steps>
+
+  <Step>
+    **Restart FileMaker Pro** if it was running during the installation process. 
+
+    Close FileMaker Pro fully, then open it again before you continue.
+  </Step>
+
+  <Step>
+    **Uninstall the ProofKit add-on from your FileMaker file.**
+
+  <Callout type="warn" title="Important">
+      This may remove all previously deployed apps from your file. You will need to make sure that you still have the source code (a folder on your computer) so you can deploy them again in a later step. 
+  </Callout>
+
+  Go into layout mode and the add-ons tab on the left sidebar. Right-click the ProofKit add-on and choose to uninstall. 
+  </Step>
+
+   <Step>
+    **Install the Add-on again.**
+
+After installation, you can verify that the new add-on was installed by checking the version number in any of the ProofKit scripts.
+  </Step>
+
+
+
+  <Step>
+    **Redeploy your apps into the FileMaker file.**
+
+    <Callout type="info" title="Don't forget to Connect to MCP">
+      Remember to run the "Connect to MCP" script in order to open the connection to your FileMaker file before deploying.
+  </Callout>
+
+    Any Web Viewer apps you want available in that file should be deployed again from their local source folders. You can either ask your coding agent to do this for you or run this command within that folder:
+
+    <CliCommand command="build:upload" script />
+  </Step>
+</Steps>
+
+
+
+
+
+## Related guides
+
+- [Install and Connect](/docs/ai/install-and-connect)
+- [Deploy to FileMaker](/docs/ai/deploy-to-filemaker)
