@@ -44,7 +44,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
       {/* Hero — always dark */}
-      <section className="relative isolate min-h-[90vh] overflow-hidden bg-black text-white">
+      <section className="relative isolate min-h-[100vh] overflow-hidden bg-black text-white">
         <div className="absolute inset-0">
           <DarkVeil
             hueShift={315}
@@ -62,7 +62,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/35 to-black" />
         <div className="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[#D15ABB]/25 to-transparent blur-3xl" />
 
-        <div className="relative z-10 mx-auto flex min-h-[90vh] w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
+        <div className="relative z-10 mx-auto flex min-h-[100vh] w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
           <MarketingNav variant="dark" />
 
           <div className="flex flex-1 flex-col pt-12 text-center">
