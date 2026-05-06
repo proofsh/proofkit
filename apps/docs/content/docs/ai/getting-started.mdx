@@ -3,38 +3,39 @@ title: Getting Started
 description: Follow the ProofKit AI path from install to deployed Web Viewer app.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
-This guide is the happy path for ProofKit v2. It mirrors the planned video series: install and connect, explore your FileMaker file, build a Web Viewer app, and deploy it back into FileMaker.
+This page is the overview for the ProofKit v2 happy path. Use it to understand the sequence: install ProofKit, connect and verify your FileMaker file, explore your file, build a Web Viewer app, and deploy it back into FileMaker.
 
-<Callout title="TODO: Video - Full getting started walkthrough">
-  Embed the complete install-to-deploy walkthrough here, or link to the four individual videos once they are published.
-</Callout>
+Each step below links to a focused guide with the detailed walkthrough. Those guides are where you will find the step-by-step instructions and companion videos for install, exploration, Web Viewer development, deployment, and related workflows.
 
 ## Before you start
 
 You need FileMaker Pro, a supported Node.js LTS release, and an MCP-compatible coding agent such as Cursor, Claude Code, Codex, OpenCode, or another agent that can use MCP servers.
 
-For Node.js, choose a release that is explicitly marked LTS. Today that means **Node.js 22**, **Node.js 24**, or **Node.js 26**. If you are setting up Node for the first time, start with the [official Node.js download page](https://nodejs.org/en/download/).
+For Node.js, choose a release that is explicitly marked LTS. If you are setting up Node for the first time, start with the [official Node.js download page](https://nodejs.org/en/download/).
 
 If you are using a chat-first tool such as Claude Desktop or ChatGPT, you can still use ProofKit to explore FileMaker metadata and data. Building Web Viewer apps requires a coding agent that can work in a project folder. See [Chat Mode vs Code Mode](/docs/ai/chat-vs-code-mode) for the difference.
 
 See [Technical Requirements](/docs/ai/technical-requirements) for the full support matrix.
 
-## The four-step path
+## The five-step path
 
 <Steps>
   <Step>
-    **Install ProofKit and connect to your FileMaker file.**
+    **Install ProofKit and add it to your FileMaker file.**
 
-    Run the installer, add the ProofKit add-on to your file, enable the plug-in if needed, and confirm your agent can see the open file.
+    Run the installer and add the ProofKit add-on to your file.
 
     Continue with [Install and Connect](/docs/ai/install-and-connect).
+  </Step>
 
-    <Callout title="TODO: Video - Install and connect ProofKit">
-      Show downloading ProofKit, installing the add-on, enabling the plug-in, and confirming the agent can see the file.
-    </Callout>
+  <Step>
+    **Connect your FileMaker file to MCP and verify it.**
+
+    Run the **Connect to MCP** script in FileMaker Pro, keep the connector Web Viewer open in Browse mode, and ask your agent to confirm it can see the open file.
+
+    Continue with [Install and Connect](/docs/ai/install-and-connect#verify-the-connection).
   </Step>
 
   <Step>
@@ -43,10 +44,6 @@ See [Technical Requirements](/docs/ai/technical-requirements) for the full suppo
     Ask your agent about tables, layouts, fields, relationships, and data. This proves the connection is useful before you ask it to build anything. For a deeper explanation of exploration versus app development, see [Chat Mode vs Code Mode](/docs/ai/chat-vs-code-mode).
 
     Continue with [Explore Your File](/docs/ai/explore-your-file).
-
-    <Callout title="TODO: Video - Explore your FileMaker file">
-      Show the agent answering questions about layouts, fields, relationships, and sample records.
-    </Callout>
   </Step>
 
   <Step>
@@ -55,10 +52,6 @@ See [Technical Requirements](/docs/ai/technical-requirements) for the full suppo
     Scaffold a project, run a local preview, ask your agent to build a real screen, and let the agent iterate with type checks and browser feedback.
 
     Continue with [Build a Web Viewer App](/docs/ai/build-a-webviewer-app).
-
-    <Callout title="TODO: Video - Build a Web Viewer app">
-      Show the agent scaffolding the project, applying a shadcn/ui theme, and iterating until the UI works.
-    </Callout>
   </Step>
 
   <Step>
@@ -67,15 +60,12 @@ See [Technical Requirements](/docs/ai/technical-requirements) for the full suppo
     Bundle the app, deploy it into your FileMaker file, and verify it runs inside the Web Viewer layout.
 
     Continue with [Deploy to FileMaker](/docs/ai/deploy-to-filemaker).
-
-    <Callout title="TODO: Video - Deploy to FileMaker">
-      Show the final bundle being deployed into the file and loaded from a FileMaker Web Viewer.
-    </Callout>
   </Step>
 </Steps>
 
 ## What to read next
 
+- [Install and Connect](/docs/ai/install-and-connect) is the first step in the walkthrough.
 - [Agent Workflow](/docs/ai/agent-workflow) explains the read, write, verify, and fix loop.
 - [Hybrid Apps](/docs/webviewer) explains the runtime model.
 - [FAQ](/docs/ai/faq) answers common scope, cost, and platform questions.

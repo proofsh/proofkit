@@ -6,6 +6,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import defaultComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 import { Mermaid } from "@/components/Mermaid";
+import { YouTubeVideo } from "@/components/YouTubeVideo";
 
 const generator = createGenerator();
 
@@ -16,6 +17,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Mermaid,
     Tab,
     Tabs,
+    YouTubeVideo,
     ...Twoslash,
     ...components,
   };
