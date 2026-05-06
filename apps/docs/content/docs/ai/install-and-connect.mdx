@@ -3,16 +3,13 @@ title: Install and Connect
 description: Install ProofKit and confirm your agent can see your FileMaker file.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
 The first milestone is simple: your coding agent should be able to communicate with an open FileMaker file through ProofKit.
 
 ProofKit installs several pieces that work together: a FileMaker add-on, a FileMaker plug-in, a connector script, an MCP server, and agent integrations.
 
-<Callout title="TODO: Screenshot - ProofKit installer">
-  Capture the installer screen for macOS, including any step where the agent integrations are selected or confirmed.
-</Callout>
+<YouTubeVideo title="ProofKit installer walkthrough" url="https://youtu.be/w6SyH5RYx5I" />
 
 ## Install ProofKit
 
@@ -36,15 +33,15 @@ ProofKit installs several pieces that work together: a FileMaker add-on, a FileM
   </Step>
 
   <Step>
-    **Run the Connect to MCP script.**
+    **Enable the ProofKit plug-in.**
 
-    In FileMaker Pro, run the **Connect to MCP** script installed by the add-on. It opens the connector Web Viewer that registers your file with the local MCP server.
+    In FileMaker Pro, open the Plug-Ins settings and confirm the ProofKit plug-in is enabled. The **Connect to MCP** script needs this plug-in to communicate with the local MCP server.
   </Step>
 
   <Step>
-    **Keep the connector open and enable the plug-in if asked.**
+    **Run the Connect to MCP script.**
 
-    Leave the connector Web Viewer open in Browse mode while you work. The plug-in provides the local API used by the MCP server and the Web Viewer proxy used for verification.
+    In FileMaker Pro, run the **Connect to MCP** script installed by the add-on. It opens the connector Web Viewer that registers your file with the local MCP server. Leave the connector Web Viewer open in Browse mode while you work.
   </Step>
 </Steps>
 
