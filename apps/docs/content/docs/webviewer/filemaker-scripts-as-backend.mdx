@@ -48,6 +48,30 @@ If an operation fails, return a structured error the web app can display.
 }
 ```
 
+## Script templates included with the add-on
+
+The ProofKit add-on includes two sample scripts that already follow the callback pattern used by `fmFetch`:
+
+- `FETCH CALLBACK TEMPLATE`
+- `FETCH CALLBACK TEMPLATE (Server version)`
+
+Copy one of these scripts when you need a FileMaker-backed endpoint for your Web Viewer. The regular version is for scripts that can safely run in the user's current FileMaker session. The server version is for workflows that should run on FileMaker Server, such as longer-running work or tasks that need a clean server context.
+
+Both templates follow the same structure:
+
+- Read the incoming JSON from `Get ( ScriptParameter )`.
+- Pull out the `callback` value that tells FileMaker where to send the response.
+- Optionally read `data` for the request payload sent from the Web Viewer.
+- Set `$webViewerName` to the Web Viewer object name that should receive the callback.
+- Build `$result` as a JSON object.
+- Call the included `SendCallBack` script with the callback, result, and Web Viewer name.
+
+Replace only the middle "update info here" block with your business logic. Leave the setup and final callback steps in place so the Web Viewer receives the response that `fmFetch` is waiting for.
+
+![The FETCH CALLBACK TEMPLATE script reads the Web Viewer request, gives you a clearly marked section for FileMaker business logic, then sends a JSON result back through the included SendCallBack script.](/screenshots/webviewer/fetch-callback-template.png)
+
+_The add-on's `FETCH CALLBACK TEMPLATE` shows the required pattern: read the request JSON, build a result object, and send that result back to the Web Viewer callback._
+
 ## Why scripts are powerful here
 
 Scripts run inside the FileMaker security and data model. That means the web app can ask FileMaker to do work without moving privileged logic, credentials, or platform-specific behavior into browser JavaScript.

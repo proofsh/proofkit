@@ -7,27 +7,33 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 Before you build a Web Viewer app, use your agent to explore the FileMaker file. This gives you immediate value from ProofKit and confirms that the agent has useful context.
 
+This page focuses on the exploratory side of ProofKit. To understand how chat-first exploration differs from building an app in a coding agent, see [Chat Mode vs Code Mode](/docs/ai/chat-vs-code-mode).
+
 ## Useful first prompts
 
-```text
+```text title="Prompt"
 Summarize the tables, layouts, and relationships in this FileMaker file.
 ```
 
-```text
-Which layouts look appropriate for building a customer dashboard?
+```text title="Prompt"
+Show me a table of the last ten invoices in the system.
 ```
 
-```text
-Show me the fields available on the Contacts layout and suggest a good card layout for them.
+```text title="Prompt"
+Show me an ERD diagram for this FileMaker file.
 ```
 
-```text
-Inspect sample data and suggest three Web Viewer screens that would improve this workflow.
+**Works with Claude Desktop Chat**
+
+```text title="Prompt"
+Use the visualizer to show recent invoice revenue by month.
 ```
 
-<Callout title="TODO: Screenshot - Schema exploration in chat">
-  Capture an agent conversation where ProofKit metadata tools are used to summarize layouts, fields, and relationships.
-</Callout>
+## Example: ProofKit ERD tool
+
+![Claude Desktop showing a ProofKit-generated ERD diagram for a connected FileMaker file.](/screenshots/ai/claude-desktop-erd-diagram.png)
+
+_Claude Desktop can use ProofKit to inspect a connected FileMaker file, render an ERD diagram, and summarize the relationships it finds._
 
 ## What the agent can learn
 

@@ -3,9 +3,7 @@ title: Data Access
 description: How ProofKit Web Viewer apps read and write FileMaker data.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
-
-For hybrid apps, the primary data path is FileMaker's Execute Data API script step, called through FileMaker scripts from the Web Viewer app.
+For hybrid apps, the generated data path uses FileMaker's Execute Data API script step, called through FileMaker scripts from the Web Viewer app.
 
 ## The basic flow
 
@@ -15,6 +13,23 @@ For hybrid apps, the primary data path is FileMaker's Execute Data API script st
 4. The script runs Execute Data API against a layout.
 5. FileMaker returns JSON to the Web Viewer.
 6. The UI renders and caches the result.
+
+## Custom scripts for reads and writes
+
+Execute Data API is the default generated path, not the only way to read or write FileMaker data. A Web Viewer app can call any FileMaker script that accepts a JSON parameter and returns JSON to the app.
+
+Use a custom script when a screen needs data or behavior that is awkward to express as one layout query or simple generated write, such as:
+
+- Aggregated reporting data.
+- Data from multiple layouts or files.
+- A response shaped specifically for one workflow.
+- Transactions.
+- Validation before destructive actions.
+- Multi-step workflows.
+- Permission-aware behavior that depends on FileMaker session context.
+- Results from external APIs, plug-ins, file system access, or other FileMaker-only capabilities.
+
+For the bridge contract, keep the boundary simple: send JSON in and return JSON out. Read [FileMaker Scripts as Backend](/docs/webviewer/filemaker-scripts-as-backend) for the higher-level pattern, or [`fmFetch`](/docs/webviewer/fmFetch) for the lower-level script call and callback mechanics.
 
 ## Layouts define the data shape
 
@@ -26,26 +41,15 @@ Good layout design makes better Web Viewer apps:
 - Use composite layouts when a screen needs one primary record plus related portal data.
 - Keep heavy calculated or unstored fields out of broad list queries when possible.
 
-<Callout title="TODO: Screenshot - API layout design">
-  Capture a FileMaker layout prepared for Web Viewer data access, with the fields needed for a generated screen.
-</Callout>
+![A FileMaker layout prepared for Web Viewer API data access, showing invoice fields, related line items, and related customer fields.](/screenshots/ai/filemaker-api-layout.png)
+
+_An example layout designed for API access. It uses relationships to fetch an invoice, its related line items, and related customer data in a single request, which is often the most efficient shape for a detail screen._
 
 ## Type safety
 
 The [@proofkit/typegen](/docs/typegen) CLI reads FileMaker metadata and generates TypeScript types and validators. That gives the agent field names, record shapes, and compile-time feedback while it builds the app.
 
 Whenever FileMaker layouts or fields change, make sure you re-run the `npx @proofkit/typegen` command to keep your types up to date. [Learn more](/docs/typegen).
-
-## Writes and business logic
-
-Simple writes can follow the generated data path. More complex changes should go through custom FileMaker scripts, especially when you need:
-
-- Transactions.
-- Validation before destructive actions.
-- Multi-step workflows.
-- Operations that should use FileMaker's normal locking while the script runs.
-
-Read [FileMaker Scripts as Backend](/docs/webviewer/filemaker-scripts-as-backend) for that pattern.
 
 ## Full web apps
 
