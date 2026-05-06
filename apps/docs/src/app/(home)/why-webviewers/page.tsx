@@ -3,6 +3,9 @@ import Link from "next/link";
 import DataFlowDiagram from "@/components/DataFlowDiagramLazy";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
+import { getMarketingMetadata } from "@/lib/og";
+
+export const metadata = getMarketingMetadata("why-webviewers");
 
 export default function WhyWebviewersPage() {
   return (

@@ -2,6 +2,9 @@ import { DownloadButton } from "@/components/DownloadButton";
 import { ExamplesGallery } from "@/components/examples/ExamplesGallery";
 import { MarketingNav } from "@/components/MarketingNav";
 import { ShadcnPresetThemes } from "@/components/ShadcnPresetThemes";
+import { getMarketingMetadata } from "@/lib/og";
+
+export const metadata = getMarketingMetadata("examples");
 
 const examples: {
   desc: string;

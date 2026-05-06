@@ -1,8 +1,10 @@
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/page";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LLMCopyButton, ViewOptions } from "@/components/ai/page-actions";
-import { source } from "@/lib/source";
+import { siteName } from "@/lib/og";
+import { getPageImage, source } from "@/lib/source";
 import { getMDXComponents } from "@/mdx-components";
 
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
@@ -50,7 +52,7 @@ export async function generateStaticParams() {
   return source.generateParams();
 }
 
-export async function generateMetadata(props: { params: Promise<{ slug?: string[] }> }) {
+export async function generateMetadata(props: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
   const params = await props.params;
   const page = source.getPage(params.slug);
   if (!page) {
@@ -58,15 +60,34 @@ export async function generateMetadata(props: { params: Promise<{ slug?: string[
   }
 
   const url = `https://proofkit.proof.sh${page.url}`;
+  const image = getPageImage(page).url;
 
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: page.url,
+    },
     openGraph: {
       title: page.data.title,
       description: page.data.description ?? undefined,
       type: "article",
       url,
+      siteName,
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: `${page.data.title} - ${siteName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: page.data.title,
+      description: page.data.description ?? undefined,
+      images: [image],
     },
   };
 }

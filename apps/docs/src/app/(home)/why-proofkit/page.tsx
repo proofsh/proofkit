@@ -1,6 +1,9 @@
 import { DownloadButton } from "@/components/DownloadButton";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
+import { getMarketingMetadata } from "@/lib/og";
+
+export const metadata = getMarketingMetadata("why-proofkit");
 
 export default function WhyProofkitPage() {
   return (

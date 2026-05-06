@@ -10,6 +10,9 @@ import { ProofLogo } from "@/components/ProofLogo";
 import { ClaudeAiIcon } from "@/components/ui/svgs/claudeAiIcon";
 import { CodexDark } from "@/components/ui/svgs/codexDark";
 import { CursorDark } from "@/components/ui/svgs/cursorDark";
+import { getMarketingMetadata } from "@/lib/og";
+
+export const metadata = getMarketingMetadata("home");
 
 const stackItems = [
   { name: "Cursor", icon: <CursorDark className="size-5" fill="currentColor" /> },
