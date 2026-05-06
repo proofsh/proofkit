@@ -8,7 +8,7 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 
 The first milestone is simple: your coding agent should be able to communicate with an open FileMaker file through ProofKit.
 
-ProofKit installs several pieces that work together: a FileMaker add-on, a FileMaker plug-in, an MCP server, and agent integrations.
+ProofKit installs several pieces that work together: a FileMaker add-on, a FileMaker plug-in, a connector script, an MCP server, and agent integrations.
 
 <Callout title="TODO: Screenshot - ProofKit installer">
   Capture the installer screen for macOS, including any step where the agent integrations are selected or confirmed.
@@ -36,9 +36,15 @@ ProofKit installs several pieces that work together: a FileMaker add-on, a FileM
   </Step>
 
   <Step>
-    **Enable the plug-in if FileMaker asks.**
+    **Run the Connect to MCP script.**
 
-    The plug-in provides the local API used by the MCP server and the Web Viewer proxy used for verification.
+    In FileMaker Pro, run the **Connect to MCP** script installed by the add-on. It opens the connector Web Viewer that registers your file with the local MCP server.
+  </Step>
+
+  <Step>
+    **Keep the connector open and enable the plug-in if asked.**
+
+    Leave the connector Web Viewer open in Browse mode while you work. The plug-in provides the local API used by the MCP server and the Web Viewer proxy used for verification.
   </Step>
 </Steps>
 
@@ -56,7 +62,7 @@ If nothing is connected, tell me what to fix before I continue.
 
 _Claude Code following the prompt and confirming the connected file and layouts._
 
-If the agent cannot see your file, open FileMaker Pro, run the **Connect to MCP** script in your file, and keep the connector Web Viewer open in Browse mode. For the full checklist, see [fmBridge troubleshooting](/docs/webviewer/fm-bridge#troubleshooting).
+If the agent cannot see your file, re-run **Connect to MCP** in FileMaker Pro and confirm the connector Web Viewer remains open in Browse mode. For the full checklist, see [fmBridge troubleshooting](/docs/webviewer/fm-bridge#troubleshooting).
 
 ## Next step
 
