@@ -1,27 +1,28 @@
 ---
-title: "Getting Started"
-description: The Web Viewer bridge package.
+title: "@proofkit/webviewer"
+description: Use the Web Viewer bridge package directly in custom apps.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
-## Purpose
+Use this page when you already have a Vite app, custom Web Viewer project, or another web app where you want to use the ProofKit bridge directly. If you are new to ProofKit and want the recommended path from install to deployed FileMaker app, start with the [ProofKit AI guide](/docs/ai/getting-started).
 
-The goal of this package is to make it easy to work with FileMaker scripts and data when building a custom webviewer integration. @proofkit/webviewer works only inside of webviewer and allows you to interact with your FileMaker solution via local scripts.
+## What this package does
 
-<Callout title="Building with an agent?">
-  Start with the [ProofKit AI guide](/docs/ai/getting-started), then come back here for lower-level Web Viewer bridge details.
+`@proofkit/webviewer` makes it easier to work with FileMaker scripts and data from a custom Web Viewer integration. It runs in a FileMaker Web Viewer and lets your app interact with your FileMaker solution through local scripts.
+
+<Callout title="New to ProofKit?">
+  The happy path starts with [ProofKit AI](/docs/ai/getting-started). Come back here when a guide points you to lower-level Web Viewer bridge details, or when you are wiring the package into an existing app yourself.
 </Callout>
 
 This is a **client-side** package, meant to run specifically in a FileMaker Web Viewer, but it can still be used in a hosted web app, such as Next.js. However, it will cause errors if loaded in a standard browser. For more information about deployment strategies, see the [Deployment Methods](/docs/webviewer/deployment-methods) guide.
 
 For web-based applications where you're looking to interact with the Data API using a network request, check out the [@proofkit/fmdapi](/docs/fmdapi) package instead.
 
-## Automatic Installation
+## Add it to an existing app
 
-We strongly recommend using the [ProofKit CLI](/docs/cli) to setup your project. It will also walk you through a FileMaker add-on that installs the neccesary layouts, scripts and custom functions to get you started.
+The [ProofKit CLI](/docs/cli) can scaffold a full Web Viewer project and install the FileMaker add-on that provides the necessary layouts, scripts, and custom functions. Use that path when you want ProofKit to create the project structure for you.
 
 If you already have a ProofKit Web Viewer project and need to install or update the FileMaker add-on manually, run `proofkit add addon webviewer` from the project root. That copies the local add-on files; you still need to install the add-on into the FileMaker file.
 
@@ -49,3 +50,10 @@ Demo file credentials: `admin` / `admin`
 
 </Accordion>
 </Accordions>
+
+## Related reference
+
+- [`fmFetch`](/docs/webviewer/fmFetch) wraps FileMaker script calls that need a result back in the Web Viewer.
+- [`callFMScript`](/docs/webviewer/callFmScript) calls a FileMaker script when you do not need a result.
+- [`fmBridge`](/docs/webviewer/fm-bridge) lets a local Vite dev server talk to a real connected FileMaker file.
+- [Data Access](/docs/webviewer/data-access) explains the generated FileMaker data path used by ProofKit Web Viewer apps.

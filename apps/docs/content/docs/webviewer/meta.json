@@ -5,6 +5,7 @@
   "root": true,
   "pages": [
     "index",
+    "package",
     "---Concepts---",
     "why-webviewers",
     "architecture",
@@ -13,8 +14,6 @@
     "filemaker-scripts-as-backend",
     "platform-notes",
     "deployment-methods",
-    "---@proofkit/webviewer---",
-    "package",
     "---Reference---",
     "fmFetch",
     "callFmScript",
