@@ -1,19 +1,23 @@
-import { getNodeMajorVersion } from "~/utils/getProofKitVersion.js";
-import { getProofkitReleaseTag } from "~/utils/proofkitReleaseChannel.js";
-
-const proofkitReleaseTag = getProofkitReleaseTag();
+import {
+  getFmdapiVersion,
+  getNodeMajorVersion,
+  getProofkitBetterAuthVersion,
+  getProofkitDependencyVersion,
+  getProofkitWebviewerVersion,
+  getTypegenVersion,
+  getVersion,
+} from "~/utils/getProofKitVersion.js";
 
 /*
  * This maps the necessary packages to a version.
  * This improves performance significantly over fetching it from the npm registry.
  */
 export const dependencyVersionMap = {
-  // Resolve to "latest" or "beta" based on current changeset state / versions.
-  "@proofkit/fmdapi": proofkitReleaseTag,
-  "@proofkit/webviewer": proofkitReleaseTag,
-  "@proofkit/cli": proofkitReleaseTag,
-  "@proofkit/typegen": proofkitReleaseTag,
-  "@proofkit/better-auth": proofkitReleaseTag,
+  "@proofkit/fmdapi": getProofkitDependencyVersion(getFmdapiVersion()),
+  "@proofkit/webviewer": getProofkitDependencyVersion(getProofkitWebviewerVersion()),
+  "@proofkit/cli": getProofkitDependencyVersion(getVersion()),
+  "@proofkit/typegen": getProofkitDependencyVersion(getTypegenVersion()),
+  "@proofkit/better-auth": getProofkitDependencyVersion(getProofkitBetterAuthVersion()),
 
   // NextAuth.js
   "next-auth": "beta",

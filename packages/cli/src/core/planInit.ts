@@ -2,8 +2,14 @@ import path from "node:path";
 import type { PackageJson } from "type-fest";
 
 import type { InitPlan, InitRequest, ProofKitSettings } from "~/core/types.js";
+import {
+  getFmdapiVersion,
+  getProofkitDependencyVersion,
+  getProofkitWebviewerVersion,
+  getTypegenVersion,
+  getVersion,
+} from "~/utils/getProofKitVersion.js";
 import { formatPackageManagerCommand, getScaffoldVersion, getTemplatePackageCommand } from "~/utils/projectFiles.js";
-import { getProofkitReleaseTag } from "~/utils/proofkitReleaseChannel.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
 function createDefaultSettings(request: InitRequest): ProofKitSettings {
@@ -36,7 +42,10 @@ export function planInit(
   options: { templateDir: string; packageManagerVersion?: string },
 ): InitPlan {
   const targetDir = path.resolve(request.cwd, request.appDir);
-  const releaseTag = getProofkitReleaseTag();
+  const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
+  const proofkitFmdapiVersion = getProofkitDependencyVersion(getFmdapiVersion());
+  const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
+  const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
   const settings = createDefaultSettings(request);
   const packageManagerCommand = getTemplatePackageCommand(request.packageManager);
 
@@ -51,30 +60,30 @@ export function planInit(
     },
     dependencies: {},
     devDependencies: {
-      "@proofkit/cli": releaseTag,
+      "@proofkit/cli": proofkitCliVersion,
       "@types/node": `^${getNodeMajorVersion()}`,
     },
   };
 
   if (request.appType === "browser") {
-    packageJson.devDependencies["@proofkit/typegen"] = releaseTag;
+    packageJson.devDependencies["@proofkit/typegen"] = proofkitTypegenVersion;
     Object.assign(packageJson.dependencies, sharedUiDependencies);
     packageJson.dependencies["@tailwindcss/postcss"] = "^4.1.10";
     packageJson.dependencies["next-themes"] = "^0.4.6";
     if (request.dataSource === "filemaker") {
-      packageJson.dependencies["@proofkit/fmdapi"] = releaseTag;
+      packageJson.dependencies["@proofkit/fmdapi"] = proofkitFmdapiVersion;
       packageJson.dependencies.zod = "^4";
     }
   }
 
   if (request.appType === "webviewer") {
     Object.assign(packageJson.dependencies, sharedUiDependencies);
-    packageJson.dependencies["@proofkit/fmdapi"] = releaseTag;
-    packageJson.dependencies["@proofkit/webviewer"] = releaseTag;
+    packageJson.dependencies["@proofkit/fmdapi"] = proofkitFmdapiVersion;
+    packageJson.dependencies["@proofkit/webviewer"] = proofkitWebviewerVersion;
     packageJson.dependencies["@tanstack/react-query"] = "^5.90.21";
     packageJson.dependencies["@tanstack/react-router"] = "^1.167.4";
     packageJson.dependencies.zod = "^4";
-    packageJson.devDependencies["@proofkit/typegen"] = releaseTag;
+    packageJson.devDependencies["@proofkit/typegen"] = proofkitTypegenVersion;
     packageJson.devDependencies["@tailwindcss/vite"] = "^4.2.1";
     packageJson.devDependencies.ultracite = "7.0.8";
   }

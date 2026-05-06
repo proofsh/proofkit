@@ -5,9 +5,13 @@ import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
+import { getProofkitDependencyVersion, getTypegenVersion, getVersion } from "~/utils/getProofKitVersion.js";
 import { detectUserPackageManager } from "~/utils/packageManager.js";
 import { getSharedTemplateDir, makeInitRequest, readScaffoldArtifacts } from "./init-fixtures.js";
 import { makeTestLayer } from "./test-layer.js";
+
+const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
+const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
 
 describe("integration scaffold generation", () => {
   it("creates a browser scaffold with proofkit.json and env", async () => {
@@ -66,8 +70,8 @@ describe("integration scaffold generation", () => {
     expect(packageJson.proofkitMetadata).toMatchObject({
       scaffoldPackage: "@proofkit/cli",
     });
-    expect(packageJson.devDependencies["@proofkit/cli"]).toBe("latest");
-    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
+    expect(packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(packageJson.scripts.typegen).toBe("typegen");
     expect(packageJson.scripts["typegen:ui"]).toBe("typegen ui");
     expect(typeof packageJson.proofkitMetadata?.initVersion).toBe("string");
@@ -266,7 +270,7 @@ describe("integration scaffold generation", () => {
     const projectDir = path.join(cwd, "filemaker-app");
     const { packageJson, proofkitJson, envFile, typegenConfig } = await readScaffoldArtifacts(projectDir);
 
-    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(proofkitJson.dataSources).toEqual([
       {
         type: "fm",

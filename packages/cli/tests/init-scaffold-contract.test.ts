@@ -32,7 +32,21 @@ const webviewerProjectDir = join(testDir, webviewerProjectName);
 const cliPackageJsonPath = join(__dirname, "..", "package.json");
 const cliPackageJson = readJsonFile<PackageJsonShape>(cliPackageJsonPath);
 const cliVersion = cliPackageJson.version ?? "";
-const expectedProofkitTag = cliVersion.includes("-") ? "beta" : "latest";
+const expectedProofkitVersions = new Map([
+  ["@proofkit/cli", `^${cliVersion}`],
+  [
+    "@proofkit/fmdapi",
+    `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "fmdapi", "package.json")).version}`,
+  ],
+  [
+    "@proofkit/typegen",
+    `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "typegen", "package.json")).version}`,
+  ],
+  [
+    "@proofkit/webviewer",
+    `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "webviewer", "package.json")).version}`,
+  ],
+]);
 const packageManagerPattern = /^(npm|pnpm|yarn|bun)@/;
 const ansiStylePrefixPattern = /^[0-9;]*m/;
 
@@ -64,7 +78,7 @@ function readJsonFile<T>(filePath: string): T {
   return JSON.parse(readFileSync(filePath, "utf-8")) as T;
 }
 
-function getProofkitDependencyVersions(pkg: PackageJsonShape): string[] {
+function getProofkitDependencyVersions(pkg: PackageJsonShape): [string, string][] {
   const combined = {
     ...(pkg.dependencies ?? {}),
     ...(pkg.devDependencies ?? {}),
@@ -72,12 +86,12 @@ function getProofkitDependencyVersions(pkg: PackageJsonShape): string[] {
 
   return Object.entries(combined)
     .filter(([name]) => name.startsWith("@proofkit/"))
-    .map(([, version]) => version);
+    .map(([name, version]) => [name, version]);
 }
 
-function allProofkitDependenciesUseCurrentReleaseTag(pkg: PackageJsonShape): boolean {
+function allProofkitDependenciesUseCurrentVersions(pkg: PackageJsonShape): boolean {
   const versions = getProofkitDependencyVersions(pkg);
-  return versions.length > 0 && versions.every((version) => version === expectedProofkitTag);
+  return versions.length > 0 && versions.every(([name, version]) => version === expectedProofkitVersions.get(name));
 }
 
 function checkNodeSyntax(projectDir: string, relativeFilePath: string): boolean {
@@ -147,7 +161,7 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.scripts?.proofkit).toBe("proofkit");
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
     expect(packageJson.packageManager).toMatch(packageManagerPattern);
-    expect(allProofkitDependenciesUseCurrentReleaseTag(packageJson)).toBe(true);
+    expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
     const pkgManager = getPackageManagerName(packageJson);
@@ -187,7 +201,7 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.scripts?.proofkit).toBe("proofkit");
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
     expect(packageJson.packageManager).toMatch(packageManagerPattern);
-    expect(allProofkitDependenciesUseCurrentReleaseTag(packageJson)).toBe(true);
+    expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(webviewerProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(webviewerProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
     const pkgManager = getPackageManagerName(packageJson);

@@ -23,6 +23,9 @@ function toText(value: string | Buffer | undefined) {
 describe("Init Non-Interactive Failure Paths", () => {
   const testDir = join(__dirname, "..", "..", "tmp", "init-failure-tests");
   const cliPath = join(__dirname, "..", "dist", "index.js");
+  const expectedTypegenVersion = `^${
+    JSON.parse(readFileSync(join(__dirname, "..", "..", "typegen", "package.json"), "utf-8")).version
+  }`;
 
   beforeEach(() => {
     rmSync(testDir, { recursive: true, force: true });
@@ -187,7 +190,7 @@ describe("Init Non-Interactive Failure Paths", () => {
       devDependencies?: Record<string, string>;
     };
     expect(packageJson.scripts?.typegen).toBe("typegen");
-    expect(packageJson.devDependencies?.["@proofkit/typegen"]).toBe("latest");
+    expect(packageJson.devDependencies?.["@proofkit/typegen"]).toBe(expectedTypegenVersion);
     expect(output).not.toMatch(typegenCommandPattern);
   });
 });

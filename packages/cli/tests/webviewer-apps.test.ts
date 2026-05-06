@@ -4,6 +4,9 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const nonInteractiveDirectoryError = /already exists and isn't empty/;
+const expectedTypegenVersion = `^${
+  JSON.parse(readFileSync(join(__dirname, "..", "..", "typegen", "package.json"), "utf-8")).version
+}`;
 
 describe("Web Viewer CLI Tests", () => {
   const testDir = join(__dirname, "..", "..", "tmp", "cli-tests");
@@ -44,7 +47,7 @@ describe("Web Viewer CLI Tests", () => {
     const packageJson = JSON.parse(readFileSync(join(projectDir, "package.json"), "utf-8"));
     expect(packageJson.scripts.typegen).toBe("npx @proofkit/typegen");
     expect(packageJson.scripts["typegen:ui"]).toBe("npx @proofkit/typegen ui");
-    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
+    expect(packageJson.devDependencies["@proofkit/typegen"]).toBe(expectedTypegenVersion);
 
     const proofkitConfig = JSON.parse(readFileSync(join(projectDir, "proofkit.json"), "utf-8"));
     expect(proofkitConfig.appType).toBe("webviewer");

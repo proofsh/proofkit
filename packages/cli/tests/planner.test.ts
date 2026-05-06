@@ -1,7 +1,19 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { planInit } from "~/core/planInit.js";
+import {
+  getFmdapiVersion,
+  getProofkitDependencyVersion,
+  getProofkitWebviewerVersion,
+  getTypegenVersion,
+  getVersion,
+} from "~/utils/getProofKitVersion.js";
 import { makeInitRequest } from "./init-fixtures.js";
+
+const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
+const proofkitFmdapiVersion = getProofkitDependencyVersion(getFmdapiVersion());
+const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
+const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
 
 describe("planInit", () => {
   it("plans a browser scaffold", () => {
@@ -14,8 +26,8 @@ describe("planInit", () => {
     expect(plan.templateDir).toBe("/templates/browser");
     expect(plan.packageJson.name).toBe("demo-app");
     expect(plan.settings.appType).toBe("browser");
-    expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe("latest");
-    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
+    expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(plan.tasks.runInstall).toBe(true);
     expect(plan.tasks.initializeGit).toBe(true);
     expect(plan.tasks.bootstrapFileMaker).toBe(false);
@@ -35,8 +47,8 @@ describe("planInit", () => {
       },
     );
 
-    expect(plan.packageJson.dependencies["@proofkit/webviewer"]).toBe("latest");
-    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
+    expect(plan.packageJson.dependencies["@proofkit/webviewer"]).toBe(proofkitWebviewerVersion);
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(plan.tasks.runInstall).toBe(false);
     expect(plan.tasks.initializeGit).toBe(false);
     expect(plan.tasks.checkWebViewerAddon).toBe(true);
@@ -53,9 +65,9 @@ describe("planInit", () => {
       },
     );
 
-    expect(plan.packageJson.dependencies["@proofkit/fmdapi"]).toBe("latest");
+    expect(plan.packageJson.dependencies["@proofkit/fmdapi"]).toBe(proofkitFmdapiVersion);
     expect(plan.packageJson.dependencies.zod).toBe("^4");
-    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe("latest");
+    expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
   });
 
   it("plans filemaker bootstrap and initial codegen when inputs are explicit", () => {
