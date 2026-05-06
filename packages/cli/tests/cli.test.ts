@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
 
@@ -136,7 +136,20 @@ describe("proofkit CLI", () => {
 
   it("supports `proofkit add addon webviewer`", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-project-"));
-    const addonModulesDir = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-modules-"));
+    const addonDownloadDir = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-downloads-"));
+    const fixtureDir = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-fixtures-"));
+    const addonFixturePath = path.join(fixtureDir, "ProofKit.fmaddon");
+    await fs.writeFile(addonFixturePath, "fake-fmaddon");
+    const manifestPath = path.join(fixtureDir, "manifest.json");
+    await fs.writeJson(manifestPath, {
+      latestVersion: "2.2.4.0",
+      versions: [
+        {
+          version: "2.2.4.0",
+          assets: [{ file: "ProofKit.fmaddon", url: pathToFileURL(addonFixturePath).toString() }],
+        },
+      ],
+    });
 
     const result = spawnSync("node", [distEntry, "add", "addon", "webviewer", "--non-interactive"], {
       cwd,
@@ -144,13 +157,16 @@ describe("proofkit CLI", () => {
       encoding: "utf8",
       env: {
         ...process.env,
-        PROOFKIT_FM_ADDON_MODULES_DIR: addonModulesDir,
+        PROOFKIT_FM_ADDON_MANIFEST_URL: pathToFileURL(manifestPath).toString(),
+        PROOFKIT_FM_ADDON_DOWNLOAD_DIR: addonDownloadDir,
+        PROOFKIT_SKIP_OPEN_FM_ADDON: "1",
       },
     });
 
     expect(result.status).toBe(0);
 
-    expect(await fs.pathExists(path.join(addonModulesDir, "ProofKitWV"))).toBe(true);
+    expect(await fs.pathExists(path.join(addonDownloadDir, "ProofKit.fmaddon"))).toBe(true);
+    expect(await fs.pathExists(path.join(addonDownloadDir, "ProofKit.fmaddon.proofkit.json"))).toBe(true);
   });
 
   it("rejects unsupported add targets", () => {

@@ -76,11 +76,11 @@ export function getWebViewerAddonMessages({ hasRequiredLayouts, inspection }: We
 
   if (inspection.status === "installed-outdated") {
     const versionSuffix =
-      inspection.installedVersion && inspection.bundledVersion
-        ? ` Local version: ${inspection.installedVersion}. Bundled version: ${inspection.bundledVersion}.`
+      inspection.installedVersion && inspection.latestVersion
+        ? ` Local version: ${inspection.installedVersion}. Latest version: ${inspection.latestVersion}.`
         : "";
     messages.warn.push(
-      `New ProofKit Web Viewer add-on available. Run \`${inspection.installCommand}\` to update the local add-on files.${versionSuffix}`,
+      `New ProofKit Web Viewer add-on available. Run \`${inspection.installCommand}\` to download and open it.${versionSuffix}`,
     );
     messages.nextSteps.push(inspection.installCommand);
   }
@@ -96,7 +96,7 @@ export function getWebViewerAddonMessages({ hasRequiredLayouts, inspection }: We
     );
     if (inspection.status === "missing") {
       messages.warn.push(
-        `Local ProofKit Web Viewer add-on files were not found. Run \`${inspection.installCommand}\` before installing the add-on into the FileMaker file.`,
+        `Local ProofKit Web Viewer add-on file was not found. Run \`${inspection.installCommand}\` to download and open it.`,
       );
       messages.nextSteps.push(inspection.installCommand);
     }

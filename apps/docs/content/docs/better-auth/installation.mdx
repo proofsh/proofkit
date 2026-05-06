@@ -11,15 +11,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 - Ensure your credentials have the `fmodata` privilege enabled.
 - If you are using OttoFMS 4.11+ and you want to use a Data API key instead of plain credentials, ensure OData is enabled for that key.
 
-# Step 1a: Automated Setup with the ProofKit CLI
-<Callout type="warning">
-This automated setup expects you to have Next.js and shadcn/ui set up in your project. It will also setup various auth pages for you, but these may not work if you have a prefix configured for tailwindcss. You can use this opinionated setup to get you started, or if you need more control you should refer to the manual setup.
-</Callout>
-
-Run the following command to add the necessary packages and config files to your project. You will not need to follow the better-auth installation guide.
-<CliCommand command="add better-auth" exec />
-
-# Step 1b: Manual Setup
+# Step 1: Manual Setup
 
 Follow the [Better-Auth installation guide](https://better-auth.com/docs/installation) to get started in your app, but come back here for special instructions for anything related to your Database Setup or schema migrations.
 

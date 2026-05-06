@@ -19,8 +19,7 @@
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "knip": "knip",
-    "prepare": "husky",
-    "build:addon": "node scripts/build-addon.js"
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",

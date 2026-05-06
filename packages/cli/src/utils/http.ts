@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import https from "node:https";
 import axios from "axios";
 
@@ -50,6 +51,13 @@ export async function requestJson<T>(
     timeoutMs?: number;
   },
 ) {
+  if (url.toString().startsWith("file://")) {
+    return {
+      status: 200,
+      data: JSON.parse(await readFile(new URL(url), "utf8")) as T,
+    };
+  }
+
   const response = await axios.request<T>({
     url: url.toString(),
     method: options?.method ?? "GET",
@@ -81,5 +89,35 @@ export async function requestText(
   return {
     status: response.status,
     data: response.data,
+  };
+}
+
+export async function requestArrayBuffer(
+  url: string | URL,
+  options?: {
+    method?: "GET";
+    headers?: Record<string, string>;
+    timeoutMs?: number;
+  },
+) {
+  if (url.toString().startsWith("file://")) {
+    return {
+      status: 200,
+      data: await readFile(new URL(url)),
+    };
+  }
+
+  const response = await axios.request<ArrayBuffer>({
+    url: url.toString(),
+    method: options?.method ?? "GET",
+    headers: options?.headers,
+    httpsAgent: createHttpsAgent(),
+    timeout: options?.timeoutMs ?? 30_000,
+    responseType: "arraybuffer",
+    validateStatus: null,
+  });
+  return {
+    status: response.status,
+    data: Buffer.from(response.data),
   };
 }

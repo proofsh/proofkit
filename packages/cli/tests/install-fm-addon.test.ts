@@ -20,7 +20,7 @@ describe("inspectFmAddon", () => {
       { addonName: "wv" },
       {
         targetDir: null,
-        bundledPath: "/tmp/bundled-addon",
+        latestAddonPath: "/tmp/latest-addon",
       },
     );
 
@@ -30,53 +30,53 @@ describe("inspectFmAddon", () => {
 
   it("returns missing when the local add-on is absent", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-addon-missing-"));
-    const bundledPath = path.join(root, "bundled", "ProofKitWV");
+    const latestAddonPath = path.join(root, "latest", "ProofKitWV");
     const targetDir = path.join(root, "target");
-    await writeAddonVersion(bundledPath, "2.2.3.0");
+    await writeAddonVersion(latestAddonPath, "2.2.3.0");
     await fs.ensureDir(targetDir);
 
-    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, bundledPath });
+    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, latestAddonPath });
 
     expect(result.status).toBe("missing");
-    expect(result.bundledVersion).toBe("2.2.3.0");
+    expect(result.latestVersion).toBe("2.2.3.0");
   });
 
   it("returns installed-current when versions match", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-addon-current-"));
-    const bundledPath = path.join(root, "bundled", "ProofKitWV");
+    const latestAddonPath = path.join(root, "latest", "ProofKitWV");
     const targetDir = path.join(root, "target");
-    await writeAddonVersion(bundledPath, "2.2.3.0");
+    await writeAddonVersion(latestAddonPath, "2.2.3.0");
     await writeAddonVersion(path.join(targetDir, "ProofKitWV"), "2.2.3.0");
 
-    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, bundledPath });
+    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, latestAddonPath });
 
     expect(result.status).toBe("installed-current");
     expect(result.installedVersion).toBe("2.2.3.0");
   });
 
-  it("returns installed-outdated when the bundled add-on is newer", async () => {
+  it("returns installed-outdated when the remote add-on is newer", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-addon-outdated-"));
-    const bundledPath = path.join(root, "bundled", "ProofKitWV");
+    const latestAddonPath = path.join(root, "latest", "ProofKitWV");
     const targetDir = path.join(root, "target");
-    await writeAddonVersion(bundledPath, "2.2.4.0");
+    await writeAddonVersion(latestAddonPath, "2.2.4.0");
     await writeAddonVersion(path.join(targetDir, "ProofKitWV"), "2.2.3.0");
 
-    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, bundledPath });
+    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, latestAddonPath });
 
     expect(result.status).toBe("installed-outdated");
     expect(result.installedVersion).toBe("2.2.3.0");
-    expect(result.bundledVersion).toBe("2.2.4.0");
+    expect(result.latestVersion).toBe("2.2.4.0");
   });
 
   it("returns unknown when installed metadata cannot be parsed", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-addon-unknown-"));
-    const bundledPath = path.join(root, "bundled", "ProofKitWV");
+    const latestAddonPath = path.join(root, "latest", "ProofKitWV");
     const targetDir = path.join(root, "target");
-    await writeAddonVersion(bundledPath, "2.2.4.0");
+    await writeAddonVersion(latestAddonPath, "2.2.4.0");
     await fs.ensureDir(path.join(targetDir, "ProofKitWV"));
     await fs.writeFile(path.join(targetDir, "ProofKitWV", "template.xml"), "<FMAdd_on />", "utf8");
 
-    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, bundledPath });
+    const result = await inspectFmAddon({ addonName: "wv" }, { targetDir, latestAddonPath });
 
     expect(result.status).toBe("unknown");
     expect(result.reason).toBe("unreadable-version");
@@ -100,11 +100,11 @@ describe("getWebViewerAddonMessages", () => {
         addonDir: "ProofKitWV",
         addonDisplayName: "ProofKit Web Viewer",
         installCommand: "proofkit add addon webviewer",
-        targetDir: "/tmp/AddonModules",
-        installedPath: "/tmp/AddonModules/ProofKitWV",
-        bundledPath: "/tmp/bundled/ProofKitWV",
+        targetDir: "/tmp/ProofKit",
+        installedPath: "/tmp/ProofKit/ProofKit.fmaddon",
         installedVersion: "2.2.3.0",
-        bundledVersion: "2.2.4.0",
+        remoteAssetUrl: "https://downloads.ottomatic.cloud/proofkit/addons/ProofKitWV.fmaddon",
+        latestVersion: "2.2.4.0",
       },
     });
 
@@ -114,10 +114,10 @@ describe("getWebViewerAddonMessages", () => {
 });
 
 describe("getFmAddonInstallInstructions", () => {
-  it("includes restart and old add-on removal guidance", () => {
+  it("includes direct-open install guidance", () => {
     const instructions = getFmAddonInstallInstructions("wv");
 
-    expect(instructions.steps).toContain("Restart FileMaker Pro so the new local add-on files appear");
-    expect(instructions.steps.join("\n")).toContain("remove that old add-on first");
+    expect(instructions.steps).toContain("When FileMaker opens the add-on file, confirm the install prompt");
+    expect(instructions.steps.join("\n")).not.toContain("Restart FileMaker");
   });
 });
