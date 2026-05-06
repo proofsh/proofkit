@@ -193,7 +193,7 @@ export default function WhyWebviewersPage() {
       <MarketingSection className="py-24">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-bold text-2xl sm:text-3xl">Ready to try it?</h2>
+            <h2 className="font-bold text-2xl sm:text-3xl">Power to the Problem Solvers.</h2>
             <div className="mt-8">
               <Link
                 className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-900 bg-gray-900 px-6 font-semibold text-base text-white shadow-lg transition hover:bg-gray-800 dark:border-white/15 dark:bg-white/[0.06] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_36px_rgba(255,255,255,0.08)] dark:hover:border-white/25 dark:hover:bg-white/[0.1]"
