@@ -16,14 +16,25 @@ function getYouTubeVideoId({ url, videoId }: Pick<YouTubeVideoProps, "url" | "vi
   const parsedUrl = new URL(url);
 
   if (parsedUrl.hostname === "youtu.be") {
-    return parsedUrl.pathname.slice(1);
+    const idFromShortUrl = parsedUrl.pathname.slice(1);
+    if (idFromShortUrl) {
+      return idFromShortUrl;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/embed/")) {
-    return parsedUrl.pathname.split("/")[2] ?? "";
+    const idFromEmbedPath = parsedUrl.pathname.split("/")[2];
+    if (idFromEmbedPath) {
+      return idFromEmbedPath;
+    }
   }
 
-  return parsedUrl.searchParams.get("v") ?? "";
+  const idFromQuery = parsedUrl.searchParams.get("v");
+  if (idFromQuery) {
+    return idFromQuery;
+  }
+
+  throw new Error(`Unable to extract YouTube video ID from URL: ${parsedUrl.href}`);
 }
 
 export function YouTubeVideo(props: YouTubeVideoProps) {
