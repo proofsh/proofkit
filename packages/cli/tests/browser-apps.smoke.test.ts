@@ -60,6 +60,7 @@ describeWhenSmokeEnvPresent("External integration smoke tests (non-interactive C
       `--data-api-key "${testEnv.FM_DATA_API_KEY}"`,
       `--file-name "${testEnv.FM_FILE_NAME}"`,
       "--no-git", // Skip git initialization for testing
+      "--no-install", // Release smoke runs before the new CLI version is published.
     ].join(" ");
 
     // Execute the command
