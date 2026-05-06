@@ -3,17 +3,11 @@ title: Runtime Under the Hood
 description: What happens when a user opens and interacts with a ProofKit hybrid app.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
-
 This page explains the runtime behavior of a deployed ProofKit Web Viewer app: loading, communication, data fetching, caching, saving, and FileMaker-specific behavior.
 
 ## Loading the app
 
 When a user opens a FileMaker layout with a ProofKit Web Viewer, the Web Viewer loads the deployed HTML and JavaScript bundle from the FileMaker file.
-
-<Callout title="TODO: Screenshot - Web Viewer layout loading">
-  Capture a FileMaker layout with the deployed Web Viewer app visible immediately after opening.
-</Callout>
 
 ## Initial props
 
@@ -29,11 +23,22 @@ The Web Viewer and FileMaker are separate runtimes. They communicate by passing 
 - A FileMaker script performs work.
 - FileMaker returns structured data to the Web Viewer.
 
-ProofKit libraries hide most of the callback plumbing so app code can use modern async patterns.
+Under the hood, that bridge uses two FileMaker features:
+
+- JavaScript in the Web Viewer can call `FileMaker.PerformScriptWithOption(script, parameter, option)` to ask FileMaker to run a script. Claris documents this on [Scripting with JavaScript in web viewers](https://help.claris.com/en/pro-help/content/scripting-javascript-in-web-viewers.html).
+- FileMaker can call back into the Web Viewer with the [Perform JavaScript in Web Viewer](https://help.claris.com/en/pro-help/content/perform-javascript-in-web-viewer.html) script step.
+
+Those APIs are asynchronous and string-based, so the raw version usually involves passing JSON, tracking callbacks, and deciding how a currently running FileMaker script should behave when JavaScript starts another one.
+
+ProofKit libraries hide most of that callback plumbing so app code can use modern async patterns. [`fmFetch`](/docs/webviewer/fmFetch) wraps the Web Viewer-to-FileMaker call and callback cycle. [`@proofkit/fmdapi`](/docs/fmdapi) and [`@proofkit/typegen`](/docs/typegen) build on FileMaker's data APIs and layout metadata so generated clients can read and write strongly typed FileMaker data without every app reimplementing the bridge details.
 
 ## Caching and reactivity
 
-ProofKit apps use TanStack Query for server state. Data can be cached locally in the browser, refreshed in the background, and invalidated after writes so the UI stays responsive without manually reloading every screen.
+ProofKit apps use TanStack Query for server state. In this context, server state means FileMaker state: the data in your FileMaker tables and the behavior exposed through your FileMaker scripts. You can think of those scripts and databases as the server-side piece, even when the app is running in a FileMaker file that is not hosted on a server.
+
+TanStack Query is a React data-fetching library that handles caching, background refreshes, request deduping, and update synchronization for data that lives outside the browser. See the [TanStack Query overview](https://tanstack.com/query/latest/docs/framework/react/overview) for more detail.
+
+Data can be cached locally in the browser, refreshed in the background, and invalidated after writes so the UI stays responsive without manually reloading every screen.
 
 ## Saving data
 

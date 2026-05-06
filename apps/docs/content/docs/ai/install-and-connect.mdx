@@ -46,15 +46,17 @@ ProofKit installs several pieces that work together: a FileMaker add-on, a FileM
 
 Open your agent and ask it to confirm that ProofKit can see your FileMaker file. A good first prompt:
 
-```text
-Use ProofKit to list the FileMaker files you can see, then summarize the available layouts in the active file.
+```text title="Prompt"
+Use ProofKit to verify my FileMaker connection, list the connected file, and summarize the available layouts.
+
+If nothing is connected, tell me what to fix before I continue.
 ```
 
-<Callout title="TODO: Screenshot - Connected agent">
-  Capture Cursor or another agent listing the connected FileMaker file and a few available layouts.
-</Callout>
+![Claude Code verifying a FileMaker connection with ProofKit and summarizing available layouts.](/screenshots/ai/connected-filemaker-agent.png)
 
-If the agent cannot see your file, confirm that FileMaker Pro is open, the file has the ProofKit add-on installed, and the plug-in is enabled.
+_Claude Code following the prompt and confirming the connected file and layouts._
+
+If the agent cannot see your file, open FileMaker Pro, run the **Connect to MCP** script in your file, and keep the connector Web Viewer open in Browse mode. For the full checklist, see [fmBridge troubleshooting](/docs/webviewer/fm-bridge#troubleshooting).
 
 ## Next step
 

@@ -1,0 +1,97 @@
+---
+title: Chat Mode vs Code Mode
+description: Understand when to use ProofKit for FileMaker exploration and when to use it to build Web Viewer apps.
+---
+
+ProofKit is useful in two different AI workflows: chat-first exploration and agentic app development.
+
+Both use the same FileMaker connection, but they are not trying to do the same job.
+
+## Chat mode
+
+Chat mode is best when you want to talk to your FileMaker file.
+
+In a chat-first tool such as Claude Desktop or ChatGPT, ProofKit can expose FileMaker context to the model. The assistant can read metadata, inspect layouts and fields, understand relationships, run read-only queries, summarize records, and help you reason about the shape of your data.
+
+This is useful even if you never build a Web Viewer app.
+
+Good chat-mode prompts include:
+
+```text title="Prompt"
+Summarize the tables, layouts, and relationships in this FileMaker file.
+```
+
+```text title="Prompt"
+Show me a table of the last ten invoices in the system.
+```
+
+```text title="Prompt"
+Show me an ERD diagram for this FileMaker file.
+```
+
+**Works with Claude Desktop Chat**
+
+```text title="Prompt"
+Use the visualizer to show recent invoice revenue by month.
+```
+
+Some chat tools also include built-in visualization features. For example, Claude can turn queried FileMaker data into charts, summaries, and dashboard-style artifacts directly inside the conversation.
+
+Chat mode is good for:
+
+- Exploring schema and relationships.
+- Asking questions about FileMaker data.
+- Creating summaries, reports, and charts.
+- Prototyping dashboard ideas before building.
+- Deciding what Web Viewer app would be worth making.
+
+Chat mode is not the full ProofKit app-building loop. The assistant may understand your file, but it usually is not editing a project, running TypeScript checks, previewing a browser app, or deploying a bundle back into FileMaker.
+
+## Code mode
+
+Code mode is for building software.
+
+In a coding agent such as Cursor, Claude Code, Codex, OpenCode, or another MCP-compatible development agent, ProofKit gives the agent FileMaker context while it works inside a real project folder.
+
+That means the agent can use your FileMaker metadata and data while also editing files, installing project dependencies, running checks, inspecting browser output, fixing errors, and deploying the finished app into FileMaker.
+
+Good code-mode prompts include:
+
+```text title="Prompt"
+Set up a ProofKit Web Viewer project in this folder.
+```
+
+```text title="Prompt"
+Build a customer dashboard using the Contacts layout.
+```
+
+```text title="Prompt"
+Run the app locally, inspect it in the browser, and fix any errors.
+```
+
+```text title="Prompt"
+Build and deploy this Web Viewer app into my FileMaker file.
+```
+
+Code mode is good for:
+
+- Scaffolding a ProofKit Web Viewer project.
+- Building React, TypeScript, Tailwind, and shadcn/ui screens.
+- Using generated FileMaker types.
+- Running lint, typecheck, and build commands.
+- Previewing and debugging the app.
+- Deploying the bundle into FileMaker.
+
+## How to choose
+
+Use chat mode when your goal is understanding, analysis, reporting, or visualization inside the conversation.
+
+Use code mode when your goal is a working app: project files, local preview, browser testing, and deployment into FileMaker.
+
+A common workflow is to start in chat mode, ask questions about the FileMaker file, identify a useful screen or dashboard, then move to code mode to build it as a real Web Viewer app.
+
+## Related pages
+
+- [Explore Your File](/docs/ai/explore-your-file)
+- [Build a Web Viewer App](/docs/ai/build-a-webviewer-app)
+- [Agent Workflow](/docs/ai/agent-workflow)
