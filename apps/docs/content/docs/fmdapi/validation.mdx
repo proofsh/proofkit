@@ -33,6 +33,6 @@ If you define a schema, each method that you call may cause the API request to t
 
 ## Typegen Integration
 
-If you use [@proofkit/typegen](/docs/typegen) or [@proofkit/cli](/docs/cli) to generate the layout-specific clients, it will automatically generate zod validators also.
+If you use [@proofkit/typegen](/docs/typegen) to generate the layout-specific clients, it will automatically generate zod validators also.
 
 These generated files should **never** be edited, since your changes would just be overwritten the next time you run an update to your schema. However, you can and should add overrides to the files at the root of your schemas, as only the files in the `client` and `generated` folders will be overwritten.

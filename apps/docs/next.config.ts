@@ -32,13 +32,8 @@ const config: NextConfig = {
       permanent: true,
     },
     {
-      source: "/docs/cli/webviewer/overview",
-      destination: "/docs/webviewer/faq",
-      permanent: true,
-    },
-    {
-      source: "/docs/cli/webviewer/:path*",
-      destination: "/docs/webviewer/:path*",
+      source: "/docs/cli/:path*",
+      destination: "/docs/ai",
       permanent: true,
     },
   ],
