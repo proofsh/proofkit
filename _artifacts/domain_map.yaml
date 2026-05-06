@@ -625,6 +625,83 @@ skills:
         priority: CRITICAL
         status: active
 
+  - name: 'WebDirect Runtime'
+    slug: 'webdirect-runtime'
+    domain: 'webviewer'
+    description: 'Build ProofKit Web Viewer apps that run safely in FileMaker WebDirect without changing code or deployment model'
+    type: core
+    packages:
+      - '@proofkit/webviewer'
+    covers:
+      - 'Same @proofkit/webviewer APIs in FileMaker Pro and WebDirect'
+      - 'Same embedded/hosted/downloaded deployment options'
+      - 'WebDirect Web Viewer refresh behavior'
+      - 'Browser resize-triggered refresh resilience'
+      - 'localStorage recovery state'
+      - 'Explicit save, resume, and discard flows'
+    tasks:
+      - 'Design a Web Viewer app that can run in WebDirect'
+      - 'Make WebDirect refreshes non-destructive'
+      - 'Persist recoverable UI and draft state'
+      - 'Avoid incorrect separate deployment guidance'
+    failure_modes:
+      - mistake: 'Recommending separate WebDirect deployment'
+        mechanism: 'WebDirect changes runtime refresh behavior, not the ProofKit deployment model. Embedded Web Viewer bundles in the FileMaker file are valid for WebDirect.'
+        wrong_pattern: |
+          // Wrong guidance:
+          // "Because this runs in WebDirect, deploy the app to Vercel
+          // and point the Web Viewer at the hosted URL."
+        correct_pattern: |
+          // Correct guidance:
+          // Use the same ProofKit Web Viewer deployment.
+          // Embedded bundles in the FileMaker file work in WebDirect.
+        source: 'maintainer interview'
+        priority: CRITICAL
+        status: active
+        skills: ['webdirect-runtime', 'webviewer-integration']
+
+      - mistake: 'Keeping critical workflow state only in memory'
+        mechanism: 'WebDirect can refresh the Web Viewer more often than a normal browser app, including on browser resize. In-memory React state and TanStack Query cache are lost on refresh.'
+        wrong_pattern: |
+          const [draft, setDraft] = useState(emptyDraft);
+        correct_pattern: |
+          const [draft, setDraft] = useState(() => loadDraft() ?? emptyDraft);
+          function updateDraft(next) {
+            setDraft(next);
+            localStorage.setItem("workflow:draft", JSON.stringify(next));
+          }
+        source: 'maintainer interview'
+        priority: HIGH
+        status: active
+
+      - mistake: 'Treating localStorage as committed FileMaker data'
+        mechanism: 'localStorage is for refresh recovery only. FileMaker remains the source of truth for committed records and permissions.'
+        wrong_pattern: |
+          const invoice = JSON.parse(localStorage.getItem("invoice") ?? "{}");
+          renderInvoice(invoice);
+        correct_pattern: |
+          const draft = loadDraft();
+          const invoice = await fmFetch("GetInvoice", { id: draft?.invoiceId });
+          renderInvoice({ ...invoice, draft });
+        source: 'maintainer interview'
+        priority: HIGH
+        status: active
+
+      - mistake: 'Assuming browser refresh is user intent'
+        mechanism: 'In WebDirect, refresh can be incidental rather than intentional. Clearing recovery state on unload can destroy work after a resize-triggered refresh.'
+        wrong_pattern: |
+          window.addEventListener("beforeunload", () => {
+            localStorage.removeItem("workflow:draft");
+          });
+        correct_pattern: |
+          async function save() {
+            await fmFetch("SaveWorkflow", draft);
+            localStorage.removeItem("workflow:draft");
+          }
+        source: 'maintainer interview'
+        priority: MEDIUM
+        status: active
+
   - name: 'Better Auth Setup'
     slug: 'better-auth-setup'
     domain: 'auth'
@@ -873,6 +950,11 @@ tensions:
     description: 'Web Viewer local mode (WebViewerAdapter) requires no auth and works offline, but uses single-threaded FM script execution — concurrent queries cause beach balls. Server-based OData is fast and concurrent but requires authentication and FM server connectivity. This is a core architecture decision.'
     implication: 'An agent might use listAll or TanStack Query with retries in Web Viewer local mode, overwhelming the single-threaded FM script engine. Or it might try server patterns inside Web Viewer without considering auth requirements.'
 
+  - name: 'WebDirect refresh resilience vs normal SPA assumptions'
+    skills: ['webdirect-runtime', 'webviewer-integration']
+    description: 'WebDirect can refresh the Web Viewer unexpectedly while normal SPA patterns assume in-memory state survives until user navigation.'
+    implication: 'An agent might build memory-only forms that work in FileMaker Pro but lose state when WebDirect refreshes after a browser resize.'
+
 cross_references:
   - from: 'typegen-setup'
     to: 'fmdapi-client'
@@ -889,6 +971,9 @@ cross_references:
   - from: 'webviewer-integration'
     to: 'fmdapi-client'
     reason: 'WebViewerAdapter implements the fmdapi Adapter interface. Understanding both is needed for Data API access inside Web Viewer.'
+  - from: 'webdirect-runtime'
+    to: 'webviewer-integration'
+    reason: 'WebDirect runtime guidance uses the same Web Viewer bridge APIs and deployment paths as the standard integration skill.'
   - from: 'getting-started'
     to: 'typegen-setup'
     reason: 'Getting started flow always involves typegen as the first step after env setup.'
@@ -926,3 +1011,8 @@ gaps:
     question: 'What are the most common deployment pitfalls for Web Viewer apps?'
     context: 'Partially resolved: single-threaded script execution bottleneck added. Deployment method tradeoffs covered in docs.'
     status: open
+
+  - skill: 'webdirect-runtime'
+    question: 'Can WebDirect apps use the same Web Viewer code and deployment as FileMaker Pro?'
+    context: 'Resolved: yes. Do not recommend separate WebDirect code, deployment, or web server. Persist critical recovery state because WebDirect refreshes the Web Viewer more often.'
+    status: resolved

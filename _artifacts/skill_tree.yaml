@@ -140,6 +140,27 @@ skills:
       - 'proofsh/proofkit:apps/docs/content/docs/webviewer/fmdapi.mdx'
       - 'proofsh/proofkit:apps/docs/content/docs/webviewer/troubleshooting.mdx'
 
+  - name: 'WebDirect Runtime'
+    slug: 'webdirect-runtime'
+    type: 'core'
+    domain: 'webviewer'
+    path: 'skills/webdirect-runtime/SKILL.md'
+    package: 'packages/webviewer'
+    description: >
+      Build ProofKit Web Viewer apps that run safely in FileMaker WebDirect.
+      Covers same-code/same-deployment behavior, embedded bundles in the
+      FileMaker file, WebDirect's more frequent Web Viewer refreshes, browser
+      resize reload behavior, localStorage recovery state, explicit save/resume
+      flows, and avoiding incorrect recommendations to deploy WebDirect apps
+      separately or serve them from a separate web server.
+    requires:
+      - 'webviewer-integration'
+    sources:
+      - 'proofsh/proofkit:apps/docs/content/docs/webviewer/platform-notes.mdx'
+      - 'proofsh/proofkit:apps/docs/content/docs/webviewer/deployment-methods.mdx'
+      - 'proofsh/proofkit:apps/docs/content/docs/webviewer/runtime-under-the-hood.mdx'
+      - 'proofsh/proofkit:packages/webviewer/src/main.ts'
+
   - name: 'Better Auth Setup'
     slug: 'better-auth-setup'
     type: 'core'

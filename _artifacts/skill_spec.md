@@ -8,7 +8,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | --- | --- | --- |
 | Connecting to FileMaker | Setting up typed connections via Data API or OData, including auth, adapters, and type generation | typegen-setup, getting-started |
 | Reading and Writing Data | Querying, creating, updating, and deleting FileMaker records through either API surface | fmdapi-client, fmodata-client, odata-query-optimization |
-| Running in Web Viewer | Executing JavaScript inside FileMaker Web Viewer with script calls and local Data API access | webviewer-integration |
+| Running in Web Viewer | Executing JavaScript inside FileMaker Web Viewer with script calls and local Data API access | webviewer-integration, webdirect-runtime |
 | Authenticating Users | Self-hosted authentication using Better Auth with FileMaker as the database backend | better-auth-setup |
 
 ## Skill Inventory
@@ -19,6 +19,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | fmdapi-client | core | data-access | DataApi factory, adapters, token stores, CRUD, find variants, scripts, validation | 6 |
 | fmodata-client | core | data-access | FMServerConnection, schema/field builders, query builder, CRUD, relationships, batch, errors | 8 |
 | webviewer-integration | core | webviewer | fmFetch, callFMScript, WebViewerAdapter, browser-only constraints, local mode perf | 6 |
+| webdirect-runtime | core | webviewer | WebDirect same deployment, refresh resilience, localStorage recovery state, explicit save/resume flows | 4 |
 | better-auth-setup | core | auth | FileMakerAdapter, migration CLI, OData prerequisites | 4 |
 | getting-started | lifecycle | connecting | Prerequisites, env setup, first typegen run, first query | 3 |
 | odata-query-optimization | core | data-access | defaultSelect, pagination, batching, entity IDs, null query perf, relationship perf, debugging | 6 |
@@ -76,6 +77,15 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | 5 | Accessing window.FileMaker directly instead of library functions | CRITICAL | maintainer | — |
 | 6 | Not understanding single-threaded script execution in Web Viewer local mode | HIGH | maintainer | fmodata-client |
 
+### webdirect-runtime (4 failure modes)
+
+| # | Mistake | Priority | Source | Cross-skill? |
+| --- | --- | --- | --- | --- |
+| 1 | Recommending separate WebDirect deployment | CRITICAL | maintainer | webviewer-integration |
+| 2 | Keeping critical workflow state only in memory | HIGH | maintainer | — |
+| 3 | Treating localStorage as committed FileMaker data | HIGH | maintainer | — |
+| 4 | Assuming browser refresh is user intent | MEDIUM | maintainer | — |
+
 ### better-auth-setup (4 failure modes)
 
 | # | Mistake | Priority | Source | Cross-skill? |
@@ -111,6 +121,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | Type safety vs rapid prototyping | typegen-setup ↔ fmdapi-client ↔ fmodata-client | Agent might skip typegen to move fast, losing validation and creating schema drift |
 | defaultSelect schema safety vs completeness | fmodata-client ↔ odata-query-optimization | Agent switches to "all" to fix missing data without understanding performance cost |
 | Web Viewer local mode vs server-based data access | webviewer-integration ↔ fmdapi-client ↔ fmodata-client | Agent uses listAll or TanStack Query retries in Web Viewer local mode, overwhelming single-threaded FM script engine |
+| WebDirect refresh resilience vs normal SPA assumptions | webdirect-runtime ↔ webviewer-integration | Agent builds memory-only flows that work in FileMaker Pro but lose state when WebDirect refreshes the Web Viewer |
 
 ## Cross-References
 
@@ -121,6 +132,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | fmodata-client | odata-query-optimization | Understanding optimization prevents performance issues |
 | better-auth-setup | fmodata-client | Better Auth uses fmodata under the hood |
 | webviewer-integration | fmdapi-client | WebViewerAdapter implements the fmdapi Adapter interface |
+| webdirect-runtime | webviewer-integration | WebDirect guidance assumes the standard Web Viewer bridge APIs and deployment model |
 | getting-started | typegen-setup | Getting started always involves typegen first |
 | fmdapi-client | fmodata-client | Understanding both helps developers choose the right API surface |
 
@@ -132,6 +144,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 | fmodata-client | — | Filter operators (>15), Error types (>10) |
 | typegen-setup | — | — |
 | webviewer-integration | — | — |
+| webdirect-runtime | — | — |
 | better-auth-setup | — | — |
 | getting-started | — | — |
 | odata-query-optimization | — | — |
@@ -145,7 +158,7 @@ ProofKit is a monorepo of TypeScript tools for building web applications integra
 
 ## Recommended Skill File Structure
 
-- **Core skills:** typegen-setup, fmdapi-client, fmodata-client, webviewer-integration, better-auth-setup, odata-query-optimization
+- **Core skills:** typegen-setup, fmdapi-client, fmodata-client, webviewer-integration, webdirect-runtime, better-auth-setup, odata-query-optimization
 - **Lifecycle skills:** getting-started
 - **Framework skills:** none (library is framework-agnostic)
 - **Composition skills:** none identified
