@@ -2,6 +2,9 @@ import { ArrowRight, Code, Download, Eye, RefreshCw, Server, Zap } from "lucide-
 import Link from "next/link";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
+import { getMarketingMetadata } from "@/lib/og";
+
+export const metadata = getMarketingMetadata("how-it-works");
 
 export default function HowItWorksPage() {
   return (

@@ -49,3 +49,14 @@ export const source = loader({
   },
   source: docs.toFumadocsSource(),
 });
+
+type SourcePage = ReturnType<typeof source.getPages>[number];
+
+export function getPageImage(page: SourcePage) {
+  const segments = [...page.slugs, "image.png"];
+
+  return {
+    segments,
+    url: `/og/docs/${segments.join("/")}`,
+  };
+}
