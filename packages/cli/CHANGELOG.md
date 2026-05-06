@@ -1,5 +1,12 @@
 # @proofgeist/kit
 
+## 2.0.1
+
+### Patch Changes
+
+- b3f820a: Use caret versions for scaffolded ProofKit deps.
+- f1869dd: Download FileMaker add-ons from CDN instead of bundled CLI templates.
+
 ## 2.0.0
 
 ### Major Changes
@@ -34,7 +41,7 @@
 - d7f86a4: Update newly scaffolded apps to use Ultracite for linting and formatting by default, including the generated `lint` and `format` scripts and CLI formatting flow.
 - e0ea042: Update bundled FileMaker addon to fix a bug in the SendCallback script.
 - c71b0d4: Add `utils/fmdapi` helper to the ProofKit registry.
-- Updated dependencies 
+- Updated dependencies
   - @proofkit/typegen@1.1.0
   - @proofkit/fmdapi@5.1.0
 
