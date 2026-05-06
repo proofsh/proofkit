@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { trackDownloadClick } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 type Platform = "mac" | "win";
@@ -81,6 +82,13 @@ export function DownloadButton({ variant = "light", className }: DownloadButtonP
       <Link
         className={cn("inline-flex items-center gap-3 rounded-l-full font-semibold text-base", styles.primary)}
         href={primary.href}
+        onClick={() =>
+          trackDownloadClick({
+            detectedPlatform: platform,
+            selectedPlatform: platform,
+            variant,
+          })
+        }
       >
         {primary.icon}
         {primary.label}
@@ -97,7 +105,17 @@ export function DownloadButton({ variant = "light", className }: DownloadButtonP
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link className="gap-3" href={other.href}>
+            <Link
+              className="gap-3"
+              href={other.href}
+              onClick={() =>
+                trackDownloadClick({
+                  detectedPlatform: platform,
+                  selectedPlatform: otherKey,
+                  variant,
+                })
+              }
+            >
               {other.icon}
               {other.label}
             </Link>

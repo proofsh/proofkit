@@ -1,6 +1,9 @@
+"use client";
+
 import { ChevronDown, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { trackMarketingNavClick } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { LargeSearchToggle } from "./search-toggle";
 import { ThemeToggle } from "./theme-toggle";
@@ -63,6 +66,13 @@ export function MarketingNav({ variant = "light" }: MarketingNavProps) {
               )}
               href={link.href}
               key={link.href}
+              onClick={() =>
+                trackMarketingNavClick({
+                  destination: link.href,
+                  label: link.label,
+                  navSurface: "primary",
+                })
+              }
             >
               {link.label}
             </Link>
@@ -116,7 +126,7 @@ function NavPopover({ isDark, label, links }: { isDark: boolean; label: string; 
             : "border-gray-200 bg-white/90 dark:border-white/10 dark:bg-black/80 dark:text-white",
         )}
       >
-        <NavMenuList isDark={isDark} links={links} />
+        <NavMenuList isDark={isDark} links={links} navSurface="more" />
       </PopoverContent>
     </Popover>
   );
@@ -145,13 +155,13 @@ function MobileNavPopover({ isDark, links }: { isDark: boolean; links: typeof na
             : "border-gray-200 bg-white/95 dark:border-white/10 dark:bg-black/85 dark:text-white",
         )}
       >
-        <NavMenuList isDark={isDark} links={links} />
+        <NavMenuList isDark={isDark} links={links} navSurface="mobile" />
       </PopoverContent>
     </Popover>
   );
 }
 
-function NavMenuList({ isDark, links }: { isDark: boolean; links: typeof navLinks }) {
+function NavMenuList({ isDark, links, navSurface }: { isDark: boolean; links: typeof navLinks; navSurface: string }) {
   return (
     <div className="grid gap-1">
       {links.map((link) => (
@@ -164,6 +174,13 @@ function NavMenuList({ isDark, links }: { isDark: boolean; links: typeof navLink
                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-950 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
             )}
             href={link.href}
+            onClick={() =>
+              trackMarketingNavClick({
+                destination: link.href,
+                label: link.label,
+                navSurface,
+              })
+            }
           >
             {link.label}
           </Link>
