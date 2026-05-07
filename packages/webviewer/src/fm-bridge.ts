@@ -30,6 +30,23 @@ export const buildNoConnectedFilesWarning = (connectedFilesUrl: string): string 
 export const buildNoConnectedFilesRuntimeError = (connectedFilesUrl: string): string =>
   `fmBridge could not forward message because no connected FileMaker file is available from ${connectedFilesUrl}.`;
 
+export const buildMockScriptUrl = (options: {
+  baseUrl: string;
+  fileName: string;
+  wsUrl: string;
+  debug: boolean;
+}): string => {
+  const scriptUrl = new URL(`${normalizeBaseUrl(options.baseUrl)}/fm-mock.js`);
+  scriptUrl.searchParams.set("fileName", options.fileName);
+  scriptUrl.searchParams.set("wsUrl", options.wsUrl);
+
+  if (options.debug) {
+    scriptUrl.searchParams.set("debug", "true");
+  }
+
+  return scriptUrl.toString();
+};
+
 export const resolveWsUrl = (options: Pick<FmBridgeOptions, "fmMcpBaseUrl" | "wsUrl">): string => {
   const explicitWsUrl = trimToNull(options.wsUrl);
   if (explicitWsUrl) {
@@ -98,29 +115,25 @@ export const buildMockScriptTag = (options: {
     return null;
   }
 
-  const scriptUrl = new URL(`${normalizeBaseUrl(options.baseUrl)}/fm-mock.js`);
-  scriptUrl.searchParams.set("fileName", options.fileName);
-  scriptUrl.searchParams.set("wsUrl", options.wsUrl);
-
-  if (options.debug) {
-    scriptUrl.searchParams.set("debug", "true");
-  }
-
   return {
     tag: "script",
-    attrs: { src: scriptUrl.toString() },
+    attrs: {
+      src: buildMockScriptUrl({
+        baseUrl: options.baseUrl,
+        fileName: options.fileName,
+        wsUrl: options.wsUrl,
+        debug: options.debug,
+      }),
+    },
     injectTo: "head-prepend",
   };
 };
 
-export const buildNoConnectedFilesScriptTag = (baseUrl: string): HtmlTagDescriptor => {
+export const buildNoConnectedFilesRuntimeScript = (baseUrl: string): string => {
   const connectedFilesUrl = `${normalizeBaseUrl(baseUrl)}/connectedFiles`;
   const errorMessage = buildNoConnectedFilesRuntimeError(connectedFilesUrl);
 
-  return {
-    tag: "script",
-    injectTo: "head-prepend",
-    children: `
+  return `
 (() => {
   const errorMessage = ${JSON.stringify(errorMessage)};
   const report = () => {
@@ -144,7 +157,14 @@ export const buildNoConnectedFilesScriptTag = (baseUrl: string): HtmlTagDescript
     };
   }
 })();
-`.trim(),
+`.trim();
+};
+
+export const buildNoConnectedFilesScriptTag = (baseUrl: string): HtmlTagDescriptor => {
+  return {
+    tag: "script",
+    injectTo: "head-prepend",
+    children: buildNoConnectedFilesRuntimeScript(baseUrl),
   };
 };
 
