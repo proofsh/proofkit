@@ -41,10 +41,24 @@
         "default": "./dist/cjs/vite-plugins.cjs"
       }
     },
+    "./nextjs": {
+      "import": {
+        "types": "./dist/esm/nextjs.d.ts",
+        "default": "./dist/esm/nextjs.js"
+      },
+      "require": {
+        "types": "./dist/cjs/nextjs.d.cts",
+        "default": "./dist/cjs/nextjs.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
     "uuid": "^11.1.0"
+  },
+  "peerDependencies": {
+    "next": ">=13.0.0",
+    "react": ">=18.0.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
