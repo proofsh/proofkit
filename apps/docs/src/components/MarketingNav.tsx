@@ -11,7 +11,7 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./ui/popo
 
 const primaryNavLinks = [
   { href: "/docs", label: "Docs" },
-  { href: "https://community.ottomatic.cloud/c/proofkit", label: "Community" },
+  { href: "https://community.proof.sh/c/proofkit", label: "Community" },
 ];
 
 const moreNavLinks = [

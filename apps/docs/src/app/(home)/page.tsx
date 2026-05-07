@@ -296,7 +296,7 @@ export default function HomePage() {
               <DownloadButton variant="light" />
               <Link
                 className="inline-flex h-12 items-center gap-3 rounded-full border border-gray-300 bg-white px-6 font-semibold text-base text-gray-700 transition hover:border-gray-400 hover:text-gray-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white"
-                href="https://community.ottomatic.cloud/c/proofkit"
+                href="https://community.proof.sh/c/proofkit"
               >
                 Join the Community
               </Link>

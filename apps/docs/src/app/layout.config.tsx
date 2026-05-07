@@ -19,7 +19,7 @@ export const baseOptions = {
   links: [
     {
       text: "Community",
-      url: "https://community.ottomatic.cloud/c/proofkit",
+      url: "https://community.proof.sh/c/proofkit",
       external: true,
     },
     {

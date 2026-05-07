@@ -3,7 +3,7 @@
 ProofKit is a collection of TypeScript tools and libraries for building modern web applications, with a focus on seamless integration with Claris FileMaker. It includes CLI utilities, API clients, type generators, and other resources to help scaffold and develop TypeScript projects. ProofKit aims to make web development easier for beginners and more efficient for experienced developers by providing an opinionated project structure, code-mod scripts, and a suite of libraries to help you build, extend, and maintain your apps over time. This monorepo is where the ProofKit tools are developed and maintained.
 
 - **Documentation:** [proofkit.proof.sh](https://proofkit.proof.sh)
-- **Community Forum:** [Ottomatic Community – ProofKit Category](https://community.ottomatic.cloud/c/proofkit/13)
+- **Community Forum:** [Ottomatic Community – ProofKit Category](https://community.proof.sh/c/proofkit/13)
 
 ---
 
@@ -21,7 +21,7 @@ This monorepo includes the following core packages:
 
 For all setup, usage, and advanced guides, please visit the [official documentation site](https://proofkit.proof.sh).
 
-For questions, support, and discussion, join the [Ottomatic Community](https://community.ottomatic.cloud/c/proofkit/13) in the **ProofKit** category.
+For questions, support, and discussion, join the [Ottomatic Community](https://community.proof.sh/c/proofkit/13) in the **ProofKit** category.
 
 ## Monorepo Structure
 
@@ -36,7 +36,7 @@ If you use an AI coding agent, run `npx @tanstack/intent@latest install` to load
 
 ## Contributing
 
-We welcome contributions! Please open issues or pull requests on [GitHub](https://github.com/proofsh/proofkit). For questions, join the [community forum](https://community.ottomatic.cloud/c/proofkit/13) in the **ProofKit** category.
+We welcome contributions! Please open issues or pull requests on [GitHub](https://github.com/proofsh/proofkit). For questions, join the [community forum](https://community.proof.sh/c/proofkit/13) in the **ProofKit** category.
 
 ## License
 

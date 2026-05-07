@@ -2,7 +2,7 @@
 
 A strongly-typed FileMaker OData API client.
 
-⚠️ This library is in **beta** status. The core API is stable but may still see minor changes before 1.0. Feedback is welcome on the [community forum](https://community.ottomatic.cloud/c/proofkit/13) or on [GitHub](https://github.com/proofsh/proofkit/issues).
+⚠️ This library is in **beta** status. The core API is stable but may still see minor changes before 1.0. Feedback is welcome on the [community forum](https://community.proof.sh/c/proofkit/13) or on [GitHub](https://github.com/proofsh/proofkit/issues).
 
 Roadmap:
 

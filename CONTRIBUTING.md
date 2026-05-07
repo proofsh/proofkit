@@ -4,7 +4,7 @@
 
 ### Prerequisites
 
-- Node.js >= 18
+- Node.js 22
 - pnpm (managed via corepack)
 - [Doppler CLI](https://docs.doppler.com/docs/install-cli) for secrets management
 
@@ -16,6 +16,7 @@
 git clone https://github.com/proofsh/proofkit.git
 cd proofkit
 corepack enable
+nvm use
 pnpm install
 ```
 
@@ -33,12 +34,41 @@ doppler login
 doppler setup
 ```
 
-### Running Tests
+### Running Checks
 
-Test scripts automatically use `doppler run` to inject secrets:
+`pnpm ci` mirrors the shared PR workflow gates:
 
 ```bash
-# Run all tests
+pnpm ci
+```
+
+That runs:
+
+- lint
+- skill version check
+- typecheck
+- deterministic tests
+- build
+
+`pnpm ci:release` mirrors the extra release-gating checks run on `main`:
+
+```bash
+pnpm ci:release
+```
+
+That adds:
+
+- CLI external integration smoke tests
+- `@proofkit/fmodata` e2e
+
+Those release-only checks need secrets loaded the same way CI does. Use `varlock run -- pnpm ci:release` when needed.
+
+### Running Tests
+
+Some test scripts use secret injection:
+
+```bash
+# Run all deterministic tests
 pnpm test
 
 # Run specific package tests
@@ -63,8 +93,8 @@ pnpm format
 
 1. Create a new branch for your feature or fix
 2. Make your changes
-3. Run tests with `pnpm test:local`
-4. Run `pnpm lint` to check for issues
+3. Run `pnpm ci`
+4. Run `pnpm ci:release` if touching release-path code or CI-only integrations
 5. Submit a pull request
 
 ## Code Style
