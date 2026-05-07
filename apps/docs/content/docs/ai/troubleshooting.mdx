@@ -1,0 +1,69 @@
+---
+title: Troubleshooting
+description: Fix common ProofKit AI setup, preview, and deployment problems.
+---
+
+## I see an error about the ProofKit plug-in [#plugin-errors]
+
+There are three common plug-in states:
+
+### The plug-in is disabled
+
+If ProofKit is installed but disabled in FileMaker Pro:
+
+1. Open FileMaker Pro.
+2. Go to **Settings**.
+3. Open the **Plug-Ins** tab.
+4. Find the ProofKit plug-in.
+5. Enable it.
+6. Re-run the **Connect to MCP** script.
+
+### The plug-in failed to load
+
+If FileMaker says the ProofKit plug-in failed to load, report a bug in the [ProofKit community](https://community.ottomatic.cloud/c/proofkit).
+
+### The plug-in is missing
+
+If FileMaker says the ProofKit plug-in is missing, download and install ProofKit again.
+
+If you already downloaded and installed it and still see the missing plug-in error, report a bug in the [ProofKit community](https://community.ottomatic.cloud/c/proofkit).
+
+## The agent cannot see my FileMaker file
+
+If your agent says no file is connected, or it cannot list layouts or fields:
+
+1. Confirm the file is open in FileMaker Pro.
+2. Re-run the **Connect to MCP** script in that file.
+3. Keep the connector Web Viewer window open while you work.
+4. Confirm that connector window is in **Browse mode**, not Layout mode.
+5. Restart the agent app after installing ProofKit if this is your first setup.
+
+This is the most common failure mode. The connector Web Viewer is part of the bridge. If it is closed, hidden in the wrong file window, or switched out of Browse mode, the agent loses access.
+
+If the connection still fails, revisit [Install and Connect](/docs/ai/install-and-connect) and the [`fmBridge` troubleshooting notes](/docs/webviewer/fm-bridge#troubleshooting).
+
+## The local preview opens, but FileMaker-backed features do not work
+
+If the browser preview loads but data calls, script calls, or bridge actions fail:
+
+- Ensure the FileMaker file is still connected through **Connect to MCP**.
+- Confirm the connector Web Viewer has not been closed since the dev server started.
+- Check that your project is using the standard ProofKit Web Viewer setup with `fmBridge`.
+- Re-run your dev server after reconnecting FileMaker if the bridge was broken during startup.
+
+Typical symptoms include script calls hanging, bridge errors, or a preview that renders static UI but never loads live FileMaker data.
+
+For bridge-specific failures, see [`fmBridge`](/docs/webviewer/fm-bridge) and [Web Viewer troubleshooting](/docs/webviewer/troubleshooting).
+
+## The generated app is using the wrong fields
+
+If the agent built against stale schema, or TypeScript errors reference fields that no longer exist:
+
+1. Make sure the agent is using the correct FileMaker file and layout.
+2. Re-run type generation after schema or layout changes.
+3. Restart the dev server after regenerated types land.
+4. Ask the agent to fix type errors before continuing feature work.
+
+ProofKit apps rely on generated metadata. If your FileMaker schema changes but the project still uses old generated files, the agent will confidently write code against the wrong shape.
+
+Use the [TypeGen docs](/docs/typegen) when the issue is clearly about generated types, layouts, or config.

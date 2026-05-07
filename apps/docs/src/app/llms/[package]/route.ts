@@ -8,7 +8,7 @@ const PACKAGES = ["better-auth", "cli", "fmdapi", "fmodata", "typegen", "webview
 
 const PACKAGE_DESCRIPTIONS: Record<string, string> = {
   "better-auth": "Better Auth adapter for FileMaker authentication",
-  cli: "Interactive CLI for scaffolding ProofKit projects",
+  cli: "Deterministic CLI for scaffolding ProofKit projects",
   fmdapi: "FileMaker Data API client (REST)",
   fmodata: "FileMaker OData API client with Drizzle-like ORM",
   typegen: "TypeScript type generator from FileMaker layouts",

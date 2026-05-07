@@ -46,7 +46,7 @@ export default defineConfig({
         __BETTER_AUTH_VERSION__: JSON.stringify(BETTER_AUTH_VERSION),
         __WEBVIEWER_VERSION__: JSON.stringify(WEBVIEWER_VERSION),
         __TYPEGEN_VERSION__: JSON.stringify(TYPEGEN_VERSION),
-        __REGISTRY_URL__: JSON.stringify(isDev ? "http://localhost:3005" : "https://proofkit.proof.sh"),
+        __REGISTRY_URL__: JSON.stringify(isDev ? "https://proofkit.localhost:1355" : "https://proofkit.proof.sh"),
       },
     }),
   ],
