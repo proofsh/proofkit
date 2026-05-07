@@ -88,6 +88,12 @@ export function planInit(
     packageJson.devDependencies.ultracite = "7.0.8";
   }
 
+  const shouldRunInitialCodegen =
+    !request.noInstall &&
+    request.dataSource === "filemaker" &&
+    !request.skipFileMakerSetup &&
+    !(request.appType === "webviewer" && request.nonInteractive && !request.hasExplicitFileMakerInputs);
+
   return {
     request,
     targetDir,
@@ -107,21 +113,14 @@ export function planInit(
     ],
     commands: [
       ...(request.noInstall ? [] : [{ type: "install" as const }]),
-      ...(request.dataSource === "filemaker" &&
-      !request.skipFileMakerSetup &&
-      !(request.appType === "webviewer" && request.nonInteractive && !request.hasExplicitFileMakerInputs)
-        ? [{ type: "codegen" as const }]
-        : []),
+      ...(shouldRunInitialCodegen ? [{ type: "codegen" as const }] : []),
       ...(request.noGit ? [] : [{ type: "git-init" as const }]),
     ],
     tasks: {
       bootstrapFileMaker: request.dataSource === "filemaker" && !request.skipFileMakerSetup,
       checkWebViewerAddon: request.appType === "webviewer",
       runInstall: !request.noInstall,
-      runInitialCodegen:
-        request.dataSource === "filemaker" &&
-        !request.skipFileMakerSetup &&
-        !(request.appType === "webviewer" && request.nonInteractive && !request.hasExplicitFileMakerInputs),
+      runInitialCodegen: shouldRunInitialCodegen,
       initializeGit: !request.noGit,
     },
     nextSteps: [

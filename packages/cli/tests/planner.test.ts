@@ -114,4 +114,23 @@ describe("planInit", () => {
     expect(plan.tasks.bootstrapFileMaker).toBe(true);
     expect(plan.tasks.runInitialCodegen).toBe(false);
   });
+
+  it("skips initial codegen when install is disabled", () => {
+    const plan = planInit(
+      makeInitRequest({
+        appType: "browser",
+        dataSource: "filemaker",
+        noInstall: true,
+        hasExplicitFileMakerInputs: true,
+      }),
+      {
+        templateDir: "/templates/browser",
+      },
+    );
+
+    expect(plan.tasks.bootstrapFileMaker).toBe(true);
+    expect(plan.tasks.runInstall).toBe(false);
+    expect(plan.tasks.runInitialCodegen).toBe(false);
+    expect(plan.commands.some((command) => command.type === "codegen")).toBe(false);
+  });
 });
