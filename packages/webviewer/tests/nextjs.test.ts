@@ -91,6 +91,23 @@ describe("getFmBridgeScriptProps", () => {
     );
   });
 
+  it("returns inline fallback script props when connected file discovery throws", async () => {
+    const { getFmBridgeScriptProps } = await nextjsModulePromise;
+    vi.mocked(globalThis.fetch).mockRejectedValue(new Error("boom"));
+
+    const script = await getFmBridgeScriptProps({
+      fmMcpBaseUrl: "http://localhost:1365",
+    });
+
+    expect(script).toMatchObject({
+      strategy: "beforeInteractive",
+      id: "proofkit-fm-bridge-fallback",
+    });
+    expect(script?.dangerouslySetInnerHTML?.__html).toContain(
+      buildNoConnectedFilesRuntimeError("http://localhost:1365/connectedFiles"),
+    );
+  });
+
   it("fallback script reports runtime errors through browser stubs", async () => {
     const { getFmBridgeScriptProps } = await nextjsModulePromise;
     vi.mocked(globalThis.fetch).mockResolvedValue(

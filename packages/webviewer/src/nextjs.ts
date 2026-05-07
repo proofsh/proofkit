@@ -38,7 +38,15 @@ export const getFmBridgeScriptProps = async (
   const baseUrl = trimToNull(options.fmMcpBaseUrl) ?? defaultFmMcpBaseUrl;
   const wsUrl = resolveWsUrl(options);
   const debug = options.debug === true;
-  const resolvedFileName = trimToNull(options.fileName) ?? (await discoverConnectedFileName(baseUrl));
+  let resolvedFileName = trimToNull(options.fileName);
+
+  if (!resolvedFileName) {
+    try {
+      resolvedFileName = await discoverConnectedFileName(baseUrl);
+    } catch {
+      resolvedFileName = null;
+    }
+  }
 
   if (resolvedFileName) {
     return {
