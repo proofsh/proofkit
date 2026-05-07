@@ -17,6 +17,6 @@
     "rootDir": "./src",
     "jsx": "preserve"
   },
-  "include": ["src/*.ts"],
+  "include": ["src/*.ts", "src/*.tsx", "src/*.d.ts"],
   "exclude": ["node_modules", "test", "dist"]
 }

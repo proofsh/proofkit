@@ -6,7 +6,7 @@ description: Use the Web Viewer bridge package directly in custom apps.
 import { Callout } from "fumadocs-ui/components/callout";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
-Use this page when you already have a Vite app, custom Web Viewer project, or another web app where you want to use the ProofKit bridge directly. If you are new to ProofKit and want the recommended path from install to deployed FileMaker app, start with the [ProofKit AI guide](/docs/ai/getting-started).
+Use this page when you already have a Vite app, Next.js app, custom Web Viewer project, or another web app where you want to use the ProofKit bridge directly. If you are new to ProofKit and want the recommended path from install to deployed FileMaker app, start with the [ProofKit AI guide](/docs/ai/getting-started).
 
 ## What this package does
 
@@ -17,6 +17,12 @@ Use this page when you already have a Vite app, custom Web Viewer project, or an
 </Callout>
 
 This is a **client-side** package, meant to run specifically in a FileMaker Web Viewer, but it can still be used in a hosted web app, such as Next.js. However, it will cause errors if loaded in a standard browser. For more information about deployment strategies, see the [Deployment Methods](/docs/webviewer/deployment-methods) guide.
+
+For local development outside FileMaker, use [`fmBridge`](/docs/webviewer/fm-bridge). It supports:
+
+- Vite through `@proofkit/webviewer/vite-plugins`
+- Next.js App Router through `<FmBridgeScript />`
+- Next.js Pages Router through `getFmBridgeScriptProps()` plus `<ResolvedFmBridgeScript />`
 
 For web-based applications where you're looking to interact with the Data API using a network request, check out the [@proofkit/fmdapi](/docs/fmdapi) package instead.
 
@@ -56,5 +62,5 @@ Demo file credentials: `admin` / `admin`
 
 - [`fmFetch`](/docs/webviewer/fmFetch) wraps FileMaker script calls that need a result back in the Web Viewer.
 - [`callFMScript`](/docs/webviewer/callFmScript) calls a FileMaker script when you do not need a result.
-- [`fmBridge`](/docs/webviewer/fm-bridge) lets a local Vite dev server talk to a real connected FileMaker file.
+- [`fmBridge`](/docs/webviewer/fm-bridge) lets a local Vite or Next.js dev server talk to a real connected FileMaker file.
 - [Data Access](/docs/webviewer/data-access) explains the generated FileMaker data path used by ProofKit Web Viewer apps.
