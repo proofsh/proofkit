@@ -77,6 +77,15 @@
   },
   "overrides": [
     {
+      "includes": ["apps/docs/env.d.ts"],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      }
+    },
+    {
       "includes": ["**/stubs/**/*.jsonc"],
       "linter": {
         "enabled": false

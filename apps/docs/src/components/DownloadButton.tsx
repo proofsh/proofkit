@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronDown, Download } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DownloadDialog } from "@/components/DownloadDialog";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {
   DropdownMenu,
@@ -10,20 +10,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { trackDownloadClick } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 type Platform = "mac" | "win";
 
-const platformOptions: Record<Platform, { label: string; href: string; icon: React.ReactNode }> = {
+const platformOptions: Record<Platform, { label: string; icon: React.ReactNode }> = {
   mac: {
     label: "Download for macOS",
-    href: "/download/mac",
     icon: <Download className="size-5" />,
   },
   win: {
     label: "Download for Windows",
-    href: "/download/win",
     icon: (
       <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
         <path d="M4 5.5h7v6H4zM13 5.5h7v6h-7zM4 13h7v5.5H4zM13 13h7v5.5h-7z" stroke="currentColor" strokeWidth="1.8" />
@@ -67,6 +64,8 @@ const variantStyles: Record<DownloadButtonVariant, { primary: string; chevron: s
 
 export function DownloadButton({ variant = "light", className }: DownloadButtonProps) {
   const [platform, setPlatform] = useState<Platform>("mac");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogPlatform, setDialogPlatform] = useState<Platform>("mac");
 
   useEffect(() => {
     setPlatform(detectPlatform());
@@ -77,51 +76,41 @@ export function DownloadButton({ variant = "light", className }: DownloadButtonP
   const other = platformOptions[otherKey];
   const styles = variantStyles[variant];
 
+  const openDialog = (p: Platform) => {
+    setDialogPlatform(p);
+    setDialogOpen(true);
+  };
+
   return (
-    <ButtonGroup className={className}>
-      <Link
-        className={cn("inline-flex items-center gap-3 rounded-l-full font-semibold text-base", styles.primary)}
-        href={primary.href}
-        onClick={() =>
-          trackDownloadClick({
-            detectedPlatform: platform,
-            selectedPlatform: platform,
-            variant,
-          })
-        }
-      >
-        {primary.icon}
-        {primary.label}
-      </Link>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label="Show other download options"
-          className={cn(
-            "inline-flex items-center justify-center rounded-r-full font-semibold focus-visible:outline-none",
-            styles.chevron,
-          )}
+    <>
+      <ButtonGroup className={className}>
+        <button
+          className={cn("inline-flex items-center gap-3 rounded-l-full font-semibold text-base", styles.primary)}
+          onClick={() => openDialog(platform)}
+          type="button"
         >
-          <ChevronDown className="size-5" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link
-              className="gap-3"
-              href={other.href}
-              onClick={() =>
-                trackDownloadClick({
-                  detectedPlatform: platform,
-                  selectedPlatform: otherKey,
-                  variant,
-                })
-              }
-            >
+          {primary.icon}
+          {primary.label}
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label="Show other download options"
+            className={cn(
+              "inline-flex items-center justify-center rounded-r-full font-semibold focus-visible:outline-none",
+              styles.chevron,
+            )}
+          >
+            <ChevronDown className="size-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="gap-3" onSelect={() => openDialog(otherKey)}>
               {other.icon}
               {other.label}
-            </Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </ButtonGroup>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </ButtonGroup>
+      <DownloadDialog onOpenChange={setDialogOpen} open={dialogOpen} platform={dialogPlatform} />
+    </>
   );
 }

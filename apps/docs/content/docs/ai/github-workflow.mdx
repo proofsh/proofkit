@@ -1,0 +1,138 @@
+---
+title: GitHub Workflow
+description: A friendly introduction to Git and GitHub for FileMaker developers.
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+If you've spent your career in FileMaker, Git can feel intimidating. The good news: you don't need to memorize commands or become a Git expert. Your AI agent can run the commands for you. What you _do_ need is a mental model of where your code lives and how it moves around. That's what this guide is for.
+
+<Callout type="info" title="Git is already set up in your project">
+  When you create a new ProofKit project, Git is initialized for you — there's nothing to configure inside the project itself.
+
+  If you're completely new to Git, you may want to ask your agent to help you configure Git on your machine. This sets things like your name and email address, which get automatically attached to every commit so the version history knows who made each change.
+</Callout>
+
+## The model you already know
+
+In FileMaker, your file lives on a server. You and your teammates open it, make changes, and everyone sees those changes immediately. There's only ever one copy that matters: the hosted file.
+
+<ThemedImage
+  alt="Diagram showing multiple developers and users connecting to a single hosted FileMaker file."
+  darkSrc="/diagrams/shared-user-model-dark.svg"
+  height={787}
+  lightSrc="/diagrams/shared-user-model-light.svg"
+  width={753}
+/>
+
+This model is simple because there's nothing to sync. The file is in one place, and editing _is_ saving. There's also no real history — once a change is made, the previous version is gone unless someone happened to take a backup.
+
+## How code projects work
+
+Web code projects work differently. Instead of one shared file on a server, every developer has their own complete copy of the project on their own machine. That copy is just a folder, but in Git terms it's called a **repo** (short for repository).
+
+You make changes in your local repo, and when you're ready, you push those changes up to a service like **GitHub**. GitHub holds the canonical copy that everyone else syncs with.
+
+<ThemedImage
+  alt="Diagram showing developers each with a local repo on their machine, syncing to a shared GitHub repo."
+  darkSrc="/diagrams/github-flow-dark.svg"
+  height={924}
+  lightSrc="/diagrams/github-flow-light.svg"
+  width={960}
+/>
+
+The big shift: there is no live shared file. Each developer works in their own copy, and Git is the tool that keeps those copies in sync.
+
+## Terms you'll run into
+
+You don't need to learn these all at once, but it helps to recognize them when your agent (or a teammate) uses them:
+
+- **Repo** — the project folder, tracked by Git. You'll have a local one on your machine and a remote one on GitHub.
+- **Clone** — make a local copy of a remote repo on your machine.
+- **Commit** — a saved snapshot of your changes, with a short message describing what you did. Think of it as a deliberate "save point" you can always return to.
+- **Push** — send your local commits up to GitHub so others can see them.
+- **Pull** — bring down commits that teammates have pushed, so your local copy is up to date.
+- **Branch** — a parallel line of work. You can experiment on a branch without affecting the main version of the project.
+- **Merge** — combine the changes from one branch into another, usually merging a finished branch back into the main one.
+- **Pull request (PR)** — a proposal on GitHub to merge one branch into another, usually with a teammate reviewing the changes first.
+- **Conflict** — what happens when two people change the same lines of the same file. Git asks you to decide which version wins.
+
+If any of these come up and you want a deeper explanation in the context of your own project, just ask your agent.
+
+## What this gives you
+
+Once your project lives on GitHub, you get things FileMaker developers have long wished for:
+
+- **Full history.** Every change is recorded with who made it, when, and why.
+- **Branches.** Try out a risky change in a separate branch without touching the main version. Throw it away if it doesn't work, or merge it in if it does.
+- **Pull requests.** Have a teammate review your changes before they become part of the main project.
+- **Safe collaboration.** Two developers can work on the same project at the same time without overwriting each other.
+
+## Let your agent do the heavy lifting
+
+You don't need to memorize Git commands. When you want to do something, just ask your agent in plain language:
+
+```text title="Commit your changes"
+Commit my current changes with a clear message.
+```
+
+```text title="Create a branch"
+Create a new branch called fix-customer-list and switch to it.
+```
+
+```text title="Push to GitHub"
+Push my work to GitHub.
+```
+
+```text title="Compare local and remote"
+What's the difference between my local copy and what's on GitHub?
+```
+
+If a Git concept comes up that you want to understand better — branches, merges, rebases, conflicts — ask the agent to explain it in the context of your project. That's a much faster way to learn than reading Git documentation cold.
+
+<Callout type="info" title="Use the word 'commit'">
+  In FileMaker, saving and history don't really come up — your changes are just there. In a code project, the equivalent of "saving your work to history" is making a **commit**: a snapshot of the project at a moment in time that you can always come back to.
+
+  When you want your work recorded, ask the agent to **commit** your changes. That keyword is what tells the agent you want a Git snapshot, not just an edit. Get in the habit of committing often — every commit is a safe point you can return to.
+</Callout>
+
+## Publish your project to GitHub
+
+When you create a new ProofKit project, the local repo on your machine is ready to go — but nothing is on GitHub yet. To get the benefits of remote backup, history you can browse online, and collaboration, you'll want to publish it.
+
+<Steps>
+  <Step>
+    **Create a free GitHub account.**
+
+    Go to [github.com](https://github.com) and sign up. The free tier is plenty for personal projects and small teams — there's no need to pay for anything to get started.
+  </Step>
+
+  <Step>
+    **Install the GitHub CLI and sign in.**
+
+    The GitHub CLI (`gh`) is what your agent will use to talk to GitHub on your behalf. Install it from [cli.github.com](https://cli.github.com), then sign in by running this once in your terminal:
+
+    ```bash
+    gh auth login
+    ```
+
+    Follow the prompts to authenticate with your GitHub account. You only need to do this once per machine.
+  </Step>
+
+  <Step>
+    **Ask your agent to publish the project.**
+
+    With the CLI installed and authenticated, your agent can create the GitHub repo and push your project up for you.
+
+    ```text title="Prompt"
+    Publish this project to a new GitHub repo on my account.
+    ```
+
+    The agent will confirm the details before creating anything on your account.
+  </Step>
+</Steps>
+
+## Next step
+
+From here on, the workflow becomes a habit: edit, commit, push, repeat. Any time you're not sure what to do next, ask your agent — that's the fastest way to learn Git in the context of your own project.
+
