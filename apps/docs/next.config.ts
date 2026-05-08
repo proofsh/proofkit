@@ -1,8 +1,10 @@
 import path from "node:path";
+import { varlockNextConfigPlugin } from "@varlock/nextjs-integration/plugin";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
 const withMDX = createMDX();
+const withVarlock = varlockNextConfigPlugin();
 // validateRegistry();
 
 const config: NextConfig = {
@@ -45,4 +47,4 @@ const config: NextConfig = {
   ],
 };
 
-export default withMDX(config);
+export default withVarlock(withMDX(config));

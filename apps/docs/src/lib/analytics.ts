@@ -1,10 +1,11 @@
 "use client";
 
 import posthog from "posthog-js";
+import { ENV } from "varlock/env";
 
 type AnalyticsProperties = Record<string, boolean | number | string | null | undefined>;
 
-const isPostHogEnabled = Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
+const isPostHogEnabled = Boolean(ENV.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
 
 export function captureEvent(event: string, properties: AnalyticsProperties = {}) {
   if (!isPostHogEnabled) {
@@ -27,6 +28,13 @@ export function trackDownloadClick(properties: {
 
 export function trackMarketingNavClick(properties: { destination: string; label: string; navSurface: string }) {
   captureEvent("marketing_nav_clicked", properties);
+}
+
+export function trackDownloadRequest(properties: { email: string; platform: string }) {
+  if (isPostHogEnabled) {
+    posthog.identify(properties.email);
+  }
+  captureEvent("proofkit_download_request", properties);
 }
 
 export function trackDocsActionClick(properties: { action: string; destination?: string; markdownUrl?: string }) {

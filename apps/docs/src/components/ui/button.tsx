@@ -1,4 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import type * as React from "react";
+
+import { cn } from "@/lib/utils";
 
 const variants = {
   primary: "bg-fd-primary text-fd-primary-foreground hover:bg-fd-primary/80",
@@ -7,12 +10,11 @@ const variants = {
   secondary: "border bg-fd-secondary text-fd-secondary-foreground hover:bg-fd-accent hover:text-fd-accent-foreground",
 } as const;
 
-export const buttonVariants = cva(
+const buttonVariants = cva(
   "inline-flex items-center justify-center rounded-md p-2 font-medium text-sm transition-colors duration-100 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: variants,
-      // fumadocs use `color` instead of `variant`
       color: variants,
       size: {
         sm: "gap-1 px-2 py-1.5 text-xs",
@@ -24,4 +26,10 @@ export const buttonVariants = cva(
   },
 );
 
-export type ButtonProps = VariantProps<typeof buttonVariants>;
+type ButtonProps = VariantProps<typeof buttonVariants>;
+
+function Button({ className, variant, size, ...props }: React.ComponentProps<"button"> & ButtonProps) {
+  return <button className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+}
+
+export { Button, buttonVariants, type ButtonProps };

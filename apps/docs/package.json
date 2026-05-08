@@ -25,6 +25,7 @@
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@tabler/icons-react": "^3.36.1",
+    "@varlock/nextjs-integration": "^1.1.0",
     "beautiful-mermaid": "^1.1.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -47,6 +48,7 @@
     "tailwind-merge": "^3.4.0",
     "ts-morph": "^26.0.0",
     "twoslash": "^0.3.6",
+    "varlock": "^1.1.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
