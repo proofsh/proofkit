@@ -3,6 +3,7 @@ import Link from "next/link";
 import DarkVeil from "@/components/DarkVeil";
 import { DownloadButton } from "@/components/DownloadButton";
 import { ExampleShowcaseGrid } from "@/components/examples/ExampleShowcaseGrid";
+import { HeroPromoVideo } from "@/components/HeroPromoVideo";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingCard, MarketingSection } from "@/components/marketing-section";
 import { ProofkitLogo } from "@/components/ProofkitLogo";
@@ -10,6 +11,7 @@ import { ProofLogo } from "@/components/ProofLogo";
 import { ClaudeAiIcon } from "@/components/ui/svgs/claudeAiIcon";
 import { CodexDark } from "@/components/ui/svgs/codexDark";
 import { CursorDark } from "@/components/ui/svgs/cursorDark";
+import { heroDarkSecondaryPillClassName } from "@/lib/hero-dark-secondary-pill";
 import { getMarketingMetadata } from "@/lib/og";
 
 export const metadata = getMarketingMetadata("home");
@@ -85,13 +87,13 @@ export default function HomePage() {
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-4">
                   <DownloadButton variant="dark" />
-                  <Link
-                    className="inline-flex items-center gap-1.5 font-medium text-sm text-white/60 underline-offset-4 transition hover:text-white hover:underline"
-                    href="/docs/ai/getting-started"
-                  >
-                    Read the Getting Started guide
-                    <ArrowRight className="size-4" />
-                  </Link>
+                  <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2">
+                    <HeroPromoVideo />
+                    <Link className={heroDarkSecondaryPillClassName} href="/docs/ai/getting-started">
+                      Read the Getting Started guide
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

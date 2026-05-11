@@ -2,6 +2,15 @@ interface YouTubeVideoProps {
   title: string;
   videoId?: string;
   url?: string;
+  /**
+   * Full iframe `src` (e.g. built during a click handler with `getYouTubeNocookieEmbedSrc`).
+   * When set, `url`, `videoId`, and `autoPlay` are ignored.
+   */
+  embedSrc?: string;
+  /** Append `autoplay`, `playsinline`, and `origin` to the embed URL. */
+  autoPlay?: boolean;
+  /** Inline embed only (no docs card chrome). */
+  variant?: "card" | "plain";
 }
 
 const YOUTUBE_HOSTS = new Set([
@@ -60,22 +69,57 @@ function getYouTubeVideoId({ url, videoId }: Pick<YouTubeVideoProps, "url" | "vi
   throw new Error(`Unable to extract YouTube video ID from URL: ${parsedUrl.href}`);
 }
 
-export function YouTubeVideo(props: YouTubeVideoProps) {
-  const videoId = getYouTubeVideoId(props);
-  const src = `https://www.youtube-nocookie.com/embed/${videoId}`;
+export interface YouTubeEmbedSrcArgs {
+  url?: string;
+  videoId?: string;
+  autoPlay?: boolean;
+  /** Register the embedding origin with YouTube (recommended with autoplay). */
+  origin?: string;
+}
 
-  return (
-    <div className="my-6 overflow-hidden rounded-xl border bg-fd-card shadow-md">
-      <div className="relative aspect-video">
-        <iframe
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          className="absolute inset-0 h-full w-full"
-          referrerPolicy="strict-origin-when-cross-origin"
-          src={src}
-          title={props.title}
-        />
-      </div>
+export function getYouTubeNocookieEmbedSrc(args: YouTubeEmbedSrcArgs): string {
+  const videoId = getYouTubeVideoId(args);
+  const embedParams = new URLSearchParams();
+  if (args.autoPlay) {
+    embedParams.set("autoplay", "1");
+    embedParams.set("playsinline", "1");
+  }
+  if (args.origin) {
+    embedParams.set("origin", args.origin);
+  }
+  const qs = embedParams.toString();
+  return qs
+    ? `https://www.youtube-nocookie.com/embed/${videoId}?${qs}`
+    : `https://www.youtube-nocookie.com/embed/${videoId}`;
+}
+
+export function YouTubeVideo(props: YouTubeVideoProps) {
+  const { variant = "card", title, autoPlay = false, embedSrc: embedSrcProp } = props;
+  const src =
+    embedSrcProp ??
+    getYouTubeNocookieEmbedSrc({
+      url: props.url,
+      videoId: props.videoId,
+      autoPlay,
+      origin: autoPlay && typeof window !== "undefined" ? window.location.origin : undefined,
+    });
+
+  const embed = (
+    <div className="relative aspect-video">
+      <iframe
+        allow="accelerometer; autoplay *; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        className="absolute inset-0 h-full w-full"
+        referrerPolicy="strict-origin-when-cross-origin"
+        src={src}
+        title={title}
+      />
     </div>
   );
+
+  if (variant === "plain") {
+    return embed;
+  }
+
+  return <div className="my-6 overflow-hidden rounded-xl border bg-fd-card shadow-md">{embed}</div>;
 }

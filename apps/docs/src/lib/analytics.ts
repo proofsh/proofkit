@@ -40,3 +40,11 @@ export function trackDownloadRequest(properties: { email: string; platform: stri
 export function trackDocsActionClick(properties: { action: string; destination?: string; markdownUrl?: string }) {
   captureEvent("docs_action_clicked", properties);
 }
+
+export function trackPromoVideoOpened(properties: { video_id: string; surface: string; video_url: string }) {
+  captureEvent("promo_video_opened", properties);
+}
+
+export function trackPromoVideoClosed(properties: { video_id: string; surface: string }) {
+  captureEvent("promo_video_closed", properties);
+}
