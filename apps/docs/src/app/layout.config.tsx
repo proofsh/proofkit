@@ -11,8 +11,20 @@ export const baseOptions = {
   nav: {
     title: (
       <>
-        <Image alt="ProofKit" className="block dark:hidden" height={150} src="/logo-horiz-light.svg" width={96} />
-        <Image alt="ProofKit" className="hidden dark:block" height={150} src="/logo-horiz-dark.svg" width={96} />
+        <Image
+          alt="ProofKit"
+          className="block h-auto w-[96px] dark:hidden"
+          height={150}
+          src="/logo-horiz-light.svg"
+          width={96}
+        />
+        <Image
+          alt="ProofKit"
+          className="hidden h-auto w-[96px] dark:block"
+          height={150}
+          src="/logo-horiz-dark.svg"
+          width={96}
+        />
       </>
     ),
   },

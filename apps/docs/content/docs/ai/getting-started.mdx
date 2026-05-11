@@ -1,13 +1,13 @@
 ---
 title: Getting Started
-description: Follow the ProofKit AI path from install to deployed Web Viewer app.
+description: ProofKit AI path from install through deploy, editing source, and redeploying updates.
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
-This page is the overview for the ProofKit v2 happy path. Use it to understand the sequence: install ProofKit, connect and verify your FileMaker file, explore your file, build a Web Viewer app, and deploy it back into FileMaker.
+This page is the overview for the ProofKit v2 happy path. Use it to understand the sequence: install ProofKit and connect MCP, explore your FileMaker file with your agent, build a Web Viewer app, deploy it into FileMaker, then keep working in your source project and redeploy when ready.
 
-Each step below links to a focused guide with the detailed walkthrough. Those guides are where you will find the step-by-step instructions and companion videos for install, exploration, Web Viewer development, deployment, and related workflows.
+Each step below maps to **one guide**: install and connect (single walkthrough), explore, build, deploy, and editing after deploy — with detailed instructions and companion videos where available.
 
 ## Before you start
 
@@ -25,19 +25,11 @@ See [Technical Requirements](/docs/ai/technical-requirements) for the full suppo
 
 <Steps>
   <Step>
-    **Install ProofKit and add it to your FileMaker file.**
+    **Install ProofKit, connect MCP, and verify your file.**
 
-    Run the installer and add the ProofKit add-on to your file.
+    Run the installer and add-on, run **Connect to MCP** in FileMaker Pro, keep the connector Web Viewer open in Browse mode, and ask your agent to confirm it sees your open file.
 
-    Continue with [Install and Connect](/docs/ai/install-and-connect).
-  </Step>
-
-  <Step>
-    **Connect your FileMaker file to MCP and verify it.**
-
-    Run the **Connect to MCP** script in FileMaker Pro, keep the connector Web Viewer open in Browse mode, and ask your agent to confirm it can see the open file.
-
-    Continue with [Install and Connect](/docs/ai/install-and-connect#verify-the-connection).
+    Continue with [Install and Connect](/docs/ai/install-and-connect) (covers install through verification).
   </Step>
 
   <Step>
@@ -63,11 +55,20 @@ See [Technical Requirements](/docs/ai/technical-requirements) for the full suppo
 
     Continue with [Deploy to FileMaker](/docs/ai/deploy-to-filemaker).
   </Step>
+
+  <Step>
+    **Edit source and redeploy.**
+
+    Iterate on your project on disk — that is where your React and TypeScript source lives — then build and redeploy the bundle stored in FileMaker whenever you want users to pick up changes.
+
+    Continue with [Edit your app](/docs/ai/edit-your-app).
+  </Step>
 </Steps>
 
 ## What to read next
 
-- [Install and Connect](/docs/ai/install-and-connect) is the first step in the walkthrough.
+- [Install and Connect](/docs/ai/install-and-connect) covers installer, MCP connection, and verification.
+- [Edit your app](/docs/ai/edit-your-app) separates source projects from bundles stored in FileMaker.
 - [Agent Workflow](/docs/ai/agent-workflow) explains the read, write, verify, and fix loop.
 - [Hybrid Apps](/docs/webviewer) explains the runtime model.
 - [FAQ](/docs/ai/faq) answers common scope, cost, and platform questions.

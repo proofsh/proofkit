@@ -1,0 +1,26 @@
+---
+title: Edit your app
+description: Work on Web Viewer source in your project, then rebuild and redeploy the bundle into FileMaker.
+---
+
+
+<YouTubeVideo title="Walkthrough: edit source and redeploy your Web Viewer app" url="https://youtu.be/U9NG-1xdCMY" />
+
+After you deploy, you will iterate on **source code**, not inside the Web Viewer HTML stored in FileMaker.
+
+## Where your code actually lives
+
+- **Your project folder (on disk, usually in Git)** is the source of truth. React components, TypeScript files, Tailwind styles, and build configuration all live here. Your coding agent and editor work against this folder.
+- **Inside FileMaker** you have a **built bundle**: the single-file HTML (and embedded assets) that ProofKit writes when you deploy. That artifact runs in the Web Viewer; it is the output of a build, not a comfortable place to hand-edit layouts or scripts.
+
+If you are used to building everything directly in FileMaker, it helps to separate these two mentally: FileMaker hosts the runtime bundle; your machine hosts the editable app.
+
+## The change loop
+
+1. Open the **same Web Viewer project** in your coding agent (the folder created when you scaffolded the app).
+2. **Ask for changes** — new screens, UX tweaks, data wiring, styling. Use the **local preview** so you see updates before touching FileMaker, as described in [Build a Web Viewer App](/docs/ai/build-a-webviewer-app).
+3. When you are satisfied, **build and redeploy** so FileMaker receives a fresh bundle, as in [Deploy to FileMaker](/docs/ai/deploy-to-filemaker). Redeployment replaces the stored artifact users load in the Web Viewer.
+
+Changing FileMaker layouts, scripts, or fields may require **regenerating types** — see [TypeGen](/docs/typegen) when metadata changes.
+
+For how agents iterate with checks and verification, see [Agent Workflow](/docs/ai/agent-workflow).

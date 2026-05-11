@@ -11,7 +11,7 @@ export const ProofkitLogo: React.FC<ProofkitLogoProps> = ({ alt = "ProofKit", cl
       <Image
         alt=""
         aria-hidden="true"
-        className="h-full w-full dark:hidden"
+        className="h-auto w-full dark:hidden"
         height={804}
         src="/logo-horiz-light.svg"
         width={2585}
@@ -19,7 +19,7 @@ export const ProofkitLogo: React.FC<ProofkitLogoProps> = ({ alt = "ProofKit", cl
       <Image
         alt=""
         aria-hidden="true"
-        className="hidden h-full w-full dark:block"
+        className="hidden h-auto w-full dark:block"
         height={804}
         src="/logo-horiz-dark.svg"
         width={2585}
