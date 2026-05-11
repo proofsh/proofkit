@@ -5,6 +5,8 @@ description: Bundle your Web Viewer app and deploy it into a FileMaker file.
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
+<YouTubeVideo title="Walkthrough: deploy your Web Viewer app to FileMaker" url="https://youtu.be/zgFb3RKmIQc" />
+
 Deployment for a ProofKit Web Viewer app means bundling the web app and storing it in your FileMaker file so it can load inside a Web Viewer layout.
 
 This is different from deploying a browser app to a hosting provider. The deployed artifact is HTML and JavaScript living in the FileMaker file.
@@ -14,7 +16,7 @@ This is different from deploying a browser app to a hosting provider. The deploy
 Once the app works locally and FileMaker is connected to ProofKit, you can ask the agent to handle deployment for you:
 
 ```text title="Prompt"
-Deploy the app to my connected file maker file.
+Deploy the app to my connected FileMaker file.
 ```
 
 The agent should treat deployment as a release step, not just a file copy. It should run available checks, build the production bundle, deploy the generated HTML through ProofKit, and then verify the result inside FileMaker.
