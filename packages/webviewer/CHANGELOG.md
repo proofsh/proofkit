@@ -1,5 +1,12 @@
 # @proofkit/webviewer
 
+## 3.0.8
+
+### Patch Changes
+
+- 2a69c03: Add Next.js fmBridge helper for App Router and Pages Router dev integration.
+- f744723: Add WebDirect runtime skill for refresh-safe Web Viewer apps.
+
 ## 3.0.7
 
 ### Patch Changes
