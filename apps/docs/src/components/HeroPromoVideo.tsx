@@ -9,8 +9,8 @@ import { trackPromoVideoClosed, trackPromoVideoOpened } from "@/lib/analytics";
 import { heroDarkSecondaryPillClassName } from "@/lib/hero-dark-secondary-pill";
 import { cn } from "@/lib/utils";
 
-const PROMO_VIDEO_URL = "https://youtu.be/9ESJLc1dUbQ";
-const PROMO_VIDEO_ID = "9ESJLc1dUbQ";
+const PROMO_VIDEO_URL = "https://youtu.be/dj3fn3RKeQ0";
+const PROMO_VIDEO_ID = "dj3fn3RKeQ0";
 const SURFACE = "home_hero";
 
 interface HeroPromoVideoProps {
