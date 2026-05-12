@@ -40,11 +40,13 @@ function run(command, args) {
   process.exit(1);
 }
 
-const binaryName = BINARIES[process.platform]?.[process.arch];
-if (binaryName) {
-  const binaryPath = path.join(__dirname, binaryName);
-  if (existsSync(binaryPath)) {
-    run(binaryPath, process.argv.slice(2));
+if (process.env.PROOFKIT_DISABLE_BUNDLED_BINARY !== "1") {
+  const binaryName = BINARIES[process.platform]?.[process.arch];
+  if (binaryName) {
+    const binaryPath = path.join(__dirname, binaryName);
+    if (existsSync(binaryPath)) {
+      run(binaryPath, process.argv.slice(2));
+    }
   }
 }
 

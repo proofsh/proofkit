@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,4 +23,5 @@ const content = [
   "",
 ].join("\n");
 
+mkdirSync(path.dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, content, "utf8");
