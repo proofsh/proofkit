@@ -334,7 +334,7 @@ export function makeTestLayer(options: {
       },
     }),
     Layer.succeed(PackageManagerService, {
-      getVersion: () => Effect.succeed("10.27.0"),
+      getVersion: () => Effect.succeed("11.1.0"),
     }),
     Layer.succeed(ProcessService, {
       run: (command: string, args: string[]) => {

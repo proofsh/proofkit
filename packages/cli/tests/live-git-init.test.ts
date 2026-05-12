@@ -41,7 +41,7 @@ describe("live git init", () => {
     vi.clearAllMocks();
     execaMock.mockImplementation((command: string, args: string[]) => {
       if (command === "pnpm" && args[0] === "-v") {
-        return Promise.resolve({ stdout: "10.27.0" });
+        return Promise.resolve({ stdout: "11.1.0" });
       }
 
       if (command === "git" && args[0] === "commit") {

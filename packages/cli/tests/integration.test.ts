@@ -51,7 +51,7 @@ describe("integration scaffold generation", () => {
       }),
       {
         templateDir: getSharedTemplateDir("nextjs-shadcn"),
-        packageManagerVersion: "10.27.0",
+        packageManagerVersion: "11.1.0",
       },
     );
 
@@ -66,7 +66,7 @@ describe("integration scaffold generation", () => {
       await readScaffoldArtifacts(projectDir);
 
     expect(packageJson.name).toBe("browser-app");
-    expect(packageJson.packageManager).toBe("pnpm@10.27.0");
+    expect(packageJson.packageManager).toBe("pnpm@11.1.0");
     expect(packageJson.proofkitMetadata).toMatchObject({
       scaffoldPackage: "@proofkit/cli",
     });
