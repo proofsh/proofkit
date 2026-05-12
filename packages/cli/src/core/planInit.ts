@@ -12,14 +12,6 @@ import {
 import { formatPackageManagerCommand, getScaffoldVersion, getTemplatePackageCommand } from "~/utils/projectFiles.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
-const PNPM_BUILD_POLICY = {
-  "@parcel/watcher": false,
-  esbuild: true,
-  "msgpackr-extract": false,
-  msw: false,
-  sharp: false,
-} as const;
-
 function getPackageManagerMajorVersion(version?: string) {
   if (!version) {
     return undefined;
@@ -29,10 +21,17 @@ function getPackageManagerMajorVersion(version?: string) {
   return Number.isFinite(major) ? major : undefined;
 }
 
-function createPnpmWorkspaceFileContent(policy: Record<string, boolean>) {
+function createPnpmWorkspaceFileContent() {
   return [
-    "allowBuilds:",
-    ...Object.entries(policy).map(([packageName, allowed]) => `  ${JSON.stringify(packageName)}: ${allowed}`),
+    "# This setting defines where in the repo your apps/packages that need installed dependancies exist. This of this as a list of paths to your package.json files. ",
+    "packages:",
+    '  - "."',
+    "",
+    "trustPolicy: no-downgrade",
+    "",
+    "trustPolicyIgnoreAfter: 43200",
+    "",
+    "blockExoticSubdeps: true",
     "",
   ].join("\n");
 }
@@ -141,7 +140,7 @@ export function planInit(
         ? [
             {
               path: path.join(targetDir, "pnpm-workspace.yaml"),
-              content: createPnpmWorkspaceFileContent(PNPM_BUILD_POLICY),
+              content: createPnpmWorkspaceFileContent(),
             },
           ]
         : []),

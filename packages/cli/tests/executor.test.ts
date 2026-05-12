@@ -61,7 +61,7 @@ describe("executeInitPlan command paths", () => {
 
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", tracker })));
 
-    expect(tracker.commands).toEqual(["pnpm install"]);
+    expect(tracker.commands).toEqual(["pnpm self-update 11", "pnpm install"]);
     expect(tracker.filemakerBootstraps).toBe(1);
     expect(tracker.codegens).toBe(1);
     expect(tracker.gitInits).toBe(1);
@@ -73,7 +73,9 @@ describe("executeInitPlan command paths", () => {
     expect(envFile).toContain("FM_DATABASE=Contacts.fmp12");
     expect(typegenConfig).toContain("API_Contacts");
     expect(typegenConfig).toContain("Contacts");
-    expect(pnpmWorkspaceFile).toContain('  "esbuild": true');
+    expect(pnpmWorkspaceFile).toContain("trustPolicy: no-downgrade");
+    expect(pnpmWorkspaceFile).toContain("trustPolicyIgnoreAfter: 43200");
+    expect(pnpmWorkspaceFile).toContain("blockExoticSubdeps: true");
   });
 
   it("supports force overwrite for an existing directory", async () => {
@@ -346,7 +348,7 @@ describe("executeInitPlan command paths", () => {
         appType: "browser",
         ui: "shadcn",
         dataSource: "none",
-        packageManager: "pnpm",
+        packageManager: "npm",
         noInstall: false,
         noGit: true,
         force: false,
@@ -367,11 +369,11 @@ describe("executeInitPlan command paths", () => {
         executeInitPlan(plan).pipe(
           makeTestLayer({
             cwd,
-            packageManager: "pnpm",
+            packageManager: "npm",
             failures: {
               processRun: new ExternalCommandError({
                 message: "install failed",
-                command: "pnpm",
+                command: "npm",
                 args: ["install"],
                 cwd,
               }),
@@ -382,7 +384,7 @@ describe("executeInitPlan command paths", () => {
     ).toMatchObject(
       new ExternalCommandError({
         message: "install failed",
-        command: "pnpm",
+        command: "npm",
         args: ["install"],
         cwd,
       }),
