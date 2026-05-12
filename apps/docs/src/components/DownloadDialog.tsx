@@ -21,17 +21,26 @@ interface DownloadDialogProps {
 export function DownloadDialog({ open, onOpenChange, platform }: DownloadDialogProps) {
   const [email, setEmail] = useState("");
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    trackDownloadRequest({
-      email,
-      platform,
-    });
+    setIsSubmitting(true);
 
-    setSubmittedEmail(email);
-    setEmail("");
+    try {
+      await trackDownloadRequest({
+        email,
+        platform,
+      });
+
+      setSubmittedEmail(email);
+      setEmail("");
+    } catch {
+      // Keep dialog open and preserve the email when tracking fails.
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -83,11 +92,11 @@ export function DownloadDialog({ open, onOpenChange, platform }: DownloadDialogP
               </div>
               <Button
                 className="h-11 w-full gap-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-                disabled={!isValidEmail(email)}
+                disabled={!isValidEmail(email) || isSubmitting}
                 type="submit"
               >
                 <Send className="size-4" />
-                Send download link
+                {isSubmitting ? "Sending..." : "Send download link"}
               </Button>
             </form>
           </>

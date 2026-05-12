@@ -39,7 +39,7 @@ export type Manifest = z.infer<typeof manifestSchema>;
 export type ManifestAsset = z.infer<typeof assetSchema>;
 export type ManifestVersion = z.infer<typeof versionEntrySchema>;
 
-const fetchManifest = async (): Promise<Manifest> => {
+export const fetchManifest = async (): Promise<Manifest> => {
   const response = await fetch(MANIFEST_URL, {
     next: { revalidate: MANIFEST_REVALIDATE_SECONDS },
   });
@@ -79,7 +79,7 @@ const pickAsset = (assets: ManifestAsset[], platform: Platform): ManifestAsset |
   return candidates[0] ?? null;
 };
 
-const resolveVersion = (manifest: Manifest, selector: VersionSelector): ManifestVersion | null => {
+export const resolveVersion = (manifest: Manifest, selector: VersionSelector): ManifestVersion | null => {
   if (selector === "latest") {
     const target = manifest.latestVersion || manifest.latestBetaVersion;
     return manifest.versions.find((entry) => entry.version === target) ?? null;
