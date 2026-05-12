@@ -28,8 +28,9 @@
     "proofkit": "bin/proofkit.cjs"
   },
   "files": [
-    "bin",
-    "dist",
+    "bin/proofkit.cjs",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "template",
     "README.md",
     "CHANGELOG.md",
