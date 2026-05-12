@@ -44,6 +44,7 @@ describe("planInit", () => {
       }),
       {
         templateDir: "/templates/webviewer",
+        packageManagerVersion: "11.0.0",
       },
     );
 
@@ -52,6 +53,32 @@ describe("planInit", () => {
     expect(plan.tasks.runInstall).toBe(false);
     expect(plan.tasks.initializeGit).toBe(false);
     expect(plan.tasks.checkWebViewerAddon).toBe(true);
+    expect(plan.writes).toContainEqual({
+      path: path.resolve("/tmp/workspace", "demo-app", "pnpm-workspace.yaml"),
+      content: [
+        "allowBuilds:",
+        '  "@parcel/watcher": false',
+        '  "esbuild": true',
+        '  "msgpackr-extract": false',
+        '  "msw": false',
+        "",
+      ].join("\n"),
+    });
+  });
+
+  it("does not add pnpm build approvals for pnpm 10", () => {
+    const plan = planInit(
+      makeInitRequest({
+        appType: "webviewer",
+        dataSource: "none",
+      }),
+      {
+        templateDir: "/templates/webviewer",
+        packageManagerVersion: "10.27.0",
+      },
+    );
+
+    expect(plan.writes.some((write) => write.path.endsWith("pnpm-workspace.yaml"))).toBe(false);
   });
 
   it("adds fmdapi for browser filemaker scaffolds", () => {

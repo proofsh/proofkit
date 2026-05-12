@@ -41,6 +41,7 @@ export async function readScaffoldArtifacts(projectDir: string) {
   const claudePath = path.join(projectDir, "CLAUDE.md");
   const cursorIgnorePath = path.join(projectDir, ".cursorignore");
   const launchPath = path.join(projectDir, ".claude", "launch.json");
+  const pnpmWorkspacePath = path.join(projectDir, "pnpm-workspace.yaml");
 
   return {
     packageJson,
@@ -51,5 +52,8 @@ export async function readScaffoldArtifacts(projectDir: string) {
     claudeFile: (await fs.pathExists(claudePath)) ? await fs.readFile(claudePath, "utf8") : undefined,
     cursorIgnoreFile: (await fs.pathExists(cursorIgnorePath)) ? await fs.readFile(cursorIgnorePath, "utf8") : undefined,
     launchConfig: (await fs.pathExists(launchPath)) ? await fs.readFile(launchPath, "utf8") : undefined,
+    pnpmWorkspaceFile: (await fs.pathExists(pnpmWorkspacePath))
+      ? await fs.readFile(pnpmWorkspacePath, "utf8")
+      : undefined,
   };
 }

@@ -55,6 +55,7 @@ describe("executeInitPlan command paths", () => {
       }),
       {
         templateDir: getSharedTemplateDir("vite-wv"),
+        packageManagerVersion: "11.0.0",
       },
     );
 
@@ -65,11 +66,12 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.codegens).toBe(1);
     expect(tracker.gitInits).toBe(1);
 
-    const { proofkitJson, envFile, typegenConfig } = await readScaffoldArtifacts(path.join(cwd, "fm-app"));
+    const { proofkitJson, envFile, typegenConfig, pnpmWorkspaceFile } = await readScaffoldArtifacts(path.join(cwd, "fm-app"));
     expect(proofkitJson.dataSources).toHaveLength(1);
     expect(envFile).toContain("FM_DATABASE=Contacts.fmp12");
     expect(typegenConfig).toContain("API_Contacts");
     expect(typegenConfig).toContain("Contacts");
+    expect(pnpmWorkspaceFile).toContain('  "esbuild": true');
   });
 
   it("supports force overwrite for an existing directory", async () => {

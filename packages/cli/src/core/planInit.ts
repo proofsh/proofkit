@@ -12,6 +12,30 @@ import {
 import { formatPackageManagerCommand, getScaffoldVersion, getTemplatePackageCommand } from "~/utils/projectFiles.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
+const PNPM_BUILD_POLICY = {
+  "@parcel/watcher": false,
+  esbuild: true,
+  "msgpackr-extract": false,
+  msw: false,
+} as const;
+
+function getPackageManagerMajorVersion(version?: string) {
+  if (!version) {
+    return undefined;
+  }
+
+  const major = Number.parseInt(version.split(".")[0] ?? "", 10);
+  return Number.isFinite(major) ? major : undefined;
+}
+
+function createPnpmWorkspaceFileContent(policy: Record<string, boolean>) {
+  return [
+    "allowBuilds:",
+    ...Object.entries(policy).map(([packageName, allowed]) => `  ${JSON.stringify(packageName)}: ${allowed}`),
+    "",
+  ].join("\n");
+}
+
 function createDefaultSettings(request: InitRequest): ProofKitSettings {
   return {
     ui: request.ui,
@@ -48,6 +72,9 @@ export function planInit(
   const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
   const settings = createDefaultSettings(request);
   const packageManagerCommand = getTemplatePackageCommand(request.packageManager);
+  const packageManagerMajorVersion = getPackageManagerMajorVersion(options.packageManagerVersion);
+  const shouldWritePnpmWorkspaceFile =
+    request.packageManager === "pnpm" && (packageManagerMajorVersion ?? 0) >= 11 && request.appType === "webviewer";
 
   const packageJson: InitPlan["packageJson"] = {
     name: request.scopedAppName,
@@ -110,6 +137,14 @@ export function planInit(
         path: path.join(targetDir, ".cursorignore"),
         content: "CLAUDE.md\n",
       },
+      ...(shouldWritePnpmWorkspaceFile
+        ? [
+            {
+              path: path.join(targetDir, "pnpm-workspace.yaml"),
+              content: createPnpmWorkspaceFileContent(PNPM_BUILD_POLICY),
+            },
+          ]
+        : []),
     ],
     commands: [
       ...(request.noInstall ? [] : [{ type: "install" as const }]),
