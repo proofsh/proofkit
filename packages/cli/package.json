@@ -1,6 +1,6 @@
 {
   "name": "@proofkit/cli",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Interactive CLI to scaffold and manage ProofKit projects",
   "license": "MIT",
   "repository": {
