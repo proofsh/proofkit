@@ -53,5 +53,18 @@
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
       "pnpm dlx ultracite fix"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "@next/env": "npm:@varlock/nextjs-integration@^1.1.0",
+      "shiki": "3.13.0",
+      "@shikijs/types": "3.13.0",
+      "glob": "^11.1.0",
+      "@modelcontextprotocol/sdk": "^1.25.2",
+      "preact": "^10.26.10",
+      "qs": "^6.14.1",
+      "vite": "^6.4.1",
+      "body-parser": "^2.2.1"
+    }
   }
 }
