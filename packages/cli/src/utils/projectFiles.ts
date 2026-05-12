@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { applyEdits, modify, parse as parseJsonc } from "jsonc-parser";
+import { applyEdits, modify, parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { PKG_ROOT } from "~/consts.js";
 import type { FileMakerEnvNames } from "~/core/types.js";
 import type { PackageManager } from "~/utils/packageManager.js";

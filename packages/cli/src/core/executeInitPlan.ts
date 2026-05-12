@@ -2,7 +2,6 @@ import path from "node:path";
 import { Chalk } from "chalk";
 import { Cause, Effect, Exit } from "effect";
 import { getOrUndefined } from "effect/Option";
-import sortPackageJson from "sort-package-json";
 
 import { AGENT_INSTRUCTIONS } from "~/consts.js";
 import {
@@ -21,6 +20,7 @@ import { DirectoryConflictError, FileSystemError, isCliError, UserCancelledError
 import { applyPackageJsonMutations } from "~/core/planInit.js";
 import type { InitPlan } from "~/core/types.js";
 import { normalizeImportAlias, replaceTextInFiles, updateTypegenConfig } from "~/utils/projectFiles.js";
+import { sortPackageJson } from "~/utils/sortPackageJson.js";
 
 const AGENT_METADATA_DIRS = new Set([".agents", ".claude", ".clawed", ".clinerules", ".cursor", ".windsurf"]);
 const IMPORT_ALIAS_WILDCARD_REGEX = /\*/g;
@@ -358,6 +358,14 @@ export const executeInitPlan = (plan: InitPlan) =>
     }
 
     if (plan.tasks.runInstall) {
+      if (plan.request.packageManager === "pnpm") {
+        yield* processService.run("pnpm", ["self-update", "11"], {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+      }
+
       let installArgs: string[] = ["install"];
       if (plan.request.packageManager === "yarn") {
         installArgs = [];

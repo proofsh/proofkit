@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { parse as parseJsonc } from "jsonc-parser";
+import { parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
 interface PackageJsonShape {
@@ -23,7 +23,7 @@ interface ProofkitSettings {
   dataSources?: unknown[];
 }
 
-const cliPath = join(__dirname, "..", "dist", "index.js");
+const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
 const testDir = join(__dirname, "..", "..", "tmp", "cli-contract-tests");
 const browserProjectName = "contract-browser-project";
 const webviewerProjectName = "contract-webviewer-project";
@@ -166,10 +166,11 @@ describe("Init scaffold contract tests", () => {
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
     const pnpmWorkspaceText = readFileSync(join(browserProjectDir, "pnpm-workspace.yaml"), "utf-8");
-    expect(pnpmWorkspaceText).toContain('  "esbuild": true');
-    expect(pnpmWorkspaceText).toContain('  "msw": false');
-    expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": false');
-    expect(pnpmWorkspaceText).toContain('  "sharp": false');
+    expect(pnpmWorkspaceText).toContain("packages:");
+    expect(pnpmWorkspaceText).toContain('  - "."');
+    expect(pnpmWorkspaceText).toContain("trustPolicy: no-downgrade");
+    expect(pnpmWorkspaceText).toContain("trustPolicyIgnoreAfter: 43200");
+    expect(pnpmWorkspaceText).toContain("blockExoticSubdeps: true");
     const pkgManager = getPackageManagerName(packageJson);
     expect(outputSuggestsCommand(normalizedOutput, formatRunCommand(pkgManager, "typegen"))).toBe(false);
 
@@ -244,10 +245,11 @@ describe("Init scaffold contract tests", () => {
     expect(uploadScriptText).toContain("const deployment = await deployHtml({");
     expect(uploadScriptText).toContain("Deployed via FM MCP bridge.");
     expect(filemakerHelperText).toContain('scriptName = "deploy_html"');
-    expect(pnpmWorkspaceText).toContain('  "esbuild": true');
-    expect(pnpmWorkspaceText).toContain('  "msw": false');
-    expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": false');
-    expect(pnpmWorkspaceText).toContain('  "sharp": false');
+    expect(pnpmWorkspaceText).toContain("packages:");
+    expect(pnpmWorkspaceText).toContain('  - "."');
+    expect(pnpmWorkspaceText).toContain("trustPolicy: no-downgrade");
+    expect(pnpmWorkspaceText).toContain("trustPolicyIgnoreAfter: 43200");
+    expect(pnpmWorkspaceText).toContain("blockExoticSubdeps: true");
 
     // Compile-equivalent smoke checks without external installs.
     expect(checkNodeSyntax(webviewerProjectDir, "scripts/upload.js")).toBe(true);

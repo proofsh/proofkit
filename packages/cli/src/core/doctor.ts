@@ -1,7 +1,7 @@
 import path from "node:path";
 import { parse as parseDotenv } from "dotenv";
 import { Effect } from "effect";
-import { parse as parseJsonc } from "jsonc-parser";
+import { parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { DOCS_URL } from "~/consts.js";
 import { CliContext, ConsoleService, FileSystemService } from "~/core/context.js";
 

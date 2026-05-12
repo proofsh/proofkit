@@ -1,9 +1,9 @@
 "use client";
 
-import { type ProofKitRoute } from "@proofkit/cli";
 import { usePathname } from "next/navigation";
 import React from "react";
 
+import { type ProofKitRoute } from "@/app/proofkit-route";
 import classes from "./Header.module.css";
 
 export default function HeaderNavLink(route: ProofKitRoute) {
