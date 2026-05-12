@@ -10,7 +10,7 @@ const expectedTypegenVersion = `^${
 
 describe("Web Viewer CLI Tests", () => {
   const testDir = join(__dirname, "..", "..", "tmp", "cli-tests");
-  const cliPath = join(__dirname, "..", "dist", "index.js");
+  const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
   const projectName = "test-webviewer-project";
   const projectDir = join(testDir, projectName);
 

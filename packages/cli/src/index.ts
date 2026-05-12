@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, realpathSync } from "node:fs";
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { optional as optionalArg, text as textArg, withDescription as withArgDescription } from "@effect/cli/Args";
@@ -37,6 +37,7 @@ import { planInit } from "~/core/planInit.js";
 import { runPrompt } from "~/core/prompt.js";
 import { resolveInitRequest } from "~/core/resolveInitRequest.js";
 import type { CliFlags } from "~/core/types.js";
+import { CLI_VERSION } from "~/generated/package-versions.js";
 import { makeLiveLayer } from "~/services/live.js";
 import { resolveNonInteractiveMode } from "~/utils/nonInteractive.js";
 import { intro } from "~/utils/prompts.js";
@@ -52,13 +53,7 @@ const defaultCliFlags: CliFlags = {
 };
 
 function getCliVersion() {
-  try {
-    const packageJsonUrl = new URL("../package.json", import.meta.url);
-    const packageJson = JSON.parse(readFileSync(fileURLToPath(packageJsonUrl), "utf8")) as { version?: string };
-    return packageJson.version ?? "0.0.0-private";
-  } catch {
-    return "0.0.0-private";
-  }
+  return CLI_VERSION;
 }
 
 export const runInit = (name?: string, rawFlags?: Partial<CliFlags>) =>

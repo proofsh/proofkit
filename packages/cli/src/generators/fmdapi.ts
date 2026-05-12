@@ -3,7 +3,7 @@ import { generateTypedClients } from "@proofkit/typegen";
 import type { typegenConfigSingle } from "@proofkit/typegen/config";
 import { config as dotenvConfig } from "dotenv";
 import fs from "fs-extra";
-import { applyEdits, modify, parse as parseJsonc } from "jsonc-parser";
+import { applyEdits, modify, parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { SyntaxKind } from "ts-morph";
 import type { z } from "zod/v4";
 

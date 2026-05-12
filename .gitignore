@@ -76,6 +76,10 @@ public/dist
 .turbo
 packages/fmdapi/test/typegen/*
 packages/typegen/schema/metadata.xml
+packages/cli/bin/proofkit-*
+!packages/cli/bin/proofkit.cjs
+packages/cli/.*.bun-build
+packages/cli/src/generated/
 
 # FM ADD-ON BUILD ARTIFACTS
 fm-addon/stage/
