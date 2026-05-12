@@ -1,5 +1,12 @@
 # @proofgeist/kit
 
+## 2.0.2
+
+### Patch Changes
+
+- cbf7bc7: Fix pnpm 11 scaffold installs in release smoke tests, including browser app build-script policy generation.
+- d2947e1: Add pnpm 11 build policy to generated WebViewer projects so fresh installs can complete without broad dependency script approval.
+
 ## 2.0.1
 
 ### Patch Changes
