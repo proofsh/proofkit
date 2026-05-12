@@ -16,13 +16,25 @@ const targets = [
   { target: "bun-windows-arm64", file: "proofkit-windows-arm64.exe" },
   { target: "bun-windows-x64", file: "proofkit-windows-x64.exe" },
 ];
+const validTargets = new Set(targets.map((config) => config.target));
+const requestedTargetsEnv = process.env.PROOFKIT_BINARY_TARGETS ?? "";
 
 const selectedTargets = new Set(
-  (process.env.PROOFKIT_BINARY_TARGETS ?? "")
+  requestedTargetsEnv
     .split(",")
     .map((target) => target.trim())
     .filter(Boolean),
 );
+const filteredSelectedTargets = new Set([...selectedTargets].filter((target) => validTargets.has(target)));
+
+if (selectedTargets.size > 0 && filteredSelectedTargets.size === 0) {
+  console.error(
+    `No valid binary targets in PROOFKIT_BINARY_TARGETS="${requestedTargetsEnv}". Valid targets: ${targets
+      .map((config) => config.target)
+      .join(", ")}`,
+  );
+  process.exit(1);
+}
 
 mkdirSync(binDir, { recursive: true });
 for (const file of readdirSync(binDir)) {
@@ -32,8 +44,9 @@ for (const file of readdirSync(binDir)) {
   rmSync(path.join(binDir, file), { recursive: true, force: true });
 }
 
+let builtCount = 0;
 for (const config of targets) {
-  if (selectedTargets.size > 0 && !selectedTargets.has(config.target)) {
+  if (filteredSelectedTargets.size > 0 && !filteredSelectedTargets.has(config.target)) {
     continue;
   }
 
@@ -69,4 +82,15 @@ for (const config of targets) {
   if (existsSync(outfile) && !outfile.endsWith(".exe")) {
     chmodSync(outfile, 0o755);
   }
+
+  builtCount += 1;
+}
+
+if (builtCount === 0) {
+  console.error(
+    `No binary targets selected from PROOFKIT_BINARY_TARGETS="${requestedTargetsEnv}". Valid targets: ${targets
+      .map((config) => config.target)
+      .join(", ")}`,
+  );
+  process.exit(1);
 }
