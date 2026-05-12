@@ -35,7 +35,9 @@ function createPnpmWorkspaceFileContent() {
     '  - "."',
     "",
     "allowBuilds:",
-    ...Object.entries(PNPM_BUILD_POLICY).map(([packageName, allowed]) => `  ${JSON.stringify(packageName)}: ${allowed}`),
+    ...Object.entries(PNPM_BUILD_POLICY).map(
+      ([packageName, allowed]) => `  ${JSON.stringify(packageName)}: ${allowed}`,
+    ),
     "",
     "trustPolicy: no-downgrade",
     "",

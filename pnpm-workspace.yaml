@@ -30,6 +30,3 @@ overrides:
   vite: ^6.4.1
   body-parser: ^2.2.1
 autoInstallPeers: true
-packageConfigs:
-  '@proofkit/fmdapi':
-    engineStrict: true
