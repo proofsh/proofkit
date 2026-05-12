@@ -17,6 +17,7 @@ const PNPM_BUILD_POLICY = {
   esbuild: true,
   "msgpackr-extract": false,
   msw: false,
+  sharp: false,
 } as const;
 
 function getPackageManagerMajorVersion(version?: string) {
@@ -73,8 +74,7 @@ export function planInit(
   const settings = createDefaultSettings(request);
   const packageManagerCommand = getTemplatePackageCommand(request.packageManager);
   const packageManagerMajorVersion = getPackageManagerMajorVersion(options.packageManagerVersion);
-  const shouldWritePnpmWorkspaceFile =
-    request.packageManager === "pnpm" && (packageManagerMajorVersion ?? 0) >= 11 && request.appType === "webviewer";
+  const shouldWritePnpmWorkspaceFile = request.packageManager === "pnpm" && (packageManagerMajorVersion ?? 0) >= 11;
 
   const packageJson: InitPlan["packageJson"] = {
     name: request.scopedAppName,

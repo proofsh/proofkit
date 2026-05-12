@@ -19,7 +19,7 @@ describe("planInit", () => {
   it("plans a browser scaffold", () => {
     const plan = planInit(makeInitRequest(), {
       templateDir: "/templates/browser",
-      packageManagerVersion: "10.0.0",
+      packageManagerVersion: "11.0.0",
     });
 
     expect(plan.targetDir).toBe(path.resolve("/tmp/workspace", "demo-app"));
@@ -32,6 +32,18 @@ describe("planInit", () => {
     expect(plan.tasks.initializeGit).toBe(true);
     expect(plan.tasks.bootstrapFileMaker).toBe(false);
     expect(plan.tasks.checkWebViewerAddon).toBe(false);
+    expect(plan.writes).toContainEqual({
+      path: path.resolve("/tmp/workspace", "demo-app", "pnpm-workspace.yaml"),
+      content: [
+        "allowBuilds:",
+        '  "@parcel/watcher": false',
+        '  "esbuild": true',
+        '  "msgpackr-extract": false',
+        '  "msw": false',
+        '  "sharp": false',
+        "",
+      ].join("\n"),
+    });
   });
 
   it("plans a webviewer scaffold with no install and no git", () => {
@@ -61,6 +73,7 @@ describe("planInit", () => {
         '  "esbuild": true',
         '  "msgpackr-extract": false',
         '  "msw": false',
+        '  "sharp": false',
         "",
       ].join("\n"),
     });

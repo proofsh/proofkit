@@ -4,9 +4,11 @@ import { fileURLToPath } from "node:url";
 import { rehypeCodeDefaultOptions, remarkMdxMermaid, remarkNpm } from "fumadocs-core/mdx-plugins";
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
 import { transformerTwoslash } from "fumadocs-twoslash";
-import type { LanguageRegistration, ShikiTransformer } from "shiki";
+import type { LanguageRegistration } from "shiki";
 
 import FileMakerLang from "./src/lib/FileMaker-tmLanguage.json";
+
+type RehypeTransformer = NonNullable<typeof rehypeCodeDefaultOptions.transformers>[number];
 
 // Options: https://fumadocs.vercel.app/docs/mdx/collections#define-docs
 export const docs = defineDocs({
@@ -30,7 +32,7 @@ export default defineConfig({
       },
       langs: ["ts", "tsx", "js", "javascript", "json", FileMakerLang as LanguageRegistration],
       transformers: [
-        ...((rehypeCodeDefaultOptions.transformers ?? []) as ShikiTransformer[]),
+        ...(rehypeCodeDefaultOptions.transformers ?? []),
         (() => {
           const __dirname = path.dirname(fileURLToPath(import.meta.url));
           const tryPaths = [
@@ -66,9 +68,9 @@ export default defineConfig({
               fsCache: true,
               extraFiles,
             },
-          }) as ShikiTransformer;
+          }) as RehypeTransformer;
         })(),
-      ] as ShikiTransformer[],
+      ] satisfies RehypeTransformer[],
     },
   },
 });

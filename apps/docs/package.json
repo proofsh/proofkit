@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @proofkit/typegen build && next build",
+    "build": "pnpm --filter @proofkit/typegen build && pnpm exec varlock run -- next build",
     "dev": "portless proofkit next dev",
     "start": "portless proofkit next start",
     "postinstall": "fumadocs-mdx",

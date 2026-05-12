@@ -66,7 +66,9 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.codegens).toBe(1);
     expect(tracker.gitInits).toBe(1);
 
-    const { proofkitJson, envFile, typegenConfig, pnpmWorkspaceFile } = await readScaffoldArtifacts(path.join(cwd, "fm-app"));
+    const { proofkitJson, envFile, typegenConfig, pnpmWorkspaceFile } = await readScaffoldArtifacts(
+      path.join(cwd, "fm-app"),
+    );
     expect(proofkitJson.dataSources).toHaveLength(1);
     expect(envFile).toContain("FM_DATABASE=Contacts.fmp12");
     expect(typegenConfig).toContain("API_Contacts");
