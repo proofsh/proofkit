@@ -167,9 +167,10 @@ describe("Init scaffold contract tests", () => {
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
     const pnpmWorkspaceText = readFileSync(join(browserProjectDir, "pnpm-workspace.yaml"), "utf-8");
     expect(pnpmWorkspaceText).toContain('  "esbuild": true');
-    expect(pnpmWorkspaceText).toContain('  "msw": false');
-    expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": false');
-    expect(pnpmWorkspaceText).toContain('  "sharp": false');
+    expect(pnpmWorkspaceText).toContain('  "msw": true');
+    expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": true');
+    expect(pnpmWorkspaceText).toContain('  "sharp": true');
+    expect(pnpmWorkspaceText).toContain('  "msgpackr-extract": true');
     const pkgManager = getPackageManagerName(packageJson);
     expect(outputSuggestsCommand(normalizedOutput, formatRunCommand(pkgManager, "typegen"))).toBe(false);
 
@@ -245,9 +246,10 @@ describe("Init scaffold contract tests", () => {
     expect(uploadScriptText).toContain("Deployed via FM MCP bridge.");
     expect(filemakerHelperText).toContain('scriptName = "deploy_html"');
     expect(pnpmWorkspaceText).toContain('  "esbuild": true');
-    expect(pnpmWorkspaceText).toContain('  "msw": false');
-    expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": false');
-    expect(pnpmWorkspaceText).toContain('  "sharp": false');
+    expect(pnpmWorkspaceText).toContain('  "msw": true');
+    expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": true');
+    expect(pnpmWorkspaceText).toContain('  "sharp": true');
+    expect(pnpmWorkspaceText).toContain('  "msgpackr-extract": true');
 
     // Compile-equivalent smoke checks without external installs.
     expect(checkNodeSyntax(webviewerProjectDir, "scripts/upload.js")).toBe(true);

@@ -36,11 +36,11 @@ describe("planInit", () => {
       path: path.resolve("/tmp/workspace", "demo-app", "pnpm-workspace.yaml"),
       content: [
         "allowBuilds:",
-        '  "@parcel/watcher": false',
+        '  "@parcel/watcher": true',
         '  "esbuild": true',
-        '  "msgpackr-extract": false',
-        '  "msw": false',
-        '  "sharp": false',
+        '  "msgpackr-extract": true',
+        '  "msw": true',
+        '  "sharp": true',
         "",
       ].join("\n"),
     });
@@ -69,11 +69,11 @@ describe("planInit", () => {
       path: path.resolve("/tmp/workspace", "demo-app", "pnpm-workspace.yaml"),
       content: [
         "allowBuilds:",
-        '  "@parcel/watcher": false',
+        '  "@parcel/watcher": true',
         '  "esbuild": true',
-        '  "msgpackr-extract": false',
-        '  "msw": false',
-        '  "sharp": false',
+        '  "msgpackr-extract": true',
+        '  "msw": true',
+        '  "sharp": true',
         "",
       ].join("\n"),
     });

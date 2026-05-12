@@ -13,11 +13,11 @@ import { formatPackageManagerCommand, getScaffoldVersion, getTemplatePackageComm
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
 const PNPM_BUILD_POLICY = {
-  "@parcel/watcher": false,
+  "@parcel/watcher": true,
   esbuild: true,
-  "msgpackr-extract": false,
-  msw: false,
-  sharp: false,
+  "msgpackr-extract": true,
+  msw: true,
+  sharp: true,
 } as const;
 
 function getPackageManagerMajorVersion(version?: string) {

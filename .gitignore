@@ -16,6 +16,7 @@ coverage/
 build/
 public/build/
 dist/
+packages/cli/bin/
 generated/
 
 # ENV FILES
