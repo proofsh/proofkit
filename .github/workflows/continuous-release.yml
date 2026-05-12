@@ -10,7 +10,7 @@ env:
 jobs:
   lint:
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -29,7 +29,7 @@ jobs:
 
   typecheck:
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -48,7 +48,7 @@ jobs:
 
   test:
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -67,7 +67,7 @@ jobs:
 
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -86,7 +86,7 @@ jobs:
 
   publish:
 
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     needs: [lint, typecheck, test, build]
     steps:
       - name: Checkout code

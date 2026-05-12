@@ -21,7 +21,7 @@ permissions:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
@@ -43,7 +43,7 @@ jobs:
 
   typecheck:
     name: Type Check
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
@@ -65,7 +65,7 @@ jobs:
 
   test:
     name: Deterministic Contract Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
@@ -87,7 +87,7 @@ jobs:
 
   cli-smoke:
     name: CLI External Integration Smoke Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
@@ -109,7 +109,7 @@ jobs:
 
   fmodata-e2e:
     name: fmodata E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
@@ -137,7 +137,7 @@ jobs:
       - test
       - cli-smoke
       - fmodata-e2e
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       contents: write
       pull-requests: write
