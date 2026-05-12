@@ -23,7 +23,7 @@ interface ProofkitSettings {
   dataSources?: unknown[];
 }
 
-const cliPath = join(__dirname, "..", "dist", "index.js");
+const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
 const testDir = join(__dirname, "..", "..", "tmp", "cli-contract-tests");
 const browserProjectName = "contract-browser-project";
 const webviewerProjectName = "contract-webviewer-project";

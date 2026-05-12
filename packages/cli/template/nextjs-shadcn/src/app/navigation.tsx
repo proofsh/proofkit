@@ -1,4 +1,4 @@
-import { type ProofKitRoute } from "@proofkit/cli";
+import { type ProofKitRoute } from "./proofkit-route";
 
 export const primaryRoutes: ProofKitRoute[] = [
   {

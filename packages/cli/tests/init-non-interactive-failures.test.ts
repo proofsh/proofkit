@@ -22,7 +22,7 @@ function toText(value: string | Buffer | undefined) {
 
 describe("Init Non-Interactive Failure Paths", () => {
   const testDir = join(__dirname, "..", "..", "tmp", "init-failure-tests");
-  const cliPath = join(__dirname, "..", "dist", "index.js");
+  const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
   const expectedTypegenVersion = `^${
     JSON.parse(readFileSync(join(__dirname, "..", "..", "typegen", "package.json"), "utf-8")).version
   }`;

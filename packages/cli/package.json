@@ -25,9 +25,10 @@
     }
   },
   "bin": {
-    "proofkit": "dist/index.js"
+    "proofkit": "bin/proofkit.cjs"
   },
   "files": [
+    "bin",
     "dist",
     "template",
     "README.md",
@@ -39,11 +40,12 @@
     "node": "^20.0.0 || ^22.0.0"
   },
   "scripts": {
-    "typecheck": "tsc",
-    "build": "NODE_ENV=production tsdown && publint --strict",
-    "prepublishOnly": "pnpm build",
+    "typecheck": "node ./scripts/write-cli-version.mjs && tsc",
+    "build": "node ./scripts/write-cli-version.mjs && NODE_ENV=production tsdown && publint --strict",
+    "build:binaries": "node ./scripts/write-cli-version.mjs && node ./scripts/build-binaries.mjs",
+    "prepublishOnly": "pnpm build && pnpm build:binaries",
     "dev": "tsdown --watch",
-    "clean": "rm -rf dist .turbo node_modules",
+    "clean": "rm -rf dist .turbo node_modules bin/proofkit-* bin/*.exe",
     "start": "node dist/index.js",
     "lint": "biome check . --write",
     "lint:summary": "biome check . --reporter=summary",
@@ -51,10 +53,10 @@
     "pub:beta": "NODE_ENV=production pnpm build && npm publish --tag beta --access public",
     "pub:next": "NODE_ENV=production pnpm build && npm publish --tag next --access public",
     "pub:release": "NODE_ENV=production pnpm build && npm publish --access public",
-    "test": "pnpm build && vitest run",
+    "test": "pnpm build && node ./scripts/build-current-binary.mjs && vitest run",
     "test:smoke": "PROOFKIT_RUN_SMOKE_TESTS=1 vitest run --config vitest.smoke.config.ts"
   },
-  "dependencies": {
+  "devDependencies": {
     "@better-fetch/fetch": "1.1.17",
     "@clack/core": "^0.3.5",
     "@clack/prompts": "^0.11.0",
@@ -86,11 +88,8 @@
     "randomstring": "^1.3.1",
     "semver": "^7.7.3",
     "shadcn": "^2.10.0",
-    "sort-package-json": "^2.15.1",
     "ts-morph": "^26.0.0",
-    "type-fest": "^3.13.1"
-  },
-  "devDependencies": {
+    "type-fest": "^3.13.1",
     "@auth/drizzle-adapter": "^1.11.1",
     "@auth/prisma-adapter": "^1.6.0",
     "@biomejs/biome": "2.3.11",

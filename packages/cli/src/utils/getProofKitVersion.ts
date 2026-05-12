@@ -1,25 +1,17 @@
-import path from "node:path";
-import fs from "fs-extra";
-import type { PackageJson } from "type-fest";
-
-import { PKG_ROOT } from "~/consts.js";
+import {
+  BETTER_AUTH_VERSION,
+  CLI_VERSION,
+  FMDAPI_VERSION,
+  TYPEGEN_VERSION,
+  WEBVIEWER_VERSION,
+} from "~/generated/package-versions.js";
 
 export const getVersion = () => {
-  const packageJsonPath = path.join(PKG_ROOT, "package.json");
-
-  const packageJsonContent = fs.readJSONSync(packageJsonPath) as PackageJson;
-
-  return packageJsonContent.version ?? "1.0.0";
-};
-
-const readSiblingPackageVersion = (packagePath: string) => {
-  const packageJsonPath = path.resolve(PKG_ROOT, "..", packagePath, "package.json");
-  const packageJsonContent = fs.readJSONSync(packageJsonPath) as PackageJson;
-  return packageJsonContent.version ?? "1.0.0";
+  return CLI_VERSION;
 };
 
 export const getFmdapiVersion = () => {
-  return typeof __FMDAPI_VERSION__ === "undefined" ? readSiblingPackageVersion("fmdapi") : __FMDAPI_VERSION__;
+  return FMDAPI_VERSION;
 };
 
 export const getNodeMajorVersion = () => {
@@ -32,17 +24,15 @@ export const getNodeMajorVersion = () => {
 };
 
 export const getProofkitBetterAuthVersion = () => {
-  return typeof __BETTER_AUTH_VERSION__ === "undefined"
-    ? readSiblingPackageVersion("better-auth")
-    : __BETTER_AUTH_VERSION__;
+  return BETTER_AUTH_VERSION;
 };
 
 export const getProofkitWebviewerVersion = () => {
-  return typeof __WEBVIEWER_VERSION__ === "undefined" ? readSiblingPackageVersion("webviewer") : __WEBVIEWER_VERSION__;
+  return WEBVIEWER_VERSION;
 };
 
 export const getTypegenVersion = () => {
-  return typeof __TYPEGEN_VERSION__ === "undefined" ? readSiblingPackageVersion("typegen") : __TYPEGEN_VERSION__;
+  return TYPEGEN_VERSION;
 };
 
 export const getProofkitDependencyVersion = (version: string) => `^${version}`;

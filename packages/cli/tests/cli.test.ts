@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageDir = path.join(__dirname, "..");
-const distEntry = path.join(packageDir, "dist/index.js");
+const distEntry = path.join(packageDir, "bin/proofkit.cjs");
 
 describe("proofkit CLI", () => {
   it("shows kebab-case init flags in help", () => {
