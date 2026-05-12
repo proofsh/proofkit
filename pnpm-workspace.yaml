@@ -1,13 +1,13 @@
 packages:
   - apps/*
   - packages/*
-  - '!packages/cli-old'
-  - '!packages/tmp'
+  - "!packages/cli-old"
+  - "!packages/tmp"
   - packages/typegen/web
 allowBuilds:
-  '@parcel/watcher': true
-  '@prisma/client': true
-  '@prisma/engines': true
+  "@parcel/watcher": true
+  "@prisma/client": true
+  "@prisma/engines": true
   core-js: true
   es5-ext: true
   esbuild: true
@@ -16,3 +16,6 @@ allowBuilds:
   prisma: true
   protobufjs: true
   sharp: true
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 43200
+blockExoticSubdeps: true
