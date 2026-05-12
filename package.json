@@ -44,7 +44,7 @@
     "varlock": "^0.6.4",
     "vitest": "^4.0.17"
   },
-  "packageManager": "pnpm@11.0.0",
+  "packageManager": "pnpm@11.1.0",
   "engines": {
     "node": ">=18"
   },

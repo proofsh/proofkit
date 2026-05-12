@@ -19,6 +19,7 @@ To build ProofKit apps, you need:
 
 - **FileMaker Pro** with the target file open.
 - **Node.js LTS** installed locally. Choose a release that is explicitly marked LTS. Today that means **Node.js 22**, **Node.js 24**, or **Node.js 26**.
+- **pnpm** version 11 is recommended. It is currently the most secure package manager option.
 - **An MCP-compatible coding agent**, such as Cursor, Claude Code, Codex, OpenCode, or another agent that supports MCP servers.
 
 FileMaker Server is not required for the development loop. ProofKit can work against a local or hosted file as long as it is open in FileMaker Pro.
@@ -63,6 +64,19 @@ If you are not already managing Node versions, the native installer from nodejs.
     `fnm` and Volta are good alternatives. The important part is pinning your project to an LTS line such as Node.js 26, Node.js 24, or Node.js 22.
   </Tab>
 </Tabs>
+
+## pnpm
+
+ProofKit projects use `pnpm` for workspace installs, scripts, and monorepo tooling. We recommend **pnpm 11** because it is the fastest and most secure package manager available for the Node.js ecosystem.
+
+- Learn more: [pnpm.io](https://pnpm.io/)
+- Installation guide: [pnpm installation docs](https://pnpm.io/installation)
+
+After installing, verify your version:
+
+```sh
+pnpm -v
+```
 
 ## Developer background
 
