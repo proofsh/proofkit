@@ -1,5 +1,11 @@
 # @proofgeist/kit
 
+## 2.0.3
+
+### Patch Changes
+
+- 16a0542: Publish prebuilt CLI binaries and cut install-time runtime deps so `npx` and `pnpm dlx` flows avoid dependency build approvals.
+
 ## 2.0.2
 
 ### Patch Changes
