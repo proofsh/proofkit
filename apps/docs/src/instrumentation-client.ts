@@ -2,7 +2,7 @@ import posthog from "posthog-js";
 import { ENV } from "varlock/env";
 
 const posthogToken = ENV.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
-const posthogHost = ENV.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+const posthogHost = "/api/posthog";
 
 if (posthogToken) {
   posthog.init(posthogToken, {

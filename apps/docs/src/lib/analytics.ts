@@ -31,10 +31,26 @@ export function trackMarketingNavClick(properties: { destination: string; label:
 }
 
 export function trackDownloadRequest(properties: { email: string; platform: string }) {
-  if (isPostHogEnabled) {
-    posthog.identify(properties.email);
+  if (!isPostHogEnabled) {
+    return Promise.resolve();
   }
-  captureEvent("proofkit_download_request", properties);
+
+  return fetch("/api/download/track", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      ...properties,
+      distinctId: posthog.get_distinct_id(),
+      path: typeof window === "undefined" ? undefined : window.location.pathname,
+    }),
+    keepalive: true,
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error("Download tracking failed.");
+    }
+  });
 }
 
 export function trackDocsActionClick(properties: { action: string; destination?: string; markdownUrl?: string }) {
