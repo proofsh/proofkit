@@ -68,7 +68,10 @@ export function DownloadDialog({ open, onOpenChange, platform }: DownloadDialogP
           <>
             <DialogHeader>
               <DialogTitle>Download ProofKit</DialogTitle>
-              <DialogDescription>Enter your email below and we'll send you a download link.</DialogDescription>
+              <DialogDescription>
+                Enter your email below and we'll send you a download link. We only use this email to notify you about
+                critical ProofKit updates.
+              </DialogDescription>
             </DialogHeader>
             <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-1.5">

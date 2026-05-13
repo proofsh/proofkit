@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
+import { captureServerEvent } from "@/lib/posthog-server";
 
 const MANIFEST_URL = "https://downloads.ottomatic.cloud/proofkit/manifest.json";
 const MANIFEST_REVALIDATE_SECONDS = 300;
@@ -94,7 +95,81 @@ export const resolveVersion = (manifest: Manifest, selector: VersionSelector): M
 
 const errorResponse = (message: string, status: number) => NextResponse.json({ error: message }, { status });
 
-export const handleDownload = async (rawParams: { platform: string; version?: string }): Promise<Response> => {
+const getIp = (requestHeaders: Headers) =>
+  requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? requestHeaders.get("x-real-ip") ?? undefined;
+
+const parsePostHogDistinctId = (value: string): string | undefined => {
+  try {
+    const parsed = JSON.parse(decodeURIComponent(value)) as unknown;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "distinct_id" in parsed &&
+      typeof parsed.distinct_id === "string" &&
+      parsed.distinct_id.length > 0
+    ) {
+      return parsed.distinct_id;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
+
+const getDistinctId = (request: Request): string => {
+  const url = new URL(request.url);
+  const queryDistinctId =
+    url.searchParams.get("distinct_id") ??
+    url.searchParams.get("distinctId") ??
+    url.searchParams.get("ph_distinct_id") ??
+    url.searchParams.get("email");
+  if (queryDistinctId) {
+    return queryDistinctId;
+  }
+
+  const cookies = request.headers.get("cookie")?.split(";") ?? [];
+  for (const cookie of cookies) {
+    const [rawName, ...rawValue] = cookie.trim().split("=");
+    const name = rawName?.trim();
+    const value = rawValue.join("=");
+    if (name?.startsWith("ph_") && name.endsWith("_posthog") && value) {
+      const distinctId = parsePostHogDistinctId(value);
+      if (distinctId) {
+        return distinctId;
+      }
+    }
+  }
+
+  return "anonymous_download";
+};
+
+const captureDownload = async (
+  request: Request,
+  input: { asset: ManifestAsset; platform: Platform; version: string },
+) => {
+  const url = new URL(request.url);
+
+  await captureServerEvent({
+    distinctId: getDistinctId(request),
+    event: "proofkit_download",
+    properties: {
+      platform: input.platform,
+      version: input.version,
+      asset_file: input.asset.file,
+      asset_url: input.asset.url,
+      path: url.pathname,
+      $current_url: request.url,
+      $ip: getIp(request.headers),
+      $user_agent: request.headers.get("user-agent") ?? undefined,
+    },
+  });
+};
+
+export const handleDownload = async (
+  rawParams: { platform: string; version?: string },
+  request: Request,
+): Promise<Response> => {
   const platformResult = platformSchema.safeParse(rawParams.platform);
   if (!platformResult.success) {
     return errorResponse("Platform must be 'mac' or 'win'.", 400);
@@ -125,6 +200,14 @@ export const handleDownload = async (rawParams: { platform: string; version?: st
       404,
     );
   }
+
+  await captureDownload(request, {
+    asset,
+    platform: platformResult.data,
+    version: versionEntry.version,
+  }).catch((error: unknown) => {
+    console.error("Download telemetry failed", error);
+  });
 
   return NextResponse.redirect(asset.url, 302);
 };
