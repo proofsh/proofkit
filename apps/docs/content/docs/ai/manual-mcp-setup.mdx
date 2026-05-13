@@ -1,0 +1,219 @@
+---
+title: Manual MCP Setup
+description: Register the ProofKit MCP server with a coding agent by hand when the installer cannot do it for you.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The ProofKit installer automatically registers the `proofkit-mcp` server with the coding agents it knows about — Claude Desktop, Claude Code, Cursor, Codex, VS Code, Windsurf, and Gemini CLI. This page is for the cases where that automatic step is not enough:
+
+- The installer reported a failure or skipped your agent.
+- You want to register ProofKit with an MCP-compatible agent the installer does not detect.
+- You want to edit the server arguments by hand, for example to add or remove the [telemetry flag](/docs/ai/telemetry).
+
+You still need to run the ProofKit installer at least once so the `proofkit-mcp` binary, the FileMaker plug-in, and the add-on are present on your machine. This page only covers the agent config file step.
+
+## Where the `proofkit-mcp` binary lives
+
+You will point your agent at the absolute path to the `proofkit-mcp` binary that the installer placed on your machine.
+
+| Platform | Path |
+| --- | --- |
+| macOS, Linux | `~/.local/bin/proofkit-mcp` |
+| Windows | `%LOCALAPPDATA%\ProofKit\MCP\bin\proofkit-mcp.exe` |
+
+Replace `~` and `%LOCALAPPDATA%` with the fully resolved path in the JSON or TOML snippets below. Most agents require an absolute path.
+
+## The server entry
+
+Every supported agent uses the same logical server entry. The only differences are the file format (JSON or TOML), the wrapper key, and where the file lives.
+
+```json title="The shared server entry"
+{
+  "command": "/Users/you/.local/bin/proofkit-mcp",
+  "args": [],
+  "env": {}
+}
+```
+
+- `command` — absolute path to `proofkit-mcp`.
+- `args` — leave empty for default behavior. Add `"--disable-telemetry"` here to opt out of [anonymous usage statistics](/docs/ai/telemetry).
+- `env` — leave empty unless you need an advanced override such as `FM_HTTP_BASE_URL`, `FM_MCP_EXPERIMENTAL_FEATURES`, or `FM_MCP_EXPOSE_LOW_LEVEL_DATA_API_TOOLS`.
+
+## Per-agent config
+
+Open the config file for your agent, add the server entry under the correct wrapper key, save, and restart the agent.
+
+<Tabs items={["Claude Desktop", "Claude Code", "Cursor", "Codex", "VS Code", "Windsurf", "Gemini CLI"]}>
+  <Tab value="Claude Desktop">
+    **Config file**
+
+    - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+    **Wrapper key:** `mcpServers`
+
+    ```json
+    {
+      "mcpServers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+    Quit and reopen Claude Desktop after saving.
+  </Tab>
+
+  <Tab value="Claude Code">
+    **Config file:** `~/.claude.json`
+
+    **Wrapper key:** `mcpServers`
+
+    ```json
+    {
+      "mcpServers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+    Restart Claude Code after saving.
+  </Tab>
+
+  <Tab value="Cursor">
+    **Config file:** `~/.cursor/mcp.json`
+
+    **Wrapper key:** `mcpServers`
+
+    ```json
+    {
+      "mcpServers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+    Restart Cursor after saving.
+  </Tab>
+
+  <Tab value="Codex">
+    **Config file:** `~/.codex/config.toml`
+
+    Codex uses TOML, not JSON. **Wrapper key:** `mcp_servers`.
+
+    ```toml
+    [mcp_servers.proofkit-mcp]
+    command = "/Users/you/.local/bin/proofkit-mcp"
+    args = []
+
+    [mcp_servers.proofkit-mcp.env]
+    ```
+
+    Restart Codex after saving.
+  </Tab>
+
+  <Tab value="VS Code">
+    **Config file**
+
+    - macOS: `~/Library/Application Support/Code/User/mcp.json`
+    - Windows: `%APPDATA%\Code\User\mcp.json`
+
+    **Wrapper key:** `servers` (not `mcpServers`).
+
+    ```json
+    {
+      "servers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+    Reload the VS Code window after saving.
+  </Tab>
+
+  <Tab value="Windsurf">
+    **Config file:** `~/.codeium/windsurf/mcp_config.json`
+
+    **Wrapper key:** `mcpServers`
+
+    ```json
+    {
+      "mcpServers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+    Restart Windsurf after saving.
+  </Tab>
+
+  <Tab value="Gemini CLI">
+    **Config file:** `~/.gemini/settings.json`
+
+    **Wrapper key:** `mcpServers`
+
+    ```json
+    {
+      "mcpServers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+    Restart the Gemini CLI session after saving.
+  </Tab>
+</Tabs>
+
+## Other MCP-compatible agents
+
+Any agent that speaks MCP over stdio can run ProofKit. The agent only needs to launch the `proofkit-mcp` binary as a child process and talk to it with the MCP protocol. Follow your agent's documentation for how to add an MCP server and use the **shared server entry** above as the values.
+
+<Callout type="info" title="Tip">
+  If your agent supports the standard `mcpServers` wrapper key (Claude Desktop, Cursor, Windsurf, Gemini CLI all use it), the Claude Desktop snippet is a safe starting point.
+</Callout>
+
+## Verify the connection
+
+After restarting your agent, ask it to use ProofKit. A good first prompt:
+
+```text title="Prompt"
+Use ProofKit to verify my FileMaker connection, list the connected file, and summarize the available layouts.
+
+If nothing is connected, tell me what to fix before I continue.
+```
+
+If the agent reports it cannot find the server, double-check the absolute path to `proofkit-mcp` and that the file is executable. On macOS and Linux, you can run the binary directly from a terminal to confirm it launches:
+
+```sh
+~/.local/bin/proofkit-mcp --help
+```
+
+## Related guides
+
+- [Install and Connect](/docs/ai/install-and-connect)
+- [Telemetry](/docs/ai/telemetry)
+- [Troubleshooting](/docs/ai/troubleshooting)

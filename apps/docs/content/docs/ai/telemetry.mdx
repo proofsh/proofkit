@@ -1,0 +1,111 @@
+---
+title: Telemetry
+description: What anonymous usage statistics ProofKit collects, and how to opt in or out.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+ProofKit can send a small amount of anonymous usage data to help us understand which tools are being used and where the MCP server fails. We collect **usage statistics only**. We do not collect anything that identifies you, your FileMaker file, your data, or your code.
+
+<Callout type="info" title="Anonymous and aggregate">
+  Telemetry is keyed to a random ID generated on your machine the first time ProofKit runs. It is not tied to your name, email, license, IP address, FileMaker account, file name, or any other personal or business identifier.
+</Callout>
+
+## What we collect
+
+When telemetry is enabled, ProofKit sends:
+
+- **MCP session lifecycle events** — when an MCP session starts and ends, the transport (`stdio`), session duration, the agent client name and version (for example, `Claude Desktop 1.2.3`), and how many tool calls happened in the session.
+- **Tool call metadata** — the tool name (for example, `connectedFiles`, `execute_filemaker_sql`), how long it took, and whether it succeeded or failed.
+- **Installer completion** — installer UI used (macOS pkg, Windows NSIS, or CLI), platform, duration, exit code, whether telemetry was enabled, and the installer version.
+- **A random anonymous ID** — generated on first run and stored locally so repeat sessions from the same machine can be counted as one user.
+- **ProofKit server version**.
+
+## What we do NOT collect
+
+ProofKit telemetry **never** includes:
+
+- FileMaker data of any kind — no record values, no field contents, no found sets.
+- Tool inputs or arguments passed to any MCP tool.
+- Tool outputs or return values.
+- SQL queries, layout names, table names, field names, or script names.
+- Error messages or stack traces.
+- File names, file paths, or anything about your project structure.
+- Your name, email, IP address, FileMaker account, or any other identifier.
+
+When a tool call fails, we record only that the tool with that name failed and how long it took. The error itself stays on your machine.
+
+## How to opt in or opt out
+
+The simplest way to change your telemetry choice is to **run the ProofKit installer again** and check or uncheck the **Allow anonymous usage statistics** option.
+
+<Steps>
+  <Step>
+    **Download the latest installer.**
+
+    <DownloadLink />
+  </Step>
+
+  <Step>
+    **Run the installer.**
+
+    On the installer screen, look for **Allow anonymous usage statistics**.
+
+    - **Check the box** to opt in.
+    - **Uncheck the box** to opt out.
+
+    The default is checked (opted in).
+  </Step>
+
+  <Step>
+    **Finish the install.**
+
+    Your choice is applied immediately. No restart of FileMaker or your agent is required for the telemetry change itself, although other parts of the installer may ask you to relaunch FileMaker.
+  </Step>
+</Steps>
+
+<Callout type="info" title="Re-running the installer is safe">
+  You can re-run the ProofKit installer any time to change your telemetry choice. It does not remove your projects or deployed apps. See [Updating ProofKit](/docs/ai/updating-proofkit) for the full update flow if you also want to update the FileMaker add-on.
+</Callout>
+
+## Manually disable telemetry
+
+If you cannot re-run the installer, or you registered ProofKit with your agent by hand, you can opt out by adding `--disable-telemetry` to the `args` array of the `proofkit-mcp` entry in your agent's MCP config.
+
+```json title="Example: Claude Desktop, Cursor, Windsurf, Gemini CLI, Claude Code"
+{
+  "mcpServers": {
+    "proofkit-mcp": {
+      "command": "/Users/you/.local/bin/proofkit-mcp",
+      "args": ["--disable-telemetry"],
+      "env": {}
+    }
+  }
+}
+```
+
+```toml title="Example: Codex"
+[mcp_servers.proofkit-mcp]
+command = "/Users/you/.local/bin/proofkit-mcp"
+args = ["--disable-telemetry"]
+```
+
+Save the config and restart your agent. To re-enable telemetry, remove `"--disable-telemetry"` from `args`.
+
+The exact config file path and wrapper key vary by agent. See [Manual MCP Setup](/docs/ai/manual-mcp-setup) for the full list of supported agents, their config file locations, and what to do if your agent is not in that list.
+
+## Why we collect it
+
+Anonymous usage statistics help us:
+
+- See which MCP tools agents actually use, so we can invest in the right ones.
+- Spot tools that fail often, so we can fix bugs we would not otherwise hear about.
+- Understand which agent clients (Claude Desktop, Cursor, Codex, and others) ProofKit is used with.
+- Measure whether installer changes succeed or fail across platforms.
+
+
+## Related guides
+
+- [Install and Connect](/docs/ai/install-and-connect)
+- [Updating ProofKit](/docs/ai/updating-proofkit)
