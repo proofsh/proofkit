@@ -61,7 +61,7 @@ export default function App() {
             <aside className="rounded-3xl border border-border bg-gradient-to-br from-card via-card to-muted/50 p-8 shadow-sm">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Starter notes</p>
               <div className="mt-5 space-y-4 text-sm text-muted-foreground">
-                <p>Update the default Web Viewer name in <code>src/App.tsx</code> to match your FileMaker layout object.</p>
+                <p>Update the default Web Viewer name in <code>src/app.tsx</code> to match your FileMaker layout object.</p>
                 <p>When the app runs inside FileMaker, you can start using <code>fmFetch</code> or generated clients right away.</p>
                 <p>The local helper scripts prefer FM MCP connected files before falling back to hosted server env vars.</p>
               </div>

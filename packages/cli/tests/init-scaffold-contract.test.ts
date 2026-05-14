@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -227,6 +227,8 @@ describe("Init scaffold contract tests", () => {
     expect(existsSync(join(webviewerProjectDir, ".env"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, ".cursorignore"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, "pnpm-workspace.yaml"))).toBe(true);
+    expect(existsSync(join(webviewerProjectDir, "src", "app.tsx"))).toBe(true);
+    expect(readdirSync(join(webviewerProjectDir, "src"))).not.toContain("App.tsx");
     expect(existsSync(join(webviewerProjectDir, "src", "main.tsx"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, "scripts", "upload.js"))).toBe(true);
 

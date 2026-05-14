@@ -456,12 +456,17 @@ export const executeInitPlan = (plan: InitPlan) =>
     }
 
     if (plan.tasks.runLint) {
-      const lintCommand = getPackageScriptCommand(plan, "lint");
-      yield* processService.run(lintCommand.command, lintCommand.args, {
-        cwd: plan.targetDir,
-        stdout: "pipe",
-        stderr: "pipe",
-      });
+      const fixCommand = getPackageScriptCommand(plan, "fix");
+      const result = yield* Effect.either(
+        processService.run(fixCommand.command, fixCommand.args, {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        }),
+      );
+      if (result._tag === "Left") {
+        consoleService.warn("Lint fix did not succeed; continuing setup.");
+      }
     }
 
     if (plan.tasks.initializeGit) {
