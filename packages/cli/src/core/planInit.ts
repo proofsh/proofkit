@@ -9,7 +9,12 @@ import {
   getTypegenVersion,
   getVersion,
 } from "~/utils/getProofKitVersion.js";
-import { formatPackageManagerCommand, getScaffoldVersion, getTemplatePackageCommand } from "~/utils/projectFiles.js";
+import {
+  formatPackageManagerCommand,
+  getScaffoldVersion,
+  getTemplatePackageCommand,
+  getTemplatePackageExecuteCommand,
+} from "~/utils/projectFiles.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
 const PNPM_BUILD_POLICY = {
@@ -19,6 +24,8 @@ const PNPM_BUILD_POLICY = {
   msw: true,
   sharp: true,
 } as const;
+const NPM_PACKAGE_MANAGER_WARNING =
+  "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";
 function getPackageManagerMajorVersion(version?: string) {
   if (!version) {
     return undefined;
@@ -84,6 +91,7 @@ export function planInit(
   const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
   const settings = createDefaultSettings(request);
   const packageManagerCommand = getTemplatePackageCommand(request.packageManager);
+  const packageManagerExecuteCommand = getTemplatePackageExecuteCommand(request.packageManager);
   const packageManagerMajorVersion = getPackageManagerMajorVersion(options.packageManagerVersion);
   const shouldWritePnpmWorkspaceFile = request.packageManager === "pnpm" && (packageManagerMajorVersion ?? 0) >= 11;
 
@@ -137,6 +145,7 @@ export function planInit(
     targetDir,
     templateDir: options.templateDir,
     packageManagerCommand,
+    packageManagerExecuteCommand,
     packageJson,
     settings,
     envFile: {
@@ -171,6 +180,7 @@ export function planInit(
     },
     nextSteps: [
       `cd ${request.appDir}`,
+      ...(request.packageManager === "npm" ? [NPM_PACKAGE_MANAGER_WARNING] : []),
       ...(request.noInstall ? [request.packageManager === "yarn" ? "yarn" : `${request.packageManager} install`] : []),
       "npx @tanstack/intent@latest install",
       formatPackageManagerCommand(request.packageManager, "dev"),

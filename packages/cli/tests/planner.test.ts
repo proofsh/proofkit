@@ -114,6 +114,22 @@ describe("planInit", () => {
     expect(plan.writes.some((write) => write.path.endsWith("pnpm-workspace.yaml"))).toBe(false);
   });
 
+  it("warns npm users to use pnpm 11 or greater", () => {
+    const plan = planInit(
+      makeInitRequest({
+        packageManager: "npm",
+      }),
+      {
+        templateDir: "/templates/browser",
+        packageManagerVersion: "10.0.0",
+      },
+    );
+
+    expect(plan.nextSteps).toContain(
+      "Warning: We strongly suggest using pnpm 11 or greater as your package manager for security reasons.",
+    );
+  });
+
   it("adds fmdapi for browser filemaker scaffolds", () => {
     const plan = planInit(
       makeInitRequest({

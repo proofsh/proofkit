@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import {
   CliValidationError,
+  ExternalCommandError,
   FileMakerSetupError,
   NonInteractiveInputError,
   UserCancelledError,
@@ -11,6 +12,139 @@ import { getFailure } from "./effect-test-utils.js";
 import { type ConsoleTranscript, makeTestLayer, type PromptTranscript } from "./test-layer.js";
 
 describe("resolveInitRequest", () => {
+  it("uses pnpm when npm invoked and pnpm is installed", async () => {
+    const request = await Effect.runPromise(
+      resolveInitRequest("demo", {
+        noGit: true,
+        noInstall: true,
+        force: false,
+        default: true,
+        importAlias: "~/",
+        CI: true,
+      }).pipe(
+        makeTestLayer({
+          cwd: "/tmp",
+          packageManager: "npm",
+        }),
+      ),
+    );
+
+    expect(request.packageManager).toBe("pnpm");
+  });
+
+  it("aborts interactively when npm invoked and pnpm is missing", async () => {
+    expect(
+      await getFailure(
+        resolveInitRequest("demo", {
+          noGit: true,
+          noInstall: true,
+          force: false,
+          default: true,
+          importAlias: "~/",
+          CI: false,
+        }).pipe(
+          makeTestLayer({
+            cwd: "/tmp",
+            packageManager: "npm",
+            nonInteractive: false,
+            failures: {
+              packageManagerGetVersion: {
+                pnpm: new ExternalCommandError({
+                  message: "pnpm not found",
+                  command: "pnpm",
+                  args: ["-v"],
+                  cwd: "/tmp",
+                }),
+              },
+            },
+          }),
+        ),
+      ),
+    ).toMatchObject(
+      new UserCancelledError({
+        message: "User aborted to install pnpm first.",
+      }),
+    );
+  });
+
+  it("continues with npm when warning is ignored", async () => {
+    const promptTranscript: PromptTranscript = {
+      text: [],
+      password: [],
+      select: [],
+      searchSelect: [],
+      multiSearchSelect: [],
+      confirm: [],
+    };
+    const request = await Effect.runPromise(
+      resolveInitRequest("demo", {
+        noGit: true,
+        noInstall: true,
+        force: false,
+        default: true,
+        importAlias: "~/",
+        CI: false,
+        appType: "browser",
+        dataSource: "none",
+      }).pipe(
+        makeTestLayer({
+          cwd: "/tmp",
+          packageManager: "npm",
+          nonInteractive: false,
+          prompts: {
+            select: ["continue"],
+          },
+          promptTranscript,
+          failures: {
+            packageManagerGetVersion: {
+              pnpm: new ExternalCommandError({
+                message: "pnpm not found",
+                command: "pnpm",
+                args: ["-v"],
+                cwd: "/tmp",
+              }),
+            },
+          },
+        }),
+      ),
+    );
+
+    expect(request.packageManager).toBe("npm");
+    expect(promptTranscript.select[0]?.message).toContain("https://pnpm.io/installation");
+  });
+
+  it("continues with npm non-interactively when pnpm is missing", async () => {
+    const request = await Effect.runPromise(
+      resolveInitRequest("demo", {
+        noGit: true,
+        noInstall: true,
+        force: false,
+        default: true,
+        importAlias: "~/",
+        CI: true,
+        appType: "browser",
+        dataSource: "none",
+      }).pipe(
+        makeTestLayer({
+          cwd: "/tmp",
+          packageManager: "npm",
+          failures: {
+            packageManagerGetVersion: {
+              pnpm: new ExternalCommandError({
+                message: "pnpm not found",
+                command: "pnpm",
+                args: ["-v"],
+                cwd: "/tmp",
+              }),
+            },
+          },
+        }),
+      ),
+    );
+
+    expect(request.packageManager).toBe("npm");
+  });
+
   it("fails for missing project name in non-interactive mode", async () => {
     expect(
       await getFailure(

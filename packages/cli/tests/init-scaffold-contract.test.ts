@@ -209,8 +209,8 @@ describe("Init scaffold contract tests", () => {
     const packageJson = readJsonFile<PackageJsonShape>(join(webviewerProjectDir, "package.json"));
     expect(packageJson.name).toBe(webviewerProjectName);
     expect(packageJson.scripts?.build).toBe("vite build");
-    expect(packageJson.scripts?.typegen).toBe("npx @proofkit/typegen");
-    expect(packageJson.scripts?.["typegen:ui"]).toBe("npx @proofkit/typegen ui");
+    expect(packageJson.scripts?.typegen).toBe("pnpx @proofkit/typegen");
+    expect(packageJson.scripts?.["typegen:ui"]).toBe("pnpx @proofkit/typegen ui");
     expect(packageJson.scripts?.proofkit).toBe("proofkit");
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
     expect(packageJson.packageManager).toMatch(packageManagerPattern);

@@ -102,6 +102,7 @@ export interface InitPlan {
   templateDir: string;
   overwriteMode?: OverwriteMode;
   packageManagerCommand: string;
+  packageManagerExecuteCommand: string;
   packageJson: {
     name: string;
     packageManager?: string;

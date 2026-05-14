@@ -338,6 +338,38 @@ describe("executeInitPlan command paths", () => {
     );
   });
 
+  it("prints pnpm warning in npm next steps", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-npm-warning-"));
+    const console = {
+      info: [] as string[],
+      warn: [] as string[],
+      error: [] as string[],
+      success: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+    };
+    const plan = planInit(
+      makeInitRequest({
+        projectName: "npm-app",
+        scopedAppName: "npm-app",
+        appDir: "npm-app",
+        packageManager: "npm",
+        noInstall: true,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+        packageManagerVersion: "10.0.0",
+      },
+    );
+
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "npm", console })));
+
+    expect(console.info.join("\n")).toContain(
+      "Warning: We strongly suggest using pnpm 11 or greater as your package manager for security reasons.",
+    );
+  });
+
   it("fails with a typed external command error when install fails", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-install-fail-"));
     const plan = planInit(

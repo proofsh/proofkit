@@ -85,6 +85,7 @@ export function makeTestLayer(options: {
     codegenRun?: unknown;
     validateHostedServerUrl?: unknown;
     deployDemoFile?: unknown;
+    packageManagerGetVersion?: Partial<Record<PackageManager, unknown>>;
   };
 }) {
   const tracker = options.tracker;
@@ -334,7 +335,13 @@ export function makeTestLayer(options: {
       },
     }),
     Layer.succeed(PackageManagerService, {
-      getVersion: () => Effect.succeed("11.1.0"),
+      getVersion: (packageManager: PackageManager) => {
+        const failure = options.failures?.packageManagerGetVersion?.[packageManager];
+        if (failure) {
+          return Effect.fail(failure as ExternalCommandError);
+        }
+        return Effect.succeed("11.1.0");
+      },
     }),
     Layer.succeed(ProcessService, {
       run: (command: string, args: string[]) => {

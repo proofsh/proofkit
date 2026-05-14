@@ -286,7 +286,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     const { stdout } = await execa(pkgManager, ["-v"], {
       cwd: projectDir,
     });
-    pkgJson.packageManager = `${pkgManager}@${stdout.trim()}`;
+    pkgJson.packageManager = `${pkgManager}>=${stdout.trim()}`;
   }
 
   fs.writeJSONSync(path.join(projectDir, "package.json"), pkgJson, {

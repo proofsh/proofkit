@@ -61,6 +61,19 @@ export function getTemplatePackageCommand(packageManager: PackageManager) {
   return packageManager;
 }
 
+export function getTemplatePackageExecuteCommand(packageManager: PackageManager) {
+  if (packageManager === "npm") {
+    return "npx";
+  }
+  if (packageManager === "pnpm") {
+    return "pnpx";
+  }
+  if (packageManager === "bun") {
+    return "bunx";
+  }
+  return `${packageManager} dlx`;
+}
+
 export function normalizeImportAlias(importAlias: string) {
   return importAlias.replace(/\*/g, "").replace(TRAILING_SLASH_REGEX, "$&/");
 }
