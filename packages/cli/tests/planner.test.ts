@@ -14,6 +14,7 @@ const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
 const proofkitFmdapiVersion = getProofkitDependencyVersion(getFmdapiVersion());
 const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
 const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
+const pnpm11WarningPattern = /pnpm.*11/i;
 
 describe("planInit", () => {
   it("plans a browser scaffold", () => {
@@ -25,6 +26,11 @@ describe("planInit", () => {
     expect(plan.targetDir).toBe(path.resolve("/tmp/workspace", "demo-app"));
     expect(plan.templateDir).toBe("/templates/browser");
     expect(plan.packageJson.name).toBe("demo-app");
+    expect(plan.packageJson.devEngines?.packageManager).toEqual({
+      name: "pnpm",
+      version: "^11.0.0",
+      onFail: "download",
+    });
     expect(plan.settings.appType).toBe("browser");
     expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
     expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
@@ -112,6 +118,37 @@ describe("planInit", () => {
     );
 
     expect(plan.writes.some((write) => write.path.endsWith("pnpm-workspace.yaml"))).toBe(false);
+  });
+
+  it("warns npm users to use pnpm 11 or greater", () => {
+    const plan = planInit(
+      makeInitRequest({
+        packageManager: "npm",
+      }),
+      {
+        templateDir: "/templates/browser",
+        packageManagerVersion: "10.0.0",
+      },
+    );
+
+    expect(plan.nextSteps).toEqual(expect.arrayContaining([expect.stringMatching(pnpm11WarningPattern)]));
+  });
+
+  it("uses package manager execute command for agent setup next step", () => {
+    const cases = [
+      ["npm", "npx @tanstack/intent@latest install"],
+      ["pnpm", "pnpx @tanstack/intent@latest install"],
+      ["yarn", "yarn dlx @tanstack/intent@latest install"],
+      ["bun", "bunx @tanstack/intent@latest install"],
+    ] as const;
+
+    for (const [packageManager, nextStep] of cases) {
+      const plan = planInit(makeInitRequest({ packageManager }), {
+        templateDir: "/templates/browser",
+      });
+
+      expect(plan.nextSteps).toContain(nextStep);
+    }
   });
 
   it("adds fmdapi for browser filemaker scaffolds", () => {

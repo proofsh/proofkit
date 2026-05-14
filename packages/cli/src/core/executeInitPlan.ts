@@ -30,6 +30,8 @@ const chalk = new Chalk({ level: 1 });
 const formatCommand = (command: string) => chalk.cyan(command);
 const formatHeading = (heading: string) => chalk.bold(heading);
 const formatPath = (value: string) => chalk.yellow(value);
+const NPM_PACKAGE_MANAGER_WARNING =
+  "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";
 
 function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
   const lines = [
@@ -37,7 +39,7 @@ function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
     "",
     formatHeading("Agent setup:"),
     "Have your agent run this in the new project and complete the interactive prompt so it can load the right skills:",
-    `  ${formatCommand("npx @tanstack/intent@latest install")}`,
+    `  ${formatCommand(`${plan.packageManagerExecuteCommand} @tanstack/intent@latest install`)}`,
   ];
 
   if (plan.request.noInstall) {
@@ -46,6 +48,10 @@ function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
       formatHeading("Install dependencies:"),
       `  ${formatCommand(plan.request.packageManager === "yarn" ? "yarn" : `${plan.request.packageManager} install`)}`,
     );
+  }
+
+  if (plan.request.packageManager === "npm") {
+    lines.push("", chalk.yellow(NPM_PACKAGE_MANAGER_WARNING));
   }
 
   lines.push("", formatHeading("Start the app:"), `  ${formatCommand(`${plan.packageManagerCommand} dev`)}`);
@@ -234,6 +240,22 @@ export const executeInitPlan = (plan: InitPlan) =>
 
     yield* Effect.tryPromise({
       try: () => replaceTextInFiles(projectFilesFs, plan.targetDir, "__PNPM_COMMAND__", plan.packageManagerCommand),
+      catch: (cause) =>
+        new FileSystemError({
+          message: "Unable to rewrite scaffold placeholders.",
+          operation: "replaceTextInFiles",
+          path: plan.targetDir,
+          cause,
+        }),
+    });
+    yield* Effect.tryPromise({
+      try: () =>
+        replaceTextInFiles(
+          projectFilesFs,
+          plan.targetDir,
+          "__PNPM_EXECUTE_COMMAND__",
+          plan.packageManagerExecuteCommand,
+        ),
       catch: (cause) =>
         new FileSystemError({
           message: "Unable to rewrite scaffold placeholders.",

@@ -1,8 +1,14 @@
 import { Effect } from "effect";
 
 import { DEFAULT_APP_NAME } from "~/consts.js";
-import { CliContext, ConsoleService, FileMakerService, PromptService } from "~/core/context.js";
-import { CliValidationError, FileMakerSetupError, isCliError, NonInteractiveInputError } from "~/core/errors.js";
+import { CliContext, ConsoleService, FileMakerService, PackageManagerService, PromptService } from "~/core/context.js";
+import {
+  CliValidationError,
+  FileMakerSetupError,
+  isCliError,
+  NonInteractiveInputError,
+  UserCancelledError,
+} from "~/core/errors.js";
 import type { AppType, CliFlags, DataSourceType, FileMakerInputs, InitRequest } from "~/core/types.js";
 import { createDataSourceEnvNames, getDefaultSchemaName } from "~/utils/projectFiles.js";
 import { parseNameAndPath, validateAppName } from "~/utils/projectName.js";
@@ -78,6 +84,62 @@ function getMissingFlags(values: [flag: string, value: unknown][]) {
 
 function createMissingInputsMessage(scope: string, flags: string[]) {
   return `Missing required ${scope} inputs in non-interactive mode: ${flags.join(", ")}.`;
+}
+
+function resolvePackageManager({
+  cwd,
+  packageManager,
+  nonInteractive,
+}: {
+  cwd: string;
+  packageManager: "npm" | "pnpm" | "yarn" | "bun";
+  nonInteractive: boolean;
+}) {
+  return Effect.gen(function* () {
+    if (packageManager !== "npm") {
+      return packageManager;
+    }
+
+    const packageManagerService = yield* PackageManagerService;
+    const prompt = yield* PromptService;
+    const pnpmVersionResult = yield* Effect.either(packageManagerService.getVersion("pnpm", cwd));
+    if (pnpmVersionResult._tag === "Right") {
+      return "pnpm" as const;
+    }
+
+    if (nonInteractive) {
+      return packageManager;
+    }
+
+    const packageManagerChoice = yield* promptEffect("Unable to choose package manager.", () =>
+      prompt.select<"abort" | "continue">({
+        message:
+          "We strongly suggest you use PNPM instead of NPM to better secure yourself and the apps you build. https://pnpm.io/installation",
+        options: [
+          {
+            value: "abort",
+            label: "Abort",
+            hint: "Install PNPM first",
+          },
+          {
+            value: "continue",
+            label: "Continue with NPM",
+            hint: "Ignore this warning",
+          },
+        ],
+      }),
+    );
+
+    if (packageManagerChoice === "abort") {
+      return yield* Effect.fail(
+        new UserCancelledError({
+          message: "User aborted to install pnpm first.",
+        }),
+      );
+    }
+
+    return packageManager;
+  });
 }
 
 function resolveHostedFileMakerInputs({
@@ -577,6 +639,11 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
     const fileMakerService = yield* FileMakerService;
     const cliContext = yield* CliContext;
     const nonInteractive = cliContext.nonInteractive || flags.CI || flags.nonInteractive === true;
+    const packageManager = yield* resolvePackageManager({
+      cwd: cliContext.cwd,
+      packageManager: cliContext.packageManager,
+      nonInteractive,
+    });
 
     let projectName = name;
     if (!projectName) {
@@ -700,7 +767,7 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       appType,
       ui: flags.ui ?? "shadcn",
       dataSource,
-      packageManager: cliContext.packageManager,
+      packageManager,
       noInstall: flags.noInstall,
       noGit: flags.noGit,
       force: flags.force,

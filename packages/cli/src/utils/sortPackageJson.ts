@@ -13,6 +13,7 @@ const ROOT_KEY_ORDER = [
   "funding",
   "type",
   "packageManager",
+  "devEngines",
   "engines",
   "bin",
   "exports",

@@ -126,6 +126,13 @@ type ProofKitPackageJSON = PackageJson & {
   proofkitMetadata?: {
     initVersion: string;
   };
+  devEngines?: {
+    packageManager: {
+      name: string;
+      version: string;
+      onFail: "download";
+    };
+  };
 };
 
 const missingTypegenCommandPatterns = [
@@ -286,7 +293,14 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     const { stdout } = await execa(pkgManager, ["-v"], {
       cwd: projectDir,
     });
-    pkgJson.packageManager = `${pkgManager}@${stdout.trim()}`;
+    pkgJson.packageManager = undefined;
+    pkgJson.devEngines = {
+      packageManager: {
+        name: pkgManager,
+        version: `^${stdout.trim()}`,
+        onFail: "download",
+      },
+    };
   }
 
   fs.writeJSONSync(path.join(projectDir, "package.json"), pkgJson, {

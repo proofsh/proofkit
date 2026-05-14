@@ -10,8 +10,8 @@
     "proofkit": "proofkit",
     "serve": "vite preview",
     "start": "vite",
-    "typegen": "npx @proofkit/typegen",
-    "typegen:ui": "npx @proofkit/typegen ui",
+    "typegen": "__PNPM_EXECUTE_COMMAND__ @proofkit/typegen",
+    "typegen:ui": "__PNPM_EXECUTE_COMMAND__ @proofkit/typegen ui",
     "upload": "node ./scripts/upload.js",
     "lint": "ultracite check .",
     "format": "ultracite fix ."
