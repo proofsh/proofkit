@@ -39,7 +39,7 @@ function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
     "",
     formatHeading("Agent setup:"),
     "Have your agent run this in the new project and complete the interactive prompt so it can load the right skills:",
-    `  ${formatCommand("npx @tanstack/intent@latest install")}`,
+    `  ${formatCommand(`${plan.packageManagerExecuteCommand} @tanstack/intent@latest install`)}`,
   ];
 
   if (plan.request.noInstall) {

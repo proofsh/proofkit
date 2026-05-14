@@ -370,6 +370,36 @@ describe("executeInitPlan command paths", () => {
     );
   });
 
+  it("prints package manager execute command in agent setup next steps", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-pnpm-agent-setup-"));
+    const console = {
+      info: [] as string[],
+      warn: [] as string[],
+      error: [] as string[],
+      success: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+    };
+    const plan = planInit(
+      makeInitRequest({
+        projectName: "pnpm-app",
+        scopedAppName: "pnpm-app",
+        appDir: "pnpm-app",
+        packageManager: "pnpm",
+        noInstall: true,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+        packageManagerVersion: "11.0.0",
+      },
+    );
+
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", console })));
+
+    expect(console.info.join("\n")).toContain("pnpx @tanstack/intent@latest install");
+  });
+
   it("fails with a typed external command error when install fails", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-install-fail-"));
     const plan = planInit(
