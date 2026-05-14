@@ -72,6 +72,14 @@ describe("integration scaffold generation", () => {
       version: "11.1.0",
       onFail: "download",
     });
+    expect(packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: "^24.11.0",
+      onFail: "download",
+    });
+    expect(packageJson.engines).toEqual({
+      node: "^24.11.0",
+    });
     expect(packageJson.proofkitMetadata).toMatchObject({
       scaffoldPackage: "@proofkit/cli",
     });
@@ -212,7 +220,6 @@ describe("integration scaffold generation", () => {
     expect(packageJson.dependencies["@tanstack/react-router"]).toBe("^1.167.4");
     expect(packageJson.devDependencies.ultracite).toBe("7.0.8");
     expect(agentsFile).toContain("Use the ProofKit docs as the primary reference");
-    expect(agentsFile).toContain("npx @tanstack/intent@latest install");
     expect(claudeFile).toBe("@AGENTS.md\n");
     expect(cursorIgnoreFile).toBe("CLAUDE.md\n");
     expect(launchConfig).toContain('"runtimeExecutable": "pnpm"');

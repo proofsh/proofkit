@@ -1,10 +1,11 @@
-import open from "open";
-import { resolve } from "path";
-import { fileURLToPath } from "url";
-import { deployHtml } from "./filemaker.js";
-import packageJson from "../package.json" with { type: "json" };
+import { resolve } from "node:path";
 
-const currentDirectory = fileURLToPath(new URL(".", import.meta.url));
+import open from "open";
+
+import packageJson from "../package.json" with { type: "json" };
+import { deployHtml } from "./filemaker.js";
+
+const currentDirectory = import.meta.dirname;
 const thePath = resolve(currentDirectory, "../dist", "index.html");
 const deployment = await deployHtml({
   appName: packageJson.name,
@@ -13,7 +14,7 @@ const deployment = await deployHtml({
 
 if (deployment.method === "none") {
   console.error(
-    "Could not resolve a FileMaker file. Start the local FM MCP proxy with a connected file, or set FM_SERVER and FM_DATABASE in .env.",
+    "Could not resolve a FileMaker file. Start the local FM MCP proxy with a connected file, or set FM_SERVER and FM_DATABASE in .env."
   );
   process.exit(1);
 }

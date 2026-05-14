@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import React from "react";
 
 import { type ProofKitRoute } from "@/app/proofkit-route";
 import classes from "./Header.module.css";
@@ -11,7 +10,7 @@ export default function HeaderNavLink(route: ProofKitRoute) {
 
   if (route.type === "function") {
     return (
-      <button className={classes.link} onClick={route.onClick}>
+      <button className={classes.link} onClick={route.onClick} type="button">
         {route.label}
       </button>
     );

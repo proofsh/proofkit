@@ -3,7 +3,7 @@ import { Chalk } from "chalk";
 import { Cause, Effect, Exit } from "effect";
 import { getOrUndefined } from "effect/Option";
 
-import { AGENT_INSTRUCTIONS } from "~/consts.js";
+import { getAgentInstructions } from "~/consts.js";
 import {
   CliContext,
   CodegenService,
@@ -19,7 +19,14 @@ import {
 import { DirectoryConflictError, FileSystemError, isCliError, UserCancelledError } from "~/core/errors.js";
 import { applyPackageJsonMutations } from "~/core/planInit.js";
 import type { InitPlan } from "~/core/types.js";
-import { normalizeImportAlias, replaceTextInFiles, updateTypegenConfig } from "~/utils/projectFiles.js";
+import { getIntentInstallCommand } from "~/helpers/intent.js";
+import { getBrowserOxlintConfig, getUltraciteInitCommand } from "~/helpers/ultracite.js";
+import {
+  formatPackageManagerCommand,
+  normalizeImportAlias,
+  replaceTextInFiles,
+  updateTypegenConfig,
+} from "~/utils/projectFiles.js";
 import { sortPackageJson } from "~/utils/sortPackageJson.js";
 
 const AGENT_METADATA_DIRS = new Set([".agents", ".claude", ".clawed", ".clinerules", ".cursor", ".windsurf"]);
@@ -76,6 +83,14 @@ function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
   );
 
   return lines.join("\n");
+}
+
+function getPackageScriptCommand(plan: InitPlan, scriptName: string) {
+  const [command, ...args] = formatPackageManagerCommand(plan.request.packageManager, scriptName).split(" ");
+  if (!command) {
+    throw new Error(`Unable to resolve ${scriptName} command for ${plan.request.packageManager}.`);
+  }
+  return { command, args };
 }
 
 function getMeaningfulDirectoryEntries(entries: string[]) {
@@ -275,7 +290,7 @@ export const executeInitPlan = (plan: InitPlan) =>
         }),
     });
     yield* Effect.tryPromise({
-      try: () => replaceTextInFiles(projectFilesFs, plan.targetDir, "__AGENT_INSTRUCTIONS__", AGENT_INSTRUCTIONS),
+      try: () => replaceTextInFiles(projectFilesFs, plan.targetDir, "__AGENT_INSTRUCTIONS__", getAgentInstructions()),
       catch: (cause) =>
         new FileSystemError({
           message: "Unable to rewrite scaffold placeholders.",
@@ -399,8 +414,54 @@ export const executeInitPlan = (plan: InitPlan) =>
       });
     }
 
+    if (plan.tasks.runUltraciteInit) {
+      const ultraciteCommand = getUltraciteInitCommand({
+        appType: plan.request.appType,
+        packageManager: plan.request.packageManager,
+        skipInstall: plan.request.noInstall,
+      });
+      yield* processService.run(ultraciteCommand.command, ultraciteCommand.args, {
+        cwd: plan.targetDir,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      if (plan.request.appType === "browser") {
+        yield* fs.writeFile(path.join(plan.targetDir, "oxlint.config.ts"), getBrowserOxlintConfig());
+      }
+    }
+
+    if (plan.tasks.runIntentInstall) {
+      const intentCommand = getIntentInstallCommand(plan.request.packageManager);
+      yield* processService.run(intentCommand.command, intentCommand.args, {
+        cwd: plan.targetDir,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+    }
+
     if (plan.tasks.runInitialCodegen) {
       yield* codegenService.runInitial(plan.targetDir, plan.request.packageManager);
+    }
+
+    if (plan.tasks.runFix) {
+      const fixCommand = getPackageScriptCommand(plan, "fix");
+      yield* Effect.either(
+        processService.run(fixCommand.command, fixCommand.args, {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        }),
+      );
+    }
+
+    if (plan.tasks.runLint) {
+      const lintCommand = getPackageScriptCommand(plan, "lint");
+      yield* processService.run(lintCommand.command, lintCommand.args, {
+        cwd: plan.targetDir,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
     }
 
     if (plan.tasks.initializeGit) {

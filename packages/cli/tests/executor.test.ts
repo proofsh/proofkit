@@ -61,7 +61,17 @@ describe("executeInitPlan command paths", () => {
 
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", tracker })));
 
-    expect(tracker.commands).toEqual(["pnpm self-update 11", "pnpm install"]);
+    expect(tracker.commands).toEqual([
+      "pnpm self-update 11",
+      "pnpm install",
+      [
+        "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors universal cursor",
+        "--agents universal claude codex --hooks cursor windsurf codebuddy claude --integrations husky lint-staged",
+      ].join(" "),
+      "pnpx @tanstack/intent@latest install",
+      "pnpm fix",
+      "pnpm lint",
+    ]);
     expect(tracker.filemakerBootstraps).toBe(1);
     expect(tracker.codegens).toBe(1);
     expect(tracker.gitInits).toBe(1);
@@ -76,6 +86,44 @@ describe("executeInitPlan command paths", () => {
     expect(pnpmWorkspaceFile).toContain("trustPolicy: no-downgrade");
     expect(pnpmWorkspaceFile).toContain("trustPolicyIgnoreAfter: 43200");
     expect(pnpmWorkspaceFile).toContain("blockExoticSubdeps: true");
+  });
+
+  it("runs Ultracite with browser framework presets", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-ultracite-browser-"));
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "browser",
+        dataSource: "none",
+        packageManager: "npm",
+        noInstall: true,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+      },
+    );
+
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "npm", tracker })));
+
+    const { npmrcFile } = await readScaffoldArtifacts(path.join(cwd, "demo-app"));
+
+    expect(tracker.commands).toEqual([
+      [
+        "npx ultracite init --quiet --linter oxlint --pm npm --frameworks react next",
+        "--editors universal cursor --agents universal claude codex",
+        "--hooks cursor windsurf codebuddy claude --integrations husky lint-staged --skip-install",
+      ].join(" "),
+      "npx @tanstack/intent@latest install",
+    ]);
+    expect(npmrcFile).toContain("min-release-age=1");
   });
 
   it("supports force overwrite for an existing directory", async () => {

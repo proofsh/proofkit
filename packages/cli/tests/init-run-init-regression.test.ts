@@ -9,6 +9,7 @@ const {
   logNextStepsMock,
   readJSONSyncMock,
   writeJSONSyncMock,
+  writeFileSyncMock,
   execaMock,
   mockState,
 } = vi.hoisted(() => ({
@@ -20,6 +21,7 @@ const {
   logNextStepsMock: vi.fn(),
   readJSONSyncMock: vi.fn(),
   writeJSONSyncMock: vi.fn(),
+  writeFileSyncMock: vi.fn(),
   execaMock: vi.fn(),
   mockState: {
     appType: undefined as "browser" | "webviewer" | undefined,
@@ -64,6 +66,7 @@ vi.mock("fs-extra", () => ({
   default: {
     readJSONSync: readJSONSyncMock,
     writeJSONSync: writeJSONSyncMock,
+    writeFileSync: writeFileSyncMock,
   },
 }));
 
@@ -193,5 +196,31 @@ describe("runInit browser post-init typegen regression", () => {
       }),
     );
     expect(runCodegenCommandMock).not.toHaveBeenCalled();
+  });
+
+  it("writes pnpm build policy before install for pnpm 10", async () => {
+    mockState.appType = "webviewer";
+
+    await expect(
+      runInit("demo-webviewer", {
+        ...browserFilemakerFlags,
+        noInstall: false,
+        dataSource: "none",
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(writeFileSyncMock).toHaveBeenCalledWith(
+      "/tmp/proofkit-regression/demo-browser/pnpm-workspace.yaml",
+      expect.stringContaining('  "sharp": false'),
+      "utf8",
+    );
+    expect(execaMock).toHaveBeenCalledWith("pnpm", ["fix"], {
+      cwd: "/tmp/proofkit-regression/demo-browser",
+      stdio: "pipe",
+    });
+    expect(execaMock).toHaveBeenCalledWith("pnpm", ["lint"], {
+      cwd: "/tmp/proofkit-regression/demo-browser",
+      stdio: "pipe",
+    });
   });
 });

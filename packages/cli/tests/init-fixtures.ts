@@ -42,6 +42,7 @@ export async function readScaffoldArtifacts(projectDir: string) {
   const cursorIgnorePath = path.join(projectDir, ".cursorignore");
   const launchPath = path.join(projectDir, ".claude", "launch.json");
   const pnpmWorkspacePath = path.join(projectDir, "pnpm-workspace.yaml");
+  const npmrcPath = path.join(projectDir, ".npmrc");
 
   return {
     packageJson,
@@ -55,5 +56,6 @@ export async function readScaffoldArtifacts(projectDir: string) {
     pnpmWorkspaceFile: (await fs.pathExists(pnpmWorkspacePath))
       ? await fs.readFile(pnpmWorkspacePath, "utf8")
       : undefined,
+    npmrcFile: (await fs.pathExists(npmrcPath)) ? await fs.readFile(npmrcPath, "utf8") : undefined,
   };
 }

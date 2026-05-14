@@ -5,20 +5,24 @@ import fs from "fs-extra";
 import type { PackageJson } from "type-fest";
 
 import { DEFAULT_APP_NAME } from "~/consts.js";
+import { createPnpmWorkspaceFileContent } from "~/core/planInit.js";
 import { addAuth } from "~/generators/auth.js";
 import { runCodegenCommand } from "~/generators/fmdapi.js";
 import { debugOption, nonInteractiveOption } from "~/globalOptions.js";
 import { createBareProject } from "~/helpers/createProject.js";
 import { initializeGit } from "~/helpers/git.js";
 import { installDependencies } from "~/helpers/installDependencies.js";
+import { getIntentInstallCommand } from "~/helpers/intent.js";
 import { logNextSteps } from "~/helpers/logNextSteps.js";
 import { setImportAlias } from "~/helpers/setImportAlias.js";
+import { getBrowserOxlintConfig, getUltraciteInitCommand } from "~/helpers/ultracite.js";
 import { buildPkgInstallerMap } from "~/installers/index.js";
 import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { getVersion } from "~/utils/getProofKitVersion.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
 import { parseNameAndPath } from "~/utils/parseNameAndPath.js";
 import { type Settings, setSettings } from "~/utils/parseSettings.js";
+import { formatPackageManagerCommand } from "~/utils/projectFiles.js";
 import { validateAppName } from "~/utils/validateAppName.js";
 import { promptForFileMakerDataSource } from "./add/data-source/filemaker.js";
 import { select, text } from "./prompts.js";
@@ -132,8 +136,18 @@ type ProofKitPackageJSON = PackageJson & {
       version: string;
       onFail: "download";
     };
+    runtime: {
+      name: "node";
+      version: string;
+      onFail: "download";
+    };
+  };
+  engines?: {
+    node: string;
   };
 };
+
+const NODE_RUNTIME_VERSION = "^24.11.0";
 
 const missingTypegenCommandPatterns = [
   /ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL[\s\S]*Command\s+["'`]typegen["'`]\s+not found/i,
@@ -289,23 +303,40 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
   pkgJson.proofkitMetadata = { initVersion: getVersion() };
 
   // ? Bun doesn't support this field (yet)
+  let pkgManagerVersion: string | undefined;
   if (pkgManager !== "bun") {
     const { stdout } = await execa(pkgManager, ["-v"], {
       cwd: projectDir,
     });
+    pkgManagerVersion = stdout.trim();
     pkgJson.packageManager = undefined;
     pkgJson.devEngines = {
       packageManager: {
         name: pkgManager,
-        version: stdout.trim(),
+        version: pkgManagerVersion,
+        onFail: "download",
+      },
+      runtime: {
+        name: "node",
+        version: NODE_RUNTIME_VERSION,
         onFail: "download",
       },
     };
   }
+  pkgJson.engines = {
+    node: NODE_RUNTIME_VERSION,
+  };
 
   fs.writeJSONSync(path.join(projectDir, "package.json"), pkgJson, {
     spaces: 2,
   });
+  if (pkgManager === "pnpm") {
+    fs.writeFileSync(
+      path.join(projectDir, "pnpm-workspace.yaml"),
+      createPnpmWorkspaceFileContent(state.appType ?? "browser"),
+      "utf8",
+    );
+  }
 
   // Ensure proofkit.json exists with shadcn settings
   const initialSettings: Settings = {
@@ -366,6 +397,24 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     await installDependencies({ projectDir });
   }
 
+  const ultraciteCommand = getUltraciteInitCommand({
+    appType: state.appType ?? "browser",
+    packageManager: pkgManager,
+    skipInstall: noInstall,
+  });
+  await execa(ultraciteCommand.command, ultraciteCommand.args, {
+    cwd: projectDir,
+    stdio: "pipe",
+  });
+  if ((state.appType ?? "browser") === "browser") {
+    fs.writeFileSync(path.join(projectDir, "oxlint.config.ts"), getBrowserOxlintConfig(), "utf8");
+  }
+  const intentCommand = getIntentInstallCommand(pkgManager);
+  await execa(intentCommand.command, intentCommand.args, {
+    cwd: projectDir,
+    stdio: "pipe",
+  });
+
   if (dataSource === "filemaker") {
     const shouldRunInitialCodegen = state.appType === "webviewer" && !(nonInteractive && !hasExplicitFileMakerInputs);
 
@@ -380,6 +429,26 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
         });
       }
     }
+  }
+
+  if (!noInstall) {
+    const [fixCommand, ...fixArgs] = formatPackageManagerCommand(pkgManager, "fix").split(" ");
+    if (!fixCommand) {
+      throw new Error(`Unable to resolve fix command for ${pkgManager}.`);
+    }
+    await execa(fixCommand, fixArgs, {
+      cwd: projectDir,
+      stdio: "pipe",
+    }).catch(() => undefined);
+
+    const [lintCommand, ...lintArgs] = formatPackageManagerCommand(pkgManager, "lint").split(" ");
+    if (!lintCommand) {
+      throw new Error(`Unable to resolve lint command for ${pkgManager}.`);
+    }
+    await execa(lintCommand, lintArgs, {
+      cwd: projectDir,
+      stdio: "pipe",
+    });
   }
 
   if (!noGit) {
