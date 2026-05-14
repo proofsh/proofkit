@@ -62,7 +62,13 @@ export const runInit = (name?: string, rawFlags?: Partial<CliFlags>) =>
     const packageManagerService = yield* PackageManagerService;
     const request = yield* resolveInitRequest(name, { ...defaultCliFlags, ...rawFlags });
     const templateDir = templateService.getTemplateDir(request.appType, request.ui);
-    const packageManagerVersion = yield* packageManagerService.getVersion(request.packageManager, request.cwd);
+    const packageManagerVersionResult = request.noInstall
+      ? yield* Effect.either(packageManagerService.getVersion(request.packageManager, request.cwd))
+      : yield* packageManagerService
+          .getVersion(request.packageManager, request.cwd)
+          .pipe(Effect.map((version) => ({ _tag: "Right" as const, right: version })));
+    const packageManagerVersion =
+      packageManagerVersionResult._tag === "Right" ? packageManagerVersionResult.right : undefined;
     const plan = planInit(request, { templateDir, packageManagerVersion });
     yield* executeInitPlan(plan);
     return { request, plan };
