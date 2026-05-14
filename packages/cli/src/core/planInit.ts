@@ -188,7 +188,7 @@ export function planInit(
       `cd ${request.appDir}`,
       ...(request.packageManager === "npm" ? [NPM_PACKAGE_MANAGER_WARNING] : []),
       ...(request.noInstall ? [request.packageManager === "yarn" ? "yarn" : `${request.packageManager} install`] : []),
-      "npx @tanstack/intent@latest install",
+      `${packageManagerExecuteCommand} @tanstack/intent@latest install`,
       formatPackageManagerCommand(request.packageManager, "dev"),
       ...(request.appType === "webviewer"
         ? [

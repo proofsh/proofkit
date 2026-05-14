@@ -14,6 +14,7 @@ const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
 const proofkitFmdapiVersion = getProofkitDependencyVersion(getFmdapiVersion());
 const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
 const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
+const pnpm11WarningPattern = /pnpm.*11/i;
 
 describe("planInit", () => {
   it("plans a browser scaffold", () => {
@@ -130,9 +131,24 @@ describe("planInit", () => {
       },
     );
 
-    expect(plan.nextSteps).toContain(
-      "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.",
-    );
+    expect(plan.nextSteps).toEqual(expect.arrayContaining([expect.stringMatching(pnpm11WarningPattern)]));
+  });
+
+  it("uses package manager execute command for agent setup next step", () => {
+    const cases = [
+      ["npm", "npx @tanstack/intent@latest install"],
+      ["pnpm", "pnpx @tanstack/intent@latest install"],
+      ["yarn", "yarn dlx @tanstack/intent@latest install"],
+      ["bun", "bunx @tanstack/intent@latest install"],
+    ] as const;
+
+    for (const [packageManager, nextStep] of cases) {
+      const plan = planInit(makeInitRequest({ packageManager }), {
+        templateDir: "/templates/browser",
+      });
+
+      expect(plan.nextSteps).toContain(nextStep);
+    }
   });
 
   it("adds fmdapi for browser filemaker scaffolds", () => {
