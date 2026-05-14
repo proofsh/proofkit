@@ -97,8 +97,14 @@ export function planInit(
 
   const packageJson: InitPlan["packageJson"] = {
     name: request.scopedAppName,
-    packageManager: options.packageManagerVersion
-      ? `${request.packageManager}@${options.packageManagerVersion}`
+    devEngines: options.packageManagerVersion
+      ? {
+          packageManager: {
+            name: request.packageManager,
+            version: `^${options.packageManagerVersion}`,
+            onFail: "download",
+          },
+        }
       : undefined,
     proofkitMetadata: {
       initVersion: getScaffoldVersion(),
@@ -202,8 +208,9 @@ export function applyPackageJsonMutations(
 ) {
   packageJson.name = mutations.name;
   packageJson.proofkitMetadata = mutations.proofkitMetadata as PackageJson["proofkitMetadata"];
-  if (mutations.packageManager) {
-    packageJson.packageManager = mutations.packageManager;
+  if (mutations.devEngines) {
+    packageJson.devEngines = mutations.devEngines;
+    packageJson.packageManager = undefined;
   }
 
   if (!packageJson.dependencies) {

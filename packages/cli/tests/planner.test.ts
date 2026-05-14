@@ -25,6 +25,11 @@ describe("planInit", () => {
     expect(plan.targetDir).toBe(path.resolve("/tmp/workspace", "demo-app"));
     expect(plan.templateDir).toBe("/templates/browser");
     expect(plan.packageJson.name).toBe("demo-app");
+    expect(plan.packageJson.devEngines?.packageManager).toEqual({
+      name: "pnpm",
+      version: "^11.0.0",
+      onFail: "download",
+    });
     expect(plan.settings.appType).toBe("browser");
     expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
     expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
@@ -126,7 +131,7 @@ describe("planInit", () => {
     );
 
     expect(plan.nextSteps).toContain(
-      "Warning: We strongly suggest using pnpm 11 or greater as your package manager for security reasons.",
+      "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.",
     );
   });
 

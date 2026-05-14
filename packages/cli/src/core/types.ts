@@ -105,7 +105,13 @@ export interface InitPlan {
   packageManagerExecuteCommand: string;
   packageJson: {
     name: string;
-    packageManager?: string;
+    devEngines?: {
+      packageManager: {
+        name: PackageManager;
+        version: string;
+        onFail: "download";
+      };
+    };
     proofkitMetadata: {
       initVersion: string;
       scaffoldPackage: "@proofkit/cli";

@@ -366,7 +366,7 @@ describe("executeInitPlan command paths", () => {
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "npm", console })));
 
     expect(console.info.join("\n")).toContain(
-      "Warning: We strongly suggest using pnpm 11 or greater as your package manager for security reasons.",
+      "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.",
     );
   });
 

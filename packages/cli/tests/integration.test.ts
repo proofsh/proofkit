@@ -66,7 +66,12 @@ describe("integration scaffold generation", () => {
       await readScaffoldArtifacts(projectDir);
 
     expect(packageJson.name).toBe("browser-app");
-    expect(packageJson.packageManager).toBe("pnpm@11.1.0");
+    expect(packageJson.packageManager).toBeUndefined();
+    expect(packageJson.devEngines?.packageManager).toEqual({
+      name: "pnpm",
+      version: "^11.1.0",
+      onFail: "download",
+    });
     expect(packageJson.proofkitMetadata).toMatchObject({
       scaffoldPackage: "@proofkit/cli",
     });

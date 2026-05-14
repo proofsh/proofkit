@@ -8,6 +8,13 @@ interface PackageJsonShape {
   version?: string;
   name?: string;
   packageManager?: string;
+  devEngines?: {
+    packageManager?: {
+      name?: string;
+      version?: string;
+      onFail?: string;
+    };
+  };
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
@@ -47,7 +54,7 @@ const expectedProofkitVersions = new Map([
     `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "webviewer", "package.json")).version}`,
   ],
 ]);
-const packageManagerPattern = /^(npm|pnpm|yarn|bun)@/;
+const packageManagerVersionPattern = /^\^?\d+\.\d+\.\d+/;
 const ansiStylePrefixPattern = /^[0-9;]*m/;
 
 function runInit({ appType, projectName }: { appType: "browser" | "webviewer"; projectName: string }): string {
@@ -110,7 +117,7 @@ function checkNodeSyntax(projectDir: string, relativeFilePath: string): boolean 
 }
 
 function getPackageManagerName(packageJson: PackageJsonShape): "npm" | "pnpm" | "yarn" | "bun" {
-  const raw = packageJson.packageManager?.split("@")[0];
+  const raw = packageJson.devEngines?.packageManager?.name ?? packageJson.packageManager?.split("@")[0];
   if (raw === "pnpm" || raw === "yarn" || raw === "bun") {
     return raw;
   }
@@ -161,7 +168,10 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.scripts?.build).toBe("next build --turbopack");
     expect(packageJson.scripts?.proofkit).toBe("proofkit");
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
-    expect(packageJson.packageManager).toMatch(packageManagerPattern);
+    expect(packageJson.packageManager).toBeUndefined();
+    expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
+    expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
+    expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
@@ -213,7 +223,10 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.scripts?.["typegen:ui"]).toBe("pnpx @proofkit/typegen ui");
     expect(packageJson.scripts?.proofkit).toBe("proofkit");
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
-    expect(packageJson.packageManager).toMatch(packageManagerPattern);
+    expect(packageJson.packageManager).toBeUndefined();
+    expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
+    expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
+    expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(webviewerProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(webviewerProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
