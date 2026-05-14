@@ -407,7 +407,13 @@ export const executeInitPlan = (plan: InitPlan) =>
       yield* gitService.initialize(plan.targetDir);
     }
 
-    const packageManagerVersion = yield* packageManagerService.getVersion(plan.request.packageManager, plan.targetDir);
+    const packageManagerVersionResult = plan.request.noInstall
+      ? yield* Effect.either(packageManagerService.getVersion(plan.request.packageManager, plan.targetDir))
+      : yield* packageManagerService
+          .getVersion(plan.request.packageManager, plan.targetDir)
+          .pipe(Effect.map((version) => ({ _tag: "Right" as const, right: version })));
+    const packageManagerVersion =
+      packageManagerVersionResult._tag === "Right" ? packageManagerVersionResult.right : undefined;
 
     consoleService.success(
       `Created ${plan.request.scopedAppName} in ${plan.targetDir}${
