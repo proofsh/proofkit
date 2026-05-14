@@ -1,5 +1,14 @@
 # @proofgeist/kit
 
+## 2.0.4
+
+### Patch Changes
+
+- 64b43aa: Use package manager execute command in init next steps.
+- f1dd2c5: Prefer pnpm when npm invokes scaffolding and warn npm fallback users to use pnpm 11+.
+- e13c759: Use devEngines packageManager in generated apps.
+- f1dd2c5: Use package-manager exec command in generated typegen scripts.
+
 ## 2.0.3
 
 ### Patch Changes
