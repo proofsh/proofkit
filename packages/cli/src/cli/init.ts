@@ -297,7 +297,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     pkgJson.devEngines = {
       packageManager: {
         name: pkgManager,
-        version: `^${stdout.trim()}`,
+        version: stdout.trim(),
         onFail: "download",
       },
     };

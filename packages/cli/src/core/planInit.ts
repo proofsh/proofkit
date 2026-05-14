@@ -101,7 +101,7 @@ export function planInit(
       ? {
           packageManager: {
             name: request.packageManager,
-            version: `^${options.packageManagerVersion}`,
+            version: options.packageManagerVersion,
             onFail: "download",
           },
         }

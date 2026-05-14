@@ -28,7 +28,7 @@ describe("planInit", () => {
     expect(plan.packageJson.name).toBe("demo-app");
     expect(plan.packageJson.devEngines?.packageManager).toEqual({
       name: "pnpm",
-      version: "^11.0.0",
+      version: "11.0.0",
       onFail: "download",
     });
     expect(plan.settings.appType).toBe("browser");
