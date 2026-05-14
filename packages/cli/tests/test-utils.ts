@@ -2,6 +2,27 @@ import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+function execSmokeCommand(command: string, options: Parameters<typeof execSync>[1]) {
+  try {
+    return execSync(command, {
+      ...options,
+      stdio: "pipe",
+      encoding: "utf-8",
+    });
+  } catch (error) {
+    if (error && typeof error === "object") {
+      const outputError = error as { stdout?: unknown; stderr?: unknown };
+      if (typeof outputError.stdout === "string" && outputError.stdout.length > 0) {
+        console.error(outputError.stdout);
+      }
+      if (typeof outputError.stderr === "string" && outputError.stderr.length > 0) {
+        console.error(outputError.stderr);
+      }
+    }
+    throw error;
+  }
+}
+
 /**
  * Smoke-test helper only: swap workspace refs to published tags so install/build
  * validates what end users can actually fetch from the registry.
@@ -42,10 +63,8 @@ export function verifySmokeProjectBuilds(projectDir: string): void {
     usePublishedProofkitVersionsForSmoke(projectDir);
 
     console.log("Installing dependencies...");
-    execSync("pnpm install --prefer-offline --no-frozen-lockfile", {
+    execSmokeCommand("pnpm install --prefer-offline --no-frozen-lockfile", {
       cwd: projectDir,
-      stdio: "inherit",
-      encoding: "utf-8",
       env: {
         ...process.env,
         PNPM_DEBUG: "1", // Enable debug logging
@@ -53,10 +72,8 @@ export function verifySmokeProjectBuilds(projectDir: string): void {
     });
 
     console.log("Building project...");
-    execSync("pnpm build", {
+    execSmokeCommand("pnpm build", {
       cwd: projectDir,
-      stdio: "inherit",
-      encoding: "utf-8",
       env: {
         ...process.env,
         NEXT_TELEMETRY_DISABLED: "1",
