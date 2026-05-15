@@ -1,5 +1,16 @@
 # @proofgeist/kit
 
+## 2.0.5
+
+### Patch Changes
+
+- b80e426: Fix Next template GitHub icon import.
+- b62a73c: Restrict Node engines to 22, 24, or 26.
+- 5cd1375: Write npm min-release-age config during npm project scaffolding.
+- b62a73c: Parse generated package-manager commands with shell-style quoting.
+- ea479ed: Add oxlint to generated app dev dependencies.
+- 5cd1375: Run Ultracite and TanStack Intent setup during project scaffolding.
+
 ## 2.0.4
 
 ### Patch Changes

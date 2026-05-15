@@ -1,6 +1,6 @@
 {
   "name": "@proofkit/better-auth",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "FileMaker adapter for Better Auth",
   "type": "module",
   "main": "dist/esm/index.js",
