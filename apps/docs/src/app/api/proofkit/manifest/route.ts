@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
+import { MANIFEST_FETCH_OPTIONS } from "@/app/download/_lib";
 
 const MANIFEST_URL = "https://downloads.ottomatic.cloud/proofkit/manifest.json";
-const MANIFEST_REVALIDATE_SECONDS = 300;
 
 const assetSchema = z.object({
   file: z.string(),
@@ -33,9 +33,7 @@ const corsHeaders = {
 export const OPTIONS = (): Response => new Response(null, { headers: corsHeaders });
 
 export const GET = async (): Promise<Response> => {
-  const response = await fetch(MANIFEST_URL, {
-    next: { revalidate: MANIFEST_REVALIDATE_SECONDS },
-  });
+  const response = await fetch(MANIFEST_URL, MANIFEST_FETCH_OPTIONS);
   if (!response.ok) {
     return NextResponse.json(
       { error: `Manifest fetch failed (${response.status})` },

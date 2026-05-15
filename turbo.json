@@ -1,7 +1,12 @@
 {
   "$schema": "https://v2-8-19.turborepo.dev/schema.json",
   "concurrency": "11",
-  "globalEnv": ["FLAGS", "FLAGS_SECRET", "ENABLE_EXPERIMENTAL_COREPACK"],
+  "globalEnv": [
+    "FLAGS",
+    "FLAGS_SECRET",
+    "ENABLE_EXPERIMENTAL_COREPACK",
+    "PROOFKIT_MANIFEST_REVALIDATE_SECRET"
+  ],
   "ui": "tui",
   "tasks": {
     "build": {

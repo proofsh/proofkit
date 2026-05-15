@@ -3,7 +3,14 @@ import { z } from "zod/v4";
 import { captureServerEvent } from "@/lib/posthog-server";
 
 const MANIFEST_URL = "https://downloads.ottomatic.cloud/proofkit/manifest.json";
-const MANIFEST_REVALIDATE_SECONDS = 300;
+export const MANIFEST_CACHE_TAG = "proofkit-manifest";
+export const MANIFEST_REVALIDATE_SECONDS = 300;
+export const MANIFEST_FETCH_OPTIONS = {
+  next: {
+    revalidate: MANIFEST_REVALIDATE_SECONDS,
+    tags: [MANIFEST_CACHE_TAG],
+  },
+} satisfies Parameters<typeof fetch>[1];
 
 export const platformSchema = z.enum(["mac", "win"]);
 export type Platform = z.infer<typeof platformSchema>;
@@ -41,9 +48,7 @@ export type ManifestAsset = z.infer<typeof assetSchema>;
 export type ManifestVersion = z.infer<typeof versionEntrySchema>;
 
 export const fetchManifest = async (): Promise<Manifest> => {
-  const response = await fetch(MANIFEST_URL, {
-    next: { revalidate: MANIFEST_REVALIDATE_SECONDS },
-  });
+  const response = await fetch(MANIFEST_URL, MANIFEST_FETCH_OPTIONS);
   if (!response.ok) {
     throw new Error(`Manifest fetch failed (${response.status})`);
   }
