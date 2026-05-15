@@ -20,6 +20,7 @@ import { buildPkgInstallerMap } from "~/installers/index.js";
 import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { getVersion } from "~/utils/getProofKitVersion.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
+import { logger } from "~/utils/logger.js";
 import { parseNameAndPath } from "~/utils/parseNameAndPath.js";
 import { type Settings, setSettings } from "~/utils/parseSettings.js";
 import { formatPackageManagerCommand, parseCommandString } from "~/utils/projectFiles.js";
@@ -440,18 +441,24 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
       stdio: "pipe",
     }).catch((error: unknown) => {
       if (state.debug) {
-        console.log(`Fix command failed; continuing. packageManager=${pkgManager} command=${fixCommandString}`);
-        console.error(error);
+        logger.warn(`Fix command failed; continuing. packageManager=${pkgManager} command=${fixCommandString}`);
+        logger.error(error);
       }
     });
 
-    const [lintCommand, ...lintArgs] = parseCommandString(formatPackageManagerCommand(pkgManager, "lint"));
+    const lintCommandString = formatPackageManagerCommand(pkgManager, "lint");
+    const [lintCommand, ...lintArgs] = parseCommandString(lintCommandString);
     if (!lintCommand) {
       throw new Error(`Unable to resolve lint command for ${pkgManager}.`);
     }
     await execa(lintCommand, lintArgs, {
       cwd: projectDir,
       stdio: "pipe",
+    }).catch((error: unknown) => {
+      logger.warn(`Lint did not succeed; continuing setup. packageManager=${pkgManager} command=${lintCommandString}`);
+      if (state.debug) {
+        logger.error(error);
+      }
     });
   }
 

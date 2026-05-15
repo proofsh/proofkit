@@ -55,7 +55,7 @@ export function formatPackageManagerCommand(packageManager: PackageManager, comm
   return ["npm", "bun"].includes(packageManager) ? `${packageManager} run ${command}` : `${packageManager} ${command}`;
 }
 
-export function parseCommandString(command: string) {
+export function parseCommandString(command: string): string[] {
   const tokens: string[] = [];
   let current = "";
   let quote: "'" | '"' | undefined;

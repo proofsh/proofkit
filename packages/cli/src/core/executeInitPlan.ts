@@ -438,7 +438,7 @@ export const executeInitPlan = (plan: InitPlan) =>
     }
 
     // plan.tasks.runFix is non-blocking: getPackageScriptCommand/processService.run can fail on fresh scaffolds.
-    // Effect.either scopes that tolerance to fixes; lint errors still propagate below.
+    // Effect.either also catches lint failures below and logs warnings; other errors still propagate.
     if (plan.tasks.runFix) {
       const fixCommand = getPackageScriptCommand(plan, "fix");
       yield* Effect.either(
