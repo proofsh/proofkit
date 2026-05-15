@@ -3,6 +3,7 @@ import path from "node:path";
 import { Effect } from "effect";
 import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
+import { NODE_RUNTIME_VERSION } from "~/consts.js";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
 import { getProofkitDependencyVersion, getTypegenVersion, getVersion } from "~/utils/getProofKitVersion.js";
@@ -74,11 +75,11 @@ describe("integration scaffold generation", () => {
     });
     expect(packageJson.devEngines?.runtime).toEqual({
       name: "node",
-      version: "^24.11.0",
+      version: NODE_RUNTIME_VERSION,
       onFail: "download",
     });
     expect(packageJson.engines).toEqual({
-      node: "^24.11.0",
+      node: NODE_RUNTIME_VERSION,
     });
     expect(packageJson.proofkitMetadata).toMatchObject({
       scaffoldPackage: "@proofkit/cli",

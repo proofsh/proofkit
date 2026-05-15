@@ -4,7 +4,7 @@ import { execa } from "execa";
 import fs from "fs-extra";
 import type { PackageJson } from "type-fest";
 
-import { DEFAULT_APP_NAME } from "~/consts.js";
+import { DEFAULT_APP_NAME, NODE_RUNTIME_VERSION } from "~/consts.js";
 import { createPnpmWorkspaceFileContent } from "~/core/planInit.js";
 import { addAuth } from "~/generators/auth.js";
 import { runCodegenCommand } from "~/generators/fmdapi.js";
@@ -20,9 +20,10 @@ import { buildPkgInstallerMap } from "~/installers/index.js";
 import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { getVersion } from "~/utils/getProofKitVersion.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
+import { logger } from "~/utils/logger.js";
 import { parseNameAndPath } from "~/utils/parseNameAndPath.js";
 import { type Settings, setSettings } from "~/utils/parseSettings.js";
-import { formatPackageManagerCommand } from "~/utils/projectFiles.js";
+import { formatPackageManagerCommand, parseCommandString } from "~/utils/projectFiles.js";
 import { validateAppName } from "~/utils/validateAppName.js";
 import { promptForFileMakerDataSource } from "./add/data-source/filemaker.js";
 import { select, text } from "./prompts.js";
@@ -146,8 +147,6 @@ type ProofKitPackageJSON = PackageJson & {
     node: string;
   };
 };
-
-const NODE_RUNTIME_VERSION = "^24.11.0";
 
 const missingTypegenCommandPatterns = [
   /ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL[\s\S]*Command\s+["'`]typegen["'`]\s+not found/i,
@@ -432,22 +431,34 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
   }
 
   if (!noInstall) {
-    const [fixCommand, ...fixArgs] = formatPackageManagerCommand(pkgManager, "fix").split(" ");
+    const fixCommandString = formatPackageManagerCommand(pkgManager, "fix");
+    const [fixCommand, ...fixArgs] = parseCommandString(fixCommandString);
     if (!fixCommand) {
       throw new Error(`Unable to resolve fix command for ${pkgManager}.`);
     }
     await execa(fixCommand, fixArgs, {
       cwd: projectDir,
       stdio: "pipe",
-    }).catch(() => undefined);
+    }).catch((error: unknown) => {
+      if (state.debug) {
+        logger.warn(`Fix command failed; continuing. packageManager=${pkgManager} command=${fixCommandString}`);
+        logger.error(error);
+      }
+    });
 
-    const [lintCommand, ...lintArgs] = formatPackageManagerCommand(pkgManager, "lint").split(" ");
+    const lintCommandString = formatPackageManagerCommand(pkgManager, "lint");
+    const [lintCommand, ...lintArgs] = parseCommandString(lintCommandString);
     if (!lintCommand) {
       throw new Error(`Unable to resolve lint command for ${pkgManager}.`);
     }
     await execa(lintCommand, lintArgs, {
       cwd: projectDir,
       stdio: "pipe",
+    }).catch((error: unknown) => {
+      logger.warn(`Lint did not succeed; continuing setup. packageManager=${pkgManager} command=${lintCommandString}`);
+      if (state.debug) {
+        logger.error(error);
+      }
     });
   }
 

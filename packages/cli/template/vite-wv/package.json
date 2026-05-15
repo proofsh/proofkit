@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0 || ^26.0.0"
+  },
   "scripts": {
     "build": "vite build",
     "build:upload": "__PNPM_COMMAND__ build && __PNPM_COMMAND__ upload",

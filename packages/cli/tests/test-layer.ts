@@ -348,11 +348,15 @@ export function makeTestLayer(options: {
       run: (command: string, args: string[]) => {
         const processCommand = [command, ...args].join(" ");
         tracker?.commands.push(processCommand);
+        const processRunFailure = options.failures?.processRun;
         if (options.failProcessCommand === processCommand) {
-          return Effect.fail(options.failures?.processRun as ExternalCommandError);
+          if (!processRunFailure) {
+            throw new Error("makeTestLayer requires failures.processRun when failProcessCommand is set.");
+          }
+          return Effect.fail(processRunFailure as ExternalCommandError);
         }
-        if (!options.failProcessCommand && options.failures?.processRun) {
-          return Effect.fail(options.failures.processRun as ExternalCommandError);
+        if (!options.failProcessCommand && processRunFailure) {
+          return Effect.fail(processRunFailure as ExternalCommandError);
         }
         return Effect.succeed({ stdout: "", stderr: "" });
       },

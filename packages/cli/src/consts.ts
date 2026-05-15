@@ -7,6 +7,7 @@ const distPath = path.dirname(__filename);
 export const PKG_ROOT = process.env.PROOFKIT_PKG_ROOT ?? path.join(distPath, "../");
 
 export const DEFAULT_APP_NAME = "my-proofkit-app";
+export const NODE_RUNTIME_VERSION = "^22.0.0 || ^24.0.0 || ^26.0.0";
 export const cliName = "proofkit";
 export const npmName = "@proofkit/cli";
 export const DOCS_URL = "https://proofkit.proof.sh";

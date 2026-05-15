@@ -7,6 +7,7 @@ import type { PackageManager } from "~/utils/packageManager.js";
 
 const commonFileMakerLayoutPrefixes = ["API_", "API ", "dapi_", "dapi"];
 const TRAILING_SLASH_REGEX = /[^/]$/;
+const WHITESPACE_REGEX = /\s/;
 const DEFAULT_FM_MCP_BASE_URL = "http://127.0.0.1:1365";
 const textFileExtensions = new Set([
   ".ts",
@@ -52,6 +53,60 @@ export function createDataSourceEnvNames(dataSourceName: string): FileMakerEnvNa
 
 export function formatPackageManagerCommand(packageManager: PackageManager, command: string) {
   return ["npm", "bun"].includes(packageManager) ? `${packageManager} run ${command}` : `${packageManager} ${command}`;
+}
+
+export function parseCommandString(command: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | undefined;
+  let escaping = false;
+
+  for (const char of command) {
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+
+    if (quote) {
+      if (char === quote) {
+        quote = undefined;
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (WHITESPACE_REGEX.test(char)) {
+      if (current) {
+        tokens.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (escaping) {
+    current += "\\";
+  }
+
+  if (current) {
+    tokens.push(current);
+  }
+
+  return tokens;
 }
 
 export function getTemplatePackageCommand(packageManager: PackageManager) {

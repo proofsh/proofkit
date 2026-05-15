@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { PackageJson } from "type-fest";
 
+import { NODE_RUNTIME_VERSION } from "~/consts.js";
 import type { InitPlan, InitRequest, ProofKitSettings } from "~/core/types.js";
 import {
   getFmdapiVersion,
@@ -25,7 +26,6 @@ const SHARED_PNPM_BUILD_POLICY = {
 } as const;
 const NPM_PACKAGE_MANAGER_WARNING =
   "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";
-const NODE_RUNTIME_VERSION = "^24.11.0";
 const NPM_MIN_RELEASE_AGE_DAYS = 1;
 
 export function createPnpmWorkspaceFileContent(appType: InitRequest["appType"]) {

@@ -24,6 +24,7 @@ import { getBrowserOxlintConfig, getUltraciteInitCommand } from "~/helpers/ultra
 import {
   formatPackageManagerCommand,
   normalizeImportAlias,
+  parseCommandString,
   replaceTextInFiles,
   updateTypegenConfig,
 } from "~/utils/projectFiles.js";
@@ -86,7 +87,7 @@ function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
 }
 
 function getPackageScriptCommand(plan: InitPlan, scriptName: string) {
-  const [command, ...args] = formatPackageManagerCommand(plan.request.packageManager, scriptName).split(" ");
+  const [command, ...args] = parseCommandString(formatPackageManagerCommand(plan.request.packageManager, scriptName));
   if (!command) {
     throw new Error(`Unable to resolve ${scriptName} command for ${plan.request.packageManager}.`);
   }
@@ -436,6 +437,8 @@ export const executeInitPlan = (plan: InitPlan) =>
       yield* codegenService.runInitial(plan.targetDir, plan.request.packageManager);
     }
 
+    // plan.tasks.runFix is non-blocking: getPackageScriptCommand/processService.run can fail on fresh scaffolds.
+    // Effect.either also catches lint failures below and logs warnings; other errors still propagate.
     if (plan.tasks.runFix) {
       const fixCommand = getPackageScriptCommand(plan, "fix");
       yield* Effect.either(
@@ -448,16 +451,16 @@ export const executeInitPlan = (plan: InitPlan) =>
     }
 
     if (plan.tasks.runLint) {
-      const fixCommand = getPackageScriptCommand(plan, "fix");
+      const lintCommand = getPackageScriptCommand(plan, "lint");
       const result = yield* Effect.either(
-        processService.run(fixCommand.command, fixCommand.args, {
+        processService.run(lintCommand.command, lintCommand.args, {
           cwd: plan.targetDir,
           stdout: "pipe",
           stderr: "pipe",
         }),
       );
       if (result._tag === "Left") {
-        consoleService.warn("Lint fix did not succeed; continuing setup.");
+        consoleService.warn("Lint did not succeed; continuing setup.");
       }
     }
 
