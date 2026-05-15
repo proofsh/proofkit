@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:f
 import { join } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { beforeEach, describe, expect, it } from "vitest";
+import { NODE_RUNTIME_VERSION } from "~/consts.js";
 
 interface PackageJsonShape {
   version?: string;
@@ -182,10 +183,10 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
     expect(packageJson.devEngines?.runtime).toEqual({
       name: "node",
-      version: "^24.11.0",
+      version: NODE_RUNTIME_VERSION,
       onFail: "download",
     });
-    expect(packageJson.engines?.node).toBe("^24.11.0");
+    expect(packageJson.engines?.node).toBe(NODE_RUNTIME_VERSION);
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
@@ -245,10 +246,10 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
     expect(packageJson.devEngines?.runtime).toEqual({
       name: "node",
-      version: "^24.11.0",
+      version: NODE_RUNTIME_VERSION,
       onFail: "download",
     });
-    expect(packageJson.engines?.node).toBe("^24.11.0");
+    expect(packageJson.engines?.node).toBe(NODE_RUNTIME_VERSION);
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(webviewerProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(webviewerProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");

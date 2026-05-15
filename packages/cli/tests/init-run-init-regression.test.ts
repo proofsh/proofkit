@@ -200,6 +200,7 @@ describe("runInit browser post-init typegen regression", () => {
 
   it("writes pnpm build policy before install for pnpm 10", async () => {
     mockState.appType = "webviewer";
+    execaMock.mockResolvedValue({ stdout: "10.0.0" });
 
     await expect(
       runInit("demo-webviewer", {
@@ -214,6 +215,19 @@ describe("runInit browser post-init typegen regression", () => {
       expect.stringContaining('  "sharp": false'),
       "utf8",
     );
+    const workspaceWriteCallIndex = writeFileSyncMock.mock.calls.findIndex(([filePath]) =>
+      String(filePath).endsWith("pnpm-workspace.yaml"),
+    );
+    const firstPnpmScriptCallIndex = execaMock.mock.calls.findIndex(
+      ([command, args]) => command === "pnpm" && Array.isArray(args) && args[0] !== "-v",
+    );
+    expect(workspaceWriteCallIndex).not.toBe(-1);
+    expect(firstPnpmScriptCallIndex).not.toBe(-1);
+    const workspaceWriteOrder = writeFileSyncMock.mock.invocationCallOrder[workspaceWriteCallIndex];
+    const firstPnpmScriptOrder = execaMock.mock.invocationCallOrder[firstPnpmScriptCallIndex];
+    expect(workspaceWriteOrder).toBeDefined();
+    expect(firstPnpmScriptOrder).toBeDefined();
+    expect(workspaceWriteOrder as number).toBeLessThan(firstPnpmScriptOrder as number);
     expect(execaMock).toHaveBeenCalledWith("pnpm", ["fix"], {
       cwd: "/tmp/proofkit-regression/demo-browser",
       stdio: "pipe",

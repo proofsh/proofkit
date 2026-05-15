@@ -69,7 +69,7 @@ describe("executeInitPlan command paths", () => {
       ].join(" "),
       "pnpx @tanstack/intent@latest install",
       "pnpm fix",
-      "pnpm fix",
+      "pnpm lint",
     ]);
     expect(tracker.filemakerBootstraps).toBe(1);
     expect(tracker.codegens).toBe(1);
@@ -125,7 +125,7 @@ describe("executeInitPlan command paths", () => {
     expect(npmrcFile).toContain("min-release-age=1");
   });
 
-  it("warns and continues when final lint fix fails", async () => {
+  it("warns and continues when final lint fails", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-lint-fix-warn-"));
     const console = {
       error: [] as string[],
@@ -161,13 +161,13 @@ describe("executeInitPlan command paths", () => {
         makeTestLayer({
           console,
           cwd,
-          failProcessCommand: "pnpm fix",
+          failProcessCommand: "pnpm lint",
           failures: {
             processRun: new ExternalCommandError({
-              args: ["fix"],
+              args: ["lint"],
               command: "pnpm",
               cwd,
-              message: "fix failed",
+              message: "lint failed",
             }),
           },
           packageManager: "pnpm",
@@ -177,7 +177,8 @@ describe("executeInitPlan command paths", () => {
     );
 
     expect(tracker.commands).toContain("pnpm fix");
-    expect(console.warn).toContain("Lint fix did not succeed; continuing setup.");
+    expect(tracker.commands).toContain("pnpm lint");
+    expect(console.warn).toContain("Lint did not succeed; continuing setup.");
   });
 
   it("supports force overwrite for an existing directory", async () => {
