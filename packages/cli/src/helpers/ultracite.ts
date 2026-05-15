@@ -56,7 +56,8 @@ export function getUltraciteInitCommand({
 }
 
 export function getBrowserOxlintConfig() {
-  return `import { defineConfig } from "oxlint";
+  return `// @ts-nocheck
+import { defineConfig } from "oxlint";
 import core from "ultracite/oxlint/core";
 import next from "ultracite/oxlint/next";
 import react from "ultracite/oxlint/react";
