@@ -38,7 +38,7 @@
     "package.json"
   ],
   "engines": {
-    "node": "^20.0.0 || ^22.0.0"
+    "node": "^22.0.0 || ^24.0.0 || ^26.0.0"
   },
   "scripts": {
     "typecheck": "node ./scripts/write-cli-version.mjs && tsc",
