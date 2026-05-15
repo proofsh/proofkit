@@ -23,6 +23,7 @@ const SHARED_PNPM_BUILD_POLICY = {
   esbuild: true,
   "msgpackr-extract": true,
   msw: true,
+  node: true,
 } as const;
 const NPM_PACKAGE_MANAGER_WARNING =
   "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";

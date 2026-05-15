@@ -194,6 +194,7 @@ describe("Init scaffold contract tests", () => {
     expect(pnpmWorkspaceText).toContain('  "esbuild": true');
     expect(pnpmWorkspaceText).toContain('  "msw": true');
     expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": true');
+    expect(pnpmWorkspaceText).toContain('  "node": true');
     expect(pnpmWorkspaceText).toContain('  "sharp": true');
     expect(pnpmWorkspaceText).toContain('  "msgpackr-extract": true');
     expect(pnpmWorkspaceText).toContain("packages:");
