@@ -67,3 +67,13 @@ If the agent built against stale schema, or TypeScript errors reference fields t
 ProofKit apps rely on generated metadata. If your FileMaker schema changes but the project still uses old generated files, the agent will confidently write code against the wrong shape.
 
 Use the [TypeGen docs](/docs/typegen) when the issue is clearly about generated types, layouts, or config.
+
+## FileMaker says access privileges are damaged [#access-privileges-damaged]
+
+If FileMaker shows a warning that says **"The access privileges in this file have been damaged or possibly tampered with"**, and the file previously had **PROOFKIT** installed in it, contact us at [support@proof.sh](mailto:support@proof.sh).
+
+![FileMaker warning that the access privileges in the file have been damaged or possibly tampered with.](/screenshots/ai/filemaker-access-privileges-warning.png)
+
+This issue only affected files where the ProofKit add-on was installed with **ProofKit 2.04**. We fixed the add-on in later versions, but in affected files the 2.04 add-on could fail to uninstall cleanly.
+
+We have a fix for affected files. Send us a note at [support@proof.sh](mailto:support@proof.sh), mention that the file had **PROOFKIT** installed, and we can help repair it.
