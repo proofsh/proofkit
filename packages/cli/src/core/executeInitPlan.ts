@@ -395,14 +395,6 @@ export const executeInitPlan = (plan: InitPlan) =>
     }
 
     if (plan.tasks.runInstall) {
-      if (plan.request.packageManager === "pnpm") {
-        yield* processService.run("pnpm", ["self-update", "11"], {
-          cwd: plan.targetDir,
-          stdout: "pipe",
-          stderr: "pipe",
-        });
-      }
-
       let installArgs: string[] = ["install"];
       if (plan.request.packageManager === "yarn") {
         installArgs = [];

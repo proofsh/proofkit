@@ -62,7 +62,6 @@ describe("executeInitPlan command paths", () => {
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", tracker })));
 
     expect(tracker.commands).toEqual([
-      "pnpm self-update 11",
       "pnpm install",
       [
         "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors universal cursor",
