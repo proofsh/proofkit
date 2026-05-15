@@ -1,7 +1,8 @@
 ---
-name: create-changeset
-description: Analyze git changes and create changesets for package releases. Use when preparing pull requests, creating PRs, when branch has commits ready for review, or when user mentions changeset or version bump.
+name: "create-changeset"
+description: "Analyze git changes and create changesets for package releases. Use when preparing pull requests, creating PRs, when branch has commits ready for review, or when user mentions changeset or version bump."
 ---
+
 # Create Changeset Skill
 
 ## Purpose
@@ -91,7 +92,7 @@ Clear description of the change
 "@proofkit/cli": minor
 ---
 
-Add new Button variant for secondary actions
+Add new command for secondary actions
 ```
 
 **Example for multiple packages:**
@@ -101,8 +102,8 @@ Add new Button variant for secondary actions
 "@proofkit/typegen": patch
 ---
 
-- @proofkit/cli: Add new Button variant for secondary actions
-- @proofkit/typegen: Fix color token contrast ratio
+- @proofkit/cli: Add new command for secondary actions
+- @proofkit/typegen: Fix generated field types
 ```
 
 **Important guidelines:**
