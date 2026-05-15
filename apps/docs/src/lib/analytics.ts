@@ -5,7 +5,7 @@ import { ENV } from "varlock/env";
 
 type AnalyticsProperties = Record<string, boolean | number | string | null | undefined>;
 
-const isPostHogEnabled = Boolean(ENV.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
+const isPostHogEnabled = process.env.NODE_ENV === "production" && Boolean(ENV.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
 
 export function captureEvent(event: string, properties: AnalyticsProperties = {}) {
   if (!isPostHogEnabled) {
