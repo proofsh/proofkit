@@ -89,7 +89,7 @@ export const dependencyVersionMap = {
   "@radix-ui/react-slot": "^1.2.3",
 
   // Icons (for shadcn/ui)
-  "lucide-react": "^0.577.0",
+  "lucide-react": "^1.16.0",
 
   // better-auth
   "better-auth": "^1.3.4",

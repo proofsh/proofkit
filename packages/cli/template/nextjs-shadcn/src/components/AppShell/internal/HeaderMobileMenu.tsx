@@ -12,6 +12,7 @@ export default function HeaderMobileMenu() {
         className="inline-flex h-8 w-8 items-center justify-center rounded border border-zinc-300 dark:border-zinc-700"
         aria-label="Open menu"
         onClick={() => setOpened((v) => !v)}
+        type="button"
       >
         <span className="block h-0.5 w-4 bg-current" />
       </button>

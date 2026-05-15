@@ -17,40 +17,44 @@ import {
 } from "~/utils/projectFiles.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
-const PNPM_BUILD_POLICY = {
+const SHARED_PNPM_BUILD_POLICY = {
   "@parcel/watcher": true,
   esbuild: true,
   "msgpackr-extract": true,
   msw: true,
-  sharp: true,
 } as const;
 const NPM_PACKAGE_MANAGER_WARNING =
   "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";
-function getPackageManagerMajorVersion(version?: string) {
-  if (!version) {
-    return undefined;
-  }
+const NODE_RUNTIME_VERSION = "^24.11.0";
+const NPM_MIN_RELEASE_AGE_DAYS = 1;
 
-  const major = Number.parseInt(version.split(".")[0] ?? "", 10);
-  return Number.isFinite(major) ? major : undefined;
-}
+export function createPnpmWorkspaceFileContent(appType: InitRequest["appType"]) {
+  const buildPolicy = {
+    ...SHARED_PNPM_BUILD_POLICY,
+    sharp: appType === "browser",
+  } as const;
 
-function createPnpmWorkspaceFileContent() {
   return [
     "# This setting defines where in the repo your apps/packages that need installed dependancies exist. This of this as a list of paths to your package.json files. ",
     "packages:",
     '  - "."',
     "",
     "allowBuilds:",
-    ...Object.entries(PNPM_BUILD_POLICY).map(
-      ([packageName, allowed]) => `  ${JSON.stringify(packageName)}: ${allowed}`,
-    ),
+    ...Object.entries(buildPolicy).map(([packageName, allowed]) => `  ${JSON.stringify(packageName)}: ${allowed}`),
     "",
     "trustPolicy: no-downgrade",
     "",
     "trustPolicyIgnoreAfter: 43200",
     "",
     "blockExoticSubdeps: true",
+    "",
+  ].join("\n");
+}
+
+export function createNpmrcFileContent() {
+  return [
+    "# Require npm package releases to be at least 24 hours old before install.",
+    `min-release-age=${NPM_MIN_RELEASE_AGE_DAYS}`,
     "",
   ].join("\n");
 }
@@ -74,7 +78,7 @@ const sharedUiDependencies = {
   "@radix-ui/react-slot": "^1.2.3",
   "class-variance-authority": "^0.7.1",
   clsx: "^2.1.1",
-  "lucide-react": "^0.577.0",
+  "lucide-react": "^1.16.0",
   "tailwind-merge": "^3.5.0",
   tailwindcss: "^4.1.10",
   "tw-animate-css": "^1.4.0",
@@ -92,16 +96,24 @@ export function planInit(
   const settings = createDefaultSettings(request);
   const packageManagerCommand = getTemplatePackageCommand(request.packageManager);
   const packageManagerExecuteCommand = getTemplatePackageExecuteCommand(request.packageManager);
-  const packageManagerMajorVersion = getPackageManagerMajorVersion(options.packageManagerVersion);
-  const shouldWritePnpmWorkspaceFile = request.packageManager === "pnpm" && (packageManagerMajorVersion ?? 0) >= 11;
+  const shouldWritePnpmWorkspaceFile = request.packageManager === "pnpm";
+  const shouldWriteNpmrcFile = request.packageManager === "npm";
 
   const packageJson: InitPlan["packageJson"] = {
     name: request.scopedAppName,
+    engines: {
+      node: NODE_RUNTIME_VERSION,
+    },
     devEngines: options.packageManagerVersion
       ? {
           packageManager: {
             name: request.packageManager,
             version: options.packageManagerVersion,
+            onFail: "download",
+          },
+          runtime: {
+            name: "node",
+            version: NODE_RUNTIME_VERSION,
             onFail: "download",
           },
         }
@@ -167,21 +179,37 @@ export function planInit(
         ? [
             {
               path: path.join(targetDir, "pnpm-workspace.yaml"),
-              content: createPnpmWorkspaceFileContent(),
+              content: createPnpmWorkspaceFileContent(request.appType),
+            },
+          ]
+        : []),
+      ...(shouldWriteNpmrcFile
+        ? [
+            {
+              path: path.join(targetDir, ".npmrc"),
+              content: createNpmrcFileContent(),
             },
           ]
         : []),
     ],
     commands: [
       ...(request.noInstall ? [] : [{ type: "install" as const }]),
+      { type: "ultracite-init" as const },
+      { type: "intent-install" as const },
       ...(shouldRunInitialCodegen ? [{ type: "codegen" as const }] : []),
+      ...(request.noInstall ? [] : [{ type: "fix" as const }]),
+      ...(request.noInstall ? [] : [{ type: "lint" as const }]),
       ...(request.noGit ? [] : [{ type: "git-init" as const }]),
     ],
     tasks: {
       bootstrapFileMaker: request.dataSource === "filemaker" && !request.skipFileMakerSetup,
       checkWebViewerAddon: request.appType === "webviewer",
       runInstall: !request.noInstall,
+      runUltraciteInit: true,
+      runIntentInstall: true,
       runInitialCodegen: shouldRunInitialCodegen,
+      runFix: !request.noInstall,
+      runLint: !request.noInstall,
       initializeGit: !request.noGit,
     },
     nextSteps: [
@@ -212,6 +240,7 @@ export function applyPackageJsonMutations(
     packageJson.devEngines = mutations.devEngines;
     packageJson.packageManager = undefined;
   }
+  packageJson.engines = mutations.engines as PackageJson["engines"];
 
   if (!packageJson.dependencies) {
     packageJson.dependencies = {};

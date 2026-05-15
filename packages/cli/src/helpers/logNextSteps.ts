@@ -5,6 +5,7 @@ import type { InstallerOptions } from "~/installers/index.js";
 import { state } from "~/state.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
 import { logger } from "~/utils/logger.js";
+import { getTemplatePackageExecuteCommand } from "~/utils/projectFiles.js";
 
 const formatRunCommand = (pkgManager: ReturnType<typeof getUserPkgManager>, command: string) =>
   ["npm", "bun"].includes(pkgManager) ? `${pkgManager} run ${command}` : `${pkgManager} ${command}`;
@@ -32,7 +33,7 @@ export const logNextSteps = ({
   }
 
   logger.dim("\nAgent instruction (required before continuing any AI-assisted development in this project):");
-  logger.info("  npx @tanstack/intent@latest install");
+  logger.info(`  ${getTemplatePackageExecuteCommand(pkgManager)} @tanstack/intent@latest install`);
   logger.dim(
     "  Have your agent run this command in the newly created project so it can discover and learn important skills relevant to the project.",
   );

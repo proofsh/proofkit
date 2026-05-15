@@ -56,7 +56,6 @@ export default function Home() {
     <div className="flex min-h-[calc(100dvh-var(--header-height,56px))] flex-col">
       <div className="mx-auto mt-20 max-w-screen-md px-4">
         <div className="flex flex-col items-center gap-6 text-center">
-          {/** biome-ignore lint/performance/noImgElement: just a template image */}
           <img
             alt="ProofKit"
             className="h-auto max-h-64 w-auto"

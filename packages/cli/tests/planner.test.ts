@@ -31,10 +31,22 @@ describe("planInit", () => {
       version: "11.0.0",
       onFail: "download",
     });
+    expect(plan.packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: "^24.11.0",
+      onFail: "download",
+    });
+    expect(plan.packageJson.engines).toEqual({
+      node: "^24.11.0",
+    });
     expect(plan.settings.appType).toBe("browser");
     expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
     expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(plan.tasks.runInstall).toBe(true);
+    expect(plan.tasks.runUltraciteInit).toBe(true);
+    expect(plan.tasks.runIntentInstall).toBe(true);
+    expect(plan.tasks.runFix).toBe(true);
+    expect(plan.tasks.runLint).toBe(true);
     expect(plan.tasks.initializeGit).toBe(true);
     expect(plan.tasks.bootstrapFileMaker).toBe(false);
     expect(plan.tasks.checkWebViewerAddon).toBe(false);
@@ -79,6 +91,10 @@ describe("planInit", () => {
     expect(plan.packageJson.dependencies["@proofkit/webviewer"]).toBe(proofkitWebviewerVersion);
     expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(plan.tasks.runInstall).toBe(false);
+    expect(plan.tasks.runUltraciteInit).toBe(true);
+    expect(plan.tasks.runIntentInstall).toBe(true);
+    expect(plan.tasks.runFix).toBe(false);
+    expect(plan.tasks.runLint).toBe(false);
     expect(plan.tasks.initializeGit).toBe(false);
     expect(plan.tasks.checkWebViewerAddon).toBe(true);
     expect(plan.writes).toContainEqual({
@@ -93,7 +109,7 @@ describe("planInit", () => {
         '  "esbuild": true',
         '  "msgpackr-extract": true',
         '  "msw": true',
-        '  "sharp": true',
+        '  "sharp": false',
         "",
         "trustPolicy: no-downgrade",
         "",
@@ -105,7 +121,7 @@ describe("planInit", () => {
     });
   });
 
-  it("does not add pnpm build approvals for pnpm 10", () => {
+  it("adds pnpm build approvals for pnpm 10", () => {
     const plan = planInit(
       makeInitRequest({
         appType: "webviewer",
@@ -117,7 +133,12 @@ describe("planInit", () => {
       },
     );
 
-    expect(plan.writes.some((write) => write.path.endsWith("pnpm-workspace.yaml"))).toBe(false);
+    expect(plan.writes).toContainEqual(
+      expect.objectContaining({
+        path: path.resolve("/tmp/workspace", "demo-app", "pnpm-workspace.yaml"),
+        content: expect.stringContaining('  "sharp": false'),
+      }),
+    );
   });
 
   it("warns npm users to use pnpm 11 or greater", () => {
@@ -132,6 +153,27 @@ describe("planInit", () => {
     );
 
     expect(plan.nextSteps).toEqual(expect.arrayContaining([expect.stringMatching(pnpm11WarningPattern)]));
+  });
+
+  it("writes npm minimum release age config for npm scaffolds", () => {
+    const plan = planInit(
+      makeInitRequest({
+        packageManager: "npm",
+      }),
+      {
+        templateDir: "/templates/browser",
+        packageManagerVersion: "11.10.0",
+      },
+    );
+
+    expect(plan.writes).toContainEqual({
+      path: path.resolve("/tmp/workspace", "demo-app", ".npmrc"),
+      content: [
+        "# Require npm package releases to be at least 24 hours old before install.",
+        "min-release-age=1",
+        "",
+      ].join("\n"),
+    });
   });
 
   it("uses package manager execute command for agent setup next step", () => {

@@ -111,6 +111,14 @@ export interface InitPlan {
         version: string;
         onFail: "download";
       };
+      runtime: {
+        name: "node";
+        version: string;
+        onFail: "download";
+      };
+    };
+    engines: {
+      node: string;
     };
     proofkitMetadata: {
       initVersion: string;
@@ -128,12 +136,24 @@ export interface InitPlan {
     path: string;
     content: string;
   }>;
-  commands: Array<{ type: "install" } | { type: "codegen" } | { type: "git-init" }>;
+  commands: Array<
+    | { type: "install" }
+    | { type: "ultracite-init" }
+    | { type: "intent-install" }
+    | { type: "codegen" }
+    | { type: "fix" }
+    | { type: "lint" }
+    | { type: "git-init" }
+  >;
   tasks: {
     bootstrapFileMaker: boolean;
     checkWebViewerAddon: boolean;
     runInstall: boolean;
+    runUltraciteInit: boolean;
+    runIntentInstall: boolean;
     runInitialCodegen: boolean;
+    runFix: boolean;
+    runLint: boolean;
     initializeGit: boolean;
   };
   nextSteps: string[];

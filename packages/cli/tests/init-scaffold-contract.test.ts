@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -14,6 +14,14 @@ interface PackageJsonShape {
       version?: string;
       onFail?: string;
     };
+    runtime?: {
+      name?: string;
+      version?: string;
+      onFail?: string;
+    };
+  };
+  engines?: {
+    node?: string;
   };
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
@@ -172,6 +180,12 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
     expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
+    expect(packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: "^24.11.0",
+      onFail: "download",
+    });
+    expect(packageJson.engines?.node).toBe("^24.11.0");
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
@@ -213,6 +227,8 @@ describe("Init scaffold contract tests", () => {
     expect(existsSync(join(webviewerProjectDir, ".env"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, ".cursorignore"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, "pnpm-workspace.yaml"))).toBe(true);
+    expect(existsSync(join(webviewerProjectDir, "src", "app.tsx"))).toBe(true);
+    expect(readdirSync(join(webviewerProjectDir, "src"))).not.toContain("App.tsx");
     expect(existsSync(join(webviewerProjectDir, "src", "main.tsx"))).toBe(true);
     expect(existsSync(join(webviewerProjectDir, "scripts", "upload.js"))).toBe(true);
 
@@ -227,6 +243,12 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
     expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
+    expect(packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: "^24.11.0",
+      onFail: "download",
+    });
+    expect(packageJson.engines?.node).toBe("^24.11.0");
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(webviewerProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(webviewerProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
@@ -266,7 +288,7 @@ describe("Init scaffold contract tests", () => {
     expect(pnpmWorkspaceText).toContain('  "esbuild": true');
     expect(pnpmWorkspaceText).toContain('  "msw": true');
     expect(pnpmWorkspaceText).toContain('  "@parcel/watcher": true');
-    expect(pnpmWorkspaceText).toContain('  "sharp": true');
+    expect(pnpmWorkspaceText).toContain('  "sharp": false');
     expect(pnpmWorkspaceText).toContain('  "msgpackr-extract": true');
     expect(pnpmWorkspaceText).toContain("packages:");
     expect(pnpmWorkspaceText).toContain('  - "."');

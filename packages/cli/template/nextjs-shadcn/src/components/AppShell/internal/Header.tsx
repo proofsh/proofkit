@@ -1,7 +1,6 @@
 import SlotHeaderCenter from "../slot-header-center";
 import SlotHeaderLeft from "../slot-header-left";
 import SlotHeaderRight from "../slot-header-right";
-import { headerHeight } from "./config";
 import classes from "./Header.module.css";
 import HeaderMobileMenu from "./HeaderMobileMenu";
 

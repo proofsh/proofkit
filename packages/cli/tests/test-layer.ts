@@ -58,6 +58,7 @@ export function makeTestLayer(options: {
   nonInteractive?: boolean;
   prompts?: PromptScript;
   console?: ConsoleTranscript;
+  failProcessCommand?: string;
   promptTranscript?: PromptTranscript;
   tracker?: {
     commands: string[];
@@ -345,8 +346,12 @@ export function makeTestLayer(options: {
     }),
     Layer.succeed(ProcessService, {
       run: (command: string, args: string[]) => {
-        tracker?.commands.push([command, ...args].join(" "));
-        if (options.failures?.processRun) {
+        const processCommand = [command, ...args].join(" ");
+        tracker?.commands.push(processCommand);
+        if (options.failProcessCommand === processCommand) {
+          return Effect.fail(options.failures?.processRun as ExternalCommandError);
+        }
+        if (!options.failProcessCommand && options.failures?.processRun) {
           return Effect.fail(options.failures.processRun as ExternalCommandError);
         }
         return Effect.succeed({ stdout: "", stderr: "" });

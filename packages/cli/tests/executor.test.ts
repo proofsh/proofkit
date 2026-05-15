@@ -61,7 +61,16 @@ describe("executeInitPlan command paths", () => {
 
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", tracker })));
 
-    expect(tracker.commands).toEqual(["pnpm self-update 11", "pnpm install"]);
+    expect(tracker.commands).toEqual([
+      "pnpm install",
+      [
+        "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors universal cursor",
+        "--agents universal claude codex --hooks cursor windsurf codebuddy claude --integrations husky lint-staged",
+      ].join(" "),
+      "pnpx @tanstack/intent@latest install",
+      "pnpm fix",
+      "pnpm fix",
+    ]);
     expect(tracker.filemakerBootstraps).toBe(1);
     expect(tracker.codegens).toBe(1);
     expect(tracker.gitInits).toBe(1);
@@ -76,6 +85,99 @@ describe("executeInitPlan command paths", () => {
     expect(pnpmWorkspaceFile).toContain("trustPolicy: no-downgrade");
     expect(pnpmWorkspaceFile).toContain("trustPolicyIgnoreAfter: 43200");
     expect(pnpmWorkspaceFile).toContain("blockExoticSubdeps: true");
+  });
+
+  it("runs Ultracite with browser framework presets", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-ultracite-browser-"));
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "browser",
+        dataSource: "none",
+        packageManager: "npm",
+        noInstall: true,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+      },
+    );
+
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "npm", tracker })));
+
+    const { npmrcFile } = await readScaffoldArtifacts(path.join(cwd, "demo-app"));
+
+    expect(tracker.commands).toEqual([
+      [
+        "npx ultracite init --quiet --linter oxlint --pm npm --frameworks react next",
+        "--editors universal cursor --agents universal claude codex",
+        "--hooks cursor windsurf codebuddy claude --integrations husky lint-staged --skip-install",
+      ].join(" "),
+      "npx @tanstack/intent@latest install",
+    ]);
+    expect(npmrcFile).toContain("min-release-age=1");
+  });
+
+  it("warns and continues when final lint fix fails", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-lint-fix-warn-"));
+    const console = {
+      error: [] as string[],
+      info: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+      success: [] as string[],
+      warn: [] as string[],
+    };
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "webviewer",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: false,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("vite-wv"),
+        packageManagerVersion: "11.0.0",
+      },
+    );
+
+    await Effect.runPromise(
+      executeInitPlan(plan).pipe(
+        makeTestLayer({
+          console,
+          cwd,
+          failProcessCommand: "pnpm fix",
+          failures: {
+            processRun: new ExternalCommandError({
+              args: ["fix"],
+              command: "pnpm",
+              cwd,
+              message: "fix failed",
+            }),
+          },
+          packageManager: "pnpm",
+          tracker,
+        }),
+      ),
+    );
+
+    expect(tracker.commands).toContain("pnpm fix");
+    expect(console.warn).toContain("Lint fix did not succeed; continuing setup.");
   });
 
   it("supports force overwrite for an existing directory", async () => {

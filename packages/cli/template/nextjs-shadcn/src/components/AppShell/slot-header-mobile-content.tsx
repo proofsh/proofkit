@@ -20,18 +20,19 @@ export function SlotHeaderMobileMenuContent({
   return (
     <div className="flex flex-col">
       {primaryRoutes.map((route) => (
-        <button
-          key={route.label}
-          className="flex items-center gap-2 rounded px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          <button
+            key={route.label}
+            className="flex items-center gap-2 rounded px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
           onClick={() => {
             closeMenu();
             if (route.type === "function") {
               route.onClick();
             } else if (route.type === "link") {
               router.push(route.href);
-            }
-          }}
-        >
+              }
+            }}
+            type="button"
+          >
           {route.icon}
           <span>{route.label}</span>
         </button>
