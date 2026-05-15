@@ -1,5 +1,11 @@
 # @proofkit/fmodata
 
+## 0.1.1
+
+### Patch Changes
+
+- b62a73c: Restrict Node engines to 22, 24, or 26.
+
 ## 0.1.0
 
 ### Minor Changes

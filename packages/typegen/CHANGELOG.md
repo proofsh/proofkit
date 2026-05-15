@@ -1,5 +1,13 @@
 # @proofkit/typegen
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [b62a73c]
+  - @proofkit/fmdapi@5.1.1
+  - @proofkit/fmodata@0.1.1
+
 ## 1.1.0
 
 ### Minor Changes
@@ -25,7 +33,7 @@
 - 4928637: Fix odata generated client validators: correct boolean transformations on `Edm.Boolean` fields, stop duplicating `readValidator`/`writeValidator` for those fields on regeneration, and preserve inline validator helpers in generated odata files.
 - 7b46a23: Fix typegen client index generation when multiple fmdapi configs write to the same output path.
 - c031d74: Improve `parseMetadata` error messages: when the OData metadata response is missing `<edmx:Edmx>`, surface a response excerpt and recognize common failure modes (empty body, JSON error payload, HTML login redirect) instead of throwing the opaque "No Edmx element found in XML".
-- Updated dependencies 
+- Updated dependencies
   - @proofkit/fmodata@0.1.0
   - @proofkit/fmdapi@5.1.0
 

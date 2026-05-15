@@ -1,6 +1,6 @@
 {
   "name": "@proofkit/fmodata",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "FileMaker OData API client",
   "repository": "git@github.com:proofsh/proofkit.git",
   "author": "Eric <37158449+eluce2@users.noreply.github.com>",
