@@ -68,8 +68,8 @@ export const createBareProject = async ({
     "tw-animate-css",
     "zod",
   ] as AvailableDependencies[];
-  const SHADCN_BASE_DEV_DEPS = ["ultracite"] as AvailableDependencies[];
-  const VITE_SHADCN_BASE_DEV_DEPS = ["@proofkit/typegen", "ultracite"] as AvailableDependencies[];
+  const SHADCN_BASE_DEV_DEPS = ["oxlint", "ultracite"] as AvailableDependencies[];
+  const VITE_SHADCN_BASE_DEV_DEPS = ["@proofkit/typegen", "oxlint", "ultracite"] as AvailableDependencies[];
 
   if (state.ui === "shadcn") {
     addPackageDependency({

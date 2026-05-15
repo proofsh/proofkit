@@ -132,6 +132,7 @@ export function planInit(
 
   if (request.appType === "browser") {
     packageJson.devDependencies["@proofkit/typegen"] = proofkitTypegenVersion;
+    packageJson.devDependencies.oxlint = "^1.39.0";
     Object.assign(packageJson.dependencies, sharedUiDependencies);
     packageJson.dependencies["@tailwindcss/postcss"] = "^4.1.10";
     packageJson.dependencies["next-themes"] = "^0.4.6";
@@ -150,6 +151,7 @@ export function planInit(
     packageJson.dependencies.zod = "^4";
     packageJson.devDependencies["@proofkit/typegen"] = proofkitTypegenVersion;
     packageJson.devDependencies["@tailwindcss/vite"] = "^4.2.1";
+    packageJson.devDependencies.oxlint = "^1.39.0";
     packageJson.devDependencies.ultracite = "7.0.8";
   }
 
