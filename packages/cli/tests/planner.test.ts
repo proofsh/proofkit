@@ -1,5 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { NODE_RUNTIME_VERSION } from "~/consts.js";
 import { planInit } from "~/core/planInit.js";
 import {
   getFmdapiVersion,
@@ -33,11 +34,11 @@ describe("planInit", () => {
     });
     expect(plan.packageJson.devEngines?.runtime).toEqual({
       name: "node",
-      version: "^24.11.0",
+      version: NODE_RUNTIME_VERSION,
       onFail: "download",
     });
     expect(plan.packageJson.engines).toEqual({
-      node: "^24.11.0",
+      node: NODE_RUNTIME_VERSION,
     });
     expect(plan.settings.appType).toBe("browser");
     expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);

@@ -7,7 +7,7 @@ const getConnectionHint = (): string =>
 export const QueryDemoPage = () => {
   const hintQuery = useQuery({
     queryFn: getConnectionHint,
-    queryKey: ["starter-connection-hint"],
+    queryKey: ["starter-connection-hint"] as const,
   });
 
   return (

@@ -1,8 +1,8 @@
 import type { PackageManager } from "~/utils/packageManager.js";
-import { getTemplatePackageExecuteCommand } from "~/utils/projectFiles.js";
+import { getTemplatePackageExecuteCommand, parseCommandString } from "~/utils/projectFiles.js";
 
 function splitExecuteCommand(packageManager: PackageManager) {
-  const [command, ...args] = getTemplatePackageExecuteCommand(packageManager).split(" ");
+  const [command, ...args] = parseCommandString(getTemplatePackageExecuteCommand(packageManager));
   if (!command) {
     throw new Error(`Unable to resolve package execute command for ${packageManager}.`);
   }
