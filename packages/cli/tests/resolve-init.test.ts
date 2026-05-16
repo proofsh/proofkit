@@ -332,6 +332,13 @@ describe("resolveInitRequest", () => {
       success: [],
       note: [],
     };
+    const tracker = {
+      commands: [],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+      localFmMcpAuthorizations: [],
+    };
 
     const request = await Effect.runPromise(
       resolveInitRequest("demo", {
@@ -349,6 +356,7 @@ describe("resolveInitRequest", () => {
           packageManager: "pnpm",
           nonInteractive: false,
           console: consoleTranscript,
+          tracker,
           fileMaker: {
             localFmMcp: {
               healthy: true,
@@ -362,7 +370,15 @@ describe("resolveInitRequest", () => {
     expect(request.fileMaker).toMatchObject({
       mode: "local-fm-mcp",
       fileName: "LocalFile.fmp12",
+      persistentToken: "test-persistent-token",
+      persistentTokenEnvName: "FM_MCP_PERSISTENT_TOKEN",
     });
+    expect(tracker.localFmMcpAuthorizations).toEqual([
+      {
+        clientName: "demo from ProofKit",
+        clientDescription: "ProofKit is requesting FileMaker bridge access for demo.",
+      },
+    ]);
     expect(consoleTranscript.info).toContain("Using ProofKit plugin file: LocalFile.fmp12");
   });
 

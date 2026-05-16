@@ -156,6 +156,7 @@ export interface FileMakerBootstrapArtifacts {
     envNames?: FileMakerEnvNames;
     fmMcpBaseUrl?: string;
     connectedFileName?: string;
+    persistentTokenEnvName?: string;
     layoutName?: string;
     schemaName?: string;
     appType: AppType;
@@ -164,6 +165,13 @@ export interface FileMakerBootstrapArtifacts {
 
 export interface FileMakerService {
   readonly detectLocalFmMcp: (baseUrl?: string) => Eff<FmMcpStatus, CliError>;
+  readonly authorizeLocalFmMcp: (input: {
+    baseUrl: string;
+    fileName: string;
+    interactive: boolean;
+    clientName: string;
+    clientDescription: string;
+  }) => Eff<{ persistentToken: string; persistentTokenEnvName: string }, CliError>;
   readonly installLocalWebViewerAddon: () => Eff<void, CliError>;
   readonly validateHostedServerUrl: (
     serverUrl: string,

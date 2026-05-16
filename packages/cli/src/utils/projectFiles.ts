@@ -234,6 +234,7 @@ export async function updateTypegenConfig(
     envNames?: FileMakerEnvNames;
     fmMcpBaseUrl?: string;
     connectedFileName?: string;
+    persistentTokenEnvName?: string;
     layoutName?: string;
     schemaName?: string;
   },
@@ -261,6 +262,14 @@ export async function updateTypegenConfig(
   }
 
   if (options.fmMcpBaseUrl || options.connectedFileName) {
+    if (options.persistentTokenEnvName) {
+      nextDataSource.envNames = {
+        ...(typeof nextDataSource.envNames === "object" ? nextDataSource.envNames : {}),
+        fmMcp: {
+          persistentToken: options.persistentTokenEnvName,
+        },
+      };
+    }
     nextDataSource.fmMcp = {
       enabled: true,
       ...(options.fmMcpBaseUrl && options.fmMcpBaseUrl !== DEFAULT_FM_MCP_BASE_URL

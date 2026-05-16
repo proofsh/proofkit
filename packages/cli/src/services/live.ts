@@ -270,6 +270,8 @@ function createDataSourceEntry(dataSourceName: string) {
   };
 }
 
+const fmMcpPersistentTokenEnvName = "FM_MCP_PERSISTENT_TOKEN";
+
 function createFileMakerBootstrapArtifacts(
   settings: ProofKitSettings,
   inputs: FileMakerInputs,
@@ -286,13 +288,18 @@ function createFileMakerBootstrapArtifacts(
   if (inputs.mode === "local-fm-mcp") {
     return Promise.resolve({
       settings: nextSettings,
-      envVars: {},
+      envVars: inputs.persistentToken
+        ? { [inputs.persistentTokenEnvName ?? fmMcpPersistentTokenEnvName]: inputs.persistentToken }
+        : {},
       envSchemaEntries: [],
       typegenConfig: {
         mode: inputs.mode,
         dataSourceName: inputs.dataSourceName,
         fmMcpBaseUrl: inputs.fmMcpBaseUrl,
         connectedFileName: inputs.fileName,
+        persistentTokenEnvName: inputs.persistentToken
+          ? (inputs.persistentTokenEnvName ?? fmMcpPersistentTokenEnvName)
+          : undefined,
         layoutName: inputs.layoutName,
         schemaName: inputs.schemaName,
         appType,
@@ -361,6 +368,55 @@ const fileMakerService = {
       catch: (cause) =>
         new FileMakerSetupError({
           message: "Unable to detect local ProofKit plugin.",
+          cause,
+        }),
+    }),
+  authorizeLocalFmMcp: ({
+    baseUrl,
+    fileName,
+    interactive,
+    clientName,
+    clientDescription,
+  }: {
+    baseUrl: string;
+    fileName: string;
+    interactive: boolean;
+    clientName: string;
+    clientDescription: string;
+  }) =>
+    Effect.tryPromise({
+      try: async () => {
+        if (!interactive) {
+          throw new Error("interactive authorization disabled");
+        }
+        const persistentToken = `pk_${randomUUID().replaceAll("-", "")}`;
+        const response = await postJson<{ status?: unknown; error?: unknown }>(
+          `${baseUrl}/authorizeSession`,
+          {
+            sessionId: persistentToken,
+            fileName,
+            clientName,
+            clientDescription,
+          },
+          { timeout: 125_000 },
+        );
+        if (response.status >= 200 && response.status < 300 && response.data?.status === "approved") {
+          return { persistentToken, persistentTokenEnvName: fmMcpPersistentTokenEnvName };
+        }
+        const status = response.data?.status;
+        let reason = "authorization failed";
+        if (typeof response.data?.error === "string") {
+          reason = response.data.error;
+        } else if (status === "rejected") {
+          reason = "authorization rejected";
+        } else if (status === "timeout") {
+          reason = "authorization timed out";
+        }
+        throw new Error(reason);
+      },
+      catch: (cause) =>
+        new FileMakerSetupError({
+          message: `Not authorized to connect to FileMaker file "${fileName}".`,
           cause,
         }),
     }),
@@ -696,6 +752,7 @@ const fileMakerService = {
           envNames: artifacts.typegenConfig.envNames,
           fmMcpBaseUrl: artifacts.typegenConfig.fmMcpBaseUrl,
           connectedFileName: artifacts.typegenConfig.connectedFileName,
+          persistentTokenEnvName: artifacts.typegenConfig.persistentTokenEnvName,
           layoutName: artifacts.typegenConfig.layoutName,
           schemaName: artifacts.typegenConfig.schemaName,
         }),

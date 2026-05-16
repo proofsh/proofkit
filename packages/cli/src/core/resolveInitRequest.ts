@@ -479,6 +479,7 @@ function resolveFileMakerInputs({
   flags,
   appType,
   nonInteractive,
+  projectName,
 }: {
   prompt: PromptService;
   console: ConsoleService;
@@ -486,6 +487,7 @@ function resolveFileMakerInputs({
   flags: CliFlags;
   appType: AppType;
   nonInteractive: boolean;
+  projectName: string;
 }) {
   return Effect.gen(function* () {
     if (flags.dataSource !== "filemaker") {
@@ -544,6 +546,15 @@ function resolveFileMakerInputs({
         yield* fileMakerService.installLocalWebViewerAddon();
         const selectedFile = localFmMcp.healthy ? yield* resolveLocalFmMcpFile(localFmMcp.connectedFiles) : undefined;
         if (localFmMcp.healthy && selectedFile) {
+          const authorization = nonInteractive
+            ? undefined
+            : yield* fileMakerService.authorizeLocalFmMcp({
+                baseUrl: localFmMcp.baseUrl,
+                fileName: selectedFile,
+                interactive: true,
+                clientName: `${projectName} from ProofKit`,
+                clientDescription: `ProofKit is requesting FileMaker bridge access for ${projectName}.`,
+              });
           console.info(`Using ProofKit plugin file: ${selectedFile}`);
           return {
             fileMaker: {
@@ -552,6 +563,8 @@ function resolveFileMakerInputs({
               envNames: createDataSourceEnvNames("filemaker"),
               fmMcpBaseUrl: localFmMcp.baseUrl,
               fileName: selectedFile,
+              persistentToken: authorization?.persistentToken,
+              persistentTokenEnvName: authorization?.persistentTokenEnvName,
               layoutName: flags.layoutName,
               schemaName: flags.schemaName,
             } satisfies FileMakerInputs,
@@ -749,6 +762,8 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       );
     }
 
+    const [scopedAppName, appDir] = parseNameAndPath(projectName);
+
     const { fileMaker, skipFileMakerSetup } = yield* resolveFileMakerInputs({
       prompt,
       console,
@@ -756,9 +771,8 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       flags: { ...flags, dataSource },
       appType,
       nonInteractive,
+      projectName: scopedAppName,
     });
-
-    const [scopedAppName, appDir] = parseNameAndPath(projectName);
 
     return {
       projectName,

@@ -53,6 +53,8 @@ export interface LocalFmMcpInputs {
   envNames: FileMakerEnvNames;
   fmMcpBaseUrl: string;
   fileName: string;
+  persistentToken?: string;
+  persistentTokenEnvName?: string;
   layoutName?: string;
   schemaName?: string;
 }

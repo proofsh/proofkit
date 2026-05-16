@@ -61,6 +61,26 @@ interface ClarisIdAuth {
 
 type SupportedAuth = ApiKeyAuth | UsernameAuth | ClarisIdAuth;
 
+const getProjectName = (cwd: string) => {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(cwd, "package.json"), "utf8")) as { name?: unknown };
+    if (typeof packageJson.name === "string" && packageJson.name.trim() !== "") {
+      return packageJson.name;
+    }
+  } catch {
+    // Fall back to folder name when the UI server runs outside a package root.
+  }
+  return path.basename(cwd);
+};
+
+const getFmMcpClientIdentity = (cwd: string) => {
+  const projectName = getProjectName(cwd);
+  return {
+    clientName: `${projectName} from ProofKit Typegen`,
+    clientDescription: `ProofKit Typegen is requesting FileMaker bridge access for ${projectName}.`,
+  };
+};
+
 type EnvVarsResult =
   | CreateClientError
   | {
@@ -335,9 +355,15 @@ export async function createClientFromConfig(
       config.envNames?.fmMcp?.connectedFileName,
       defaultEnvNames.fmMcpConnectedFileName,
     );
+    const persistentTokenEnvName = getEnvName(
+      config.envNames?.fmMcp?.persistentToken,
+      defaultEnvNames.fmMcpPersistentToken,
+    );
 
     const baseUrl = fmMcpObj?.baseUrl || process.env[baseUrlEnvName] || defaultFmMcpBaseUrl;
     const connectedFileName = fmMcpObj?.connectedFileName || process.env[connectedFileNameEnvName];
+    const persistentToken = fmMcpObj?.persistentToken || process.env[persistentTokenEnvName];
+    const fmMcpClientIdentity = getFmMcpClientIdentity(process.cwd());
 
     if (!connectedFileName) {
       return {
@@ -356,6 +382,11 @@ export async function createClientFromConfig(
           baseUrl,
           connectedFileName,
           scriptName: fmMcpObj?.scriptName ?? config.webviewerScriptName,
+          sessionId: persistentToken ?? fmMcpObj?.sessionId,
+          clientName: fmMcpObj?.clientName ?? fmMcpClientIdentity.clientName,
+          clientDescription: fmMcpObj?.clientDescription ?? fmMcpClientIdentity.clientDescription,
+          authorizationTimeoutMs: fmMcpObj?.authorizationTimeoutMs,
+          disableInteractiveAuthorization: fmMcpObj?.disableInteractiveAuthorization,
         }),
         layout: "",
       });

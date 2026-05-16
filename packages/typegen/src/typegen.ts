@@ -16,6 +16,26 @@ import { type BuildSchemaArgs, typegenConfig, type typegenConfigSingle } from ".
 
 type GlobalOptions = Omit<z.infer<typeof typegenConfig>, "config">;
 
+const getProjectName = (cwd: string) => {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(cwd, "package.json"), "utf8")) as PackageJson;
+    if (typeof packageJson.name === "string" && packageJson.name.trim() !== "") {
+      return packageJson.name;
+    }
+  } catch {
+    // Fall back to folder name when typegen runs outside a package root.
+  }
+  return path.basename(cwd);
+};
+
+const getFmMcpClientIdentity = (cwd: string) => {
+  const projectName = getProjectName(cwd);
+  return {
+    clientName: `${projectName} from ProofKit Typegen`,
+    clientDescription: `ProofKit Typegen is requesting FileMaker bridge access for ${projectName}.`,
+  };
+};
+
 export const generateTypedClients = async (
   config: z.infer<typeof typegenConfig>["config"],
   options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string; configPath?: string },
@@ -165,7 +185,11 @@ const generateTypedClientsSingle = async (
   const validationResult = validateAndLogEnvValues(envValues, envNames, {
     fmMcp: isFmMcpMode,
     fmMcpConfig: isFmMcpMode
-      ? { baseUrl: fmMcpObj?.baseUrl, connectedFileName: fmMcpObj?.connectedFileName }
+      ? {
+          baseUrl: fmMcpObj?.baseUrl,
+          connectedFileName: fmMcpObj?.connectedFileName,
+          persistentToken: fmMcpObj?.persistentToken,
+        }
       : undefined,
   });
 
@@ -179,10 +203,12 @@ const generateTypedClientsSingle = async (
   let auth: { apiKey: OttoAPIKey } | { username: string; password: string } | undefined;
   let fmMcpBaseUrl: string | undefined;
   let fmMcpConnectedFileName: string | undefined;
+  let fmMcpPersistentToken: string | undefined;
 
   if (validationResult.mode === "fmMcp") {
     fmMcpBaseUrl = validationResult.baseUrl;
     fmMcpConnectedFileName = validationResult.connectedFileName;
+    fmMcpPersistentToken = validationResult.persistentToken;
 
     // Auto-discover connectedFileName if not provided
     if (!fmMcpConnectedFileName) {
@@ -300,6 +326,7 @@ const generateTypedClientsSingle = async (
   let successCount = 0;
   let errorCount = 0;
   let totalCount = 0;
+  const fmMcpClientIdentity = getFmMcpClientIdentity(cwd);
 
   for await (const item of layouts) {
     totalCount++;
@@ -310,6 +337,11 @@ const generateTypedClientsSingle = async (
           baseUrl: fmMcpBaseUrl as string,
           connectedFileName: fmMcpConnectedFileName as string,
           scriptName: fmMcpObj?.scriptName ?? config.webviewerScriptName,
+          sessionId: fmMcpPersistentToken ?? fmMcpObj?.sessionId,
+          clientName: fmMcpObj?.clientName ?? fmMcpClientIdentity.clientName,
+          clientDescription: fmMcpObj?.clientDescription ?? fmMcpClientIdentity.clientDescription,
+          authorizationTimeoutMs: fmMcpObj?.authorizationTimeoutMs,
+          disableInteractiveAuthorization: fmMcpObj?.disableInteractiveAuthorization,
         }),
         layout: item.layoutName,
       });

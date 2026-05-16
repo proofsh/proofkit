@@ -619,4 +619,97 @@ describe("typegen unit tests", () => {
     expect(scriptParam.action).toBe("metaData");
     expect(scriptParam.layouts).toBe("FmMcpLayout");
   });
+
+  it("requests FileMaker bridge authorization after unauthorized fmMcp metadata request", async () => {
+    process.env.FM_MCP_BASE_URL = "http://127.0.0.1:1365";
+    process.env.FM_CONNECTED_FILE_NAME = "TestFile";
+
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: "session_not_authorized" }), {
+          status: 401,
+          headers: { "content-type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "approved" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            result: {
+              messages: [{ code: "0" }],
+              response: mockLayoutMetadata["basic-layout"],
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }> = {
+      type: "fmdapi",
+      envNames: undefined,
+      layouts: [{ layoutName: "FmMcpLayout", schemaName: "fmMcpAuthSchema" }],
+      path: "unit-typegen-output/fm-mcp-auth",
+      validator: false,
+      fmMcp: {
+        enabled: true,
+        sessionId: "typegen-session",
+        clientName: "Typegen Config Test",
+        clientDescription: "Typegen config authorization",
+        authorizationTimeoutMs: 10_000,
+      },
+    };
+
+    await generateTypedClients(config, { cwd: import.meta.dirname });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[1][0]).toBe("http://127.0.0.1:1365/authorizeSession");
+    const authorizeBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body ?? "{}"));
+    expect(authorizeBody).toMatchObject({
+      sessionId: "typegen-session",
+      fileName: "TestFile",
+      clientName: "Typegen Config Test",
+      clientDescription: "Typegen config authorization",
+    });
+  });
+
+  it("uses fmMcp persistent token env var as session id", async () => {
+    process.env.FM_MCP_BASE_URL = "http://127.0.0.1:1365";
+    process.env.FM_CONNECTED_FILE_NAME = "TestFile";
+    process.env.TYPEGEN_PERSISTENT_TOKEN = "registered-persistent-token";
+
+    const fetchMock = vi.fn(
+      createLayoutMetadataMock({
+        FmMcpLayout: mockLayoutMetadata["basic-layout"],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+
+    const config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }> = {
+      type: "fmdapi",
+      envNames: {
+        fmMcp: {
+          persistentToken: "TYPEGEN_PERSISTENT_TOKEN",
+        },
+      },
+      layouts: [{ layoutName: "FmMcpLayout", schemaName: "fmMcpPersistentTokenSchema" }],
+      path: "unit-typegen-output/fm-mcp-persistent-token",
+      validator: false,
+      fmMcp: {
+        enabled: true,
+      },
+    };
+
+    await generateTypedClients(config, { cwd: import.meta.dirname });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
+    expect(headers.get("X-ProofKit-Session")).toBe("registered-persistent-token");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
