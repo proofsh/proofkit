@@ -497,7 +497,7 @@ export function createApiApp(context: ApiContext) {
           // Validate config type
           if (config.type === "fmdapi") {
             // Create client from config
-            const clientResult = await createClientFromConfig(config);
+            const clientResult = await createClientFromConfig(config, { projectRoot: context.cwd });
 
             // Check if client creation failed
             if ("error" in clientResult) {

@@ -330,6 +330,7 @@ export async function createOdataClientFromConfig(
 
 export async function createClientFromConfig(
   config: FmdapiConfig,
+  options?: { projectRoot?: string },
 ): Promise<Omit<CreateClientResult, "config"> | CreateClientError> {
   let deps: Awaited<ReturnType<typeof loadFmdapiDeps>>;
   try {
@@ -363,7 +364,7 @@ export async function createClientFromConfig(
     const baseUrl = fmMcpObj?.baseUrl || process.env[baseUrlEnvName] || defaultFmMcpBaseUrl;
     const connectedFileName = fmMcpObj?.connectedFileName || process.env[connectedFileNameEnvName];
     const persistentToken = fmMcpObj?.persistentToken || process.env[persistentTokenEnvName];
-    const fmMcpClientIdentity = getFmMcpClientIdentity(process.cwd());
+    const fmMcpClientIdentity = getFmMcpClientIdentity(options?.projectRoot ?? process.cwd());
 
     if (!connectedFileName) {
       return {
@@ -504,7 +505,7 @@ export async function createDataApiClient(
     };
   }
 
-  const result = await createClientFromConfig(config);
+  const result = await createClientFromConfig(config, { projectRoot: context.cwd });
 
   if ("error" in result) {
     return result;

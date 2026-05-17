@@ -167,7 +167,7 @@ export class FmMcpAdapter implements Adapter {
     timeout?: number;
     fetchOptions?: RequestInit;
   }): Promise<unknown> => {
-    const { action = "read", layout, body, fetchOptions = {} } = params;
+    const { action = "read", layout, body } = params;
 
     // Normalize underscore-prefixed keys to match FM script expectations
     const normalizedBody: Record<string, unknown> = { ...body } as Record<string, unknown>;
@@ -191,18 +191,53 @@ export class FmMcpAdapter implements Adapter {
       version: "vLatest",
     });
 
-    const controller = new AbortController();
-    let timeout: NodeJS.Timeout | null = null;
-    if (params.timeout) {
-      timeout = setTimeout(() => controller.abort(), params.timeout);
+    const raw = await this.postCallScript({
+      data: scriptParam,
+      errorMessage: "FM MCP request failed",
+      fetchOptions: params.fetchOptions,
+      scriptName: this.scriptName,
+      timeout: params.timeout,
+    });
+
+    // The /callScript response wraps the script result as a string or object
+    let scriptResult: unknown;
+    try {
+      scriptResult = typeof raw.result === "string" ? JSON.parse(raw.result) : (raw.result ?? raw);
+    } catch (err) {
+      throw new FileMakerError(
+        "500",
+        `FM MCP response parse failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
+    const respData = scriptResult as RawFMResponse;
+
+    const errorCode = respData.messages?.[0]?.code;
+    if (errorCode !== undefined && errorCode !== "0") {
+      throw new FileMakerError(
+        errorCode,
+        `Filemaker Data API failed with (${errorCode}): ${JSON.stringify(respData, null, 2)}`,
+      );
+    }
+
+    return respData.response;
+  };
+
+  protected postCallScript = async (params: {
+    data: string | undefined;
+    errorMessage: string;
+    fetchOptions?: RequestInit;
+    scriptName: string;
+    timeout?: number;
+  }): Promise<Record<string, unknown>> => {
+    const { fetchOptions = {} } = params;
+    const controller = new AbortController();
+    const timeout = params.timeout ? setTimeout(() => controller.abort(), params.timeout) : undefined;
     const headers = new Headers(this.sessionHeaders());
-    new Headers(fetchOptions?.headers).forEach((value, key) => {
+    new Headers(fetchOptions.headers).forEach((value, key) => {
       headers.set(key, value);
     });
     headers.set("Content-Type", "application/json");
-
     const postCallScript = () =>
       fetch(`${this.baseUrl}/callScript`, {
         ...fetchOptions,
@@ -210,8 +245,8 @@ export class FmMcpAdapter implements Adapter {
         headers,
         body: JSON.stringify({
           connectedFileName: this.connectedFileName,
-          scriptName: this.scriptName,
-          data: scriptParam,
+          scriptName: params.scriptName,
+          data: params.data,
         }),
         signal: controller.signal,
       });
@@ -235,32 +270,10 @@ export class FmMcpAdapter implements Adapter {
     }
 
     if (!res.ok) {
-      throw new FileMakerError(String(res.status), `FM MCP request failed (${res.status}): ${await res.text()}`);
+      throw new FileMakerError(String(res.status), `${params.errorMessage} (${res.status}): ${await res.text()}`);
     }
 
-    const raw = await res.json();
-    // The /callScript response wraps the script result as a string or object
-    let scriptResult: unknown;
-    try {
-      scriptResult = typeof raw.result === "string" ? JSON.parse(raw.result) : (raw.result ?? raw);
-    } catch (err) {
-      throw new FileMakerError(
-        "500",
-        `FM MCP response parse failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-
-    const respData = scriptResult as RawFMResponse;
-
-    const errorCode = respData.messages?.[0]?.code;
-    if (errorCode !== undefined && errorCode !== "0") {
-      throw new FileMakerError(
-        errorCode,
-        `Filemaker Data API failed with (${errorCode}): ${JSON.stringify(respData, null, 2)}`,
-      );
-    }
-
-    return respData.response;
+    return (await res.json()) as Record<string, unknown>;
   };
 
   list = async (opts: ListOptions): Promise<GetResponse> => {
@@ -331,37 +344,13 @@ export class FmMcpAdapter implements Adapter {
   };
 
   executeScript = async (opts: ExecuteScriptOptions): Promise<ScriptResponse> => {
-    const postCallScript = () =>
-      fetch(`${this.baseUrl}/callScript`, {
-        method: "POST",
-        headers: (() => {
-          const headers = this.sessionHeaders();
-          headers.set("Content-Type", "application/json");
-          return headers;
-        })(),
-        body: JSON.stringify({
-          connectedFileName: this.connectedFileName,
-          scriptName: opts.script,
-          data: opts.scriptParam,
-        }),
-      });
-
-    let res = await postCallScript();
-    if (await this.isUnauthorizedSession(res)) {
-      try {
-        await this.ensureAuthorized();
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : "authorization failed";
-        throw new Error(`Not authorized to connect to FileMaker file "${this.connectedFileName}": ${reason}`);
-      }
-      res = await postCallScript();
-    }
-
-    if (!res.ok) {
-      throw new FileMakerError(String(res.status), `FM MCP executeScript failed (${res.status}): ${await res.text()}`);
-    }
-
-    const raw = await res.json();
+    const raw = await this.postCallScript({
+      data: opts.scriptParam,
+      errorMessage: "FM MCP executeScript failed",
+      fetchOptions: opts.fetch,
+      scriptName: opts.script,
+      timeout: opts.timeout,
+    });
     return {
       scriptResult: typeof raw.result === "string" ? raw.result : JSON.stringify(raw.result),
     } as ScriptResponse;
