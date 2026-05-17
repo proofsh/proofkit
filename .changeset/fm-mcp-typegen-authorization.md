@@ -4,4 +4,4 @@
 "@proofkit/cli": patch
 ---
 
-Handle FileMaker bridge session authorization and clarify FM MCP authorization prompts.
+Handle ProofKit Plugin authorization and clarify FM MCP authorization prompts.
