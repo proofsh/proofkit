@@ -21,6 +21,37 @@ import type {
 } from "./core.js";
 
 const TRAILING_SLASHES_REGEX = /\/+$/;
+const DEFAULT_AUTHORIZE_TIMEOUT_MS = 125_000;
+const DEFAULT_IDLE_TIMEOUT_SECONDS = 3600;
+const SESSION_HEADER_NAME = "X-ProofKit-Session";
+const CLIENT_HEADER_NAME = "X-ProofKit-Client";
+
+const envValue = (name: string): string | undefined => {
+  if (typeof process === "undefined") {
+    return undefined;
+  }
+  return process.env[name];
+};
+
+const randomSessionId = (): string => {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2);
+};
+
+const statusReason = (status: unknown): string => {
+  if (status === "rejected") {
+    return "authorization rejected";
+  }
+  if (status === "timeout") {
+    return "authorization timed out";
+  }
+  if (status === "file_not_connected") {
+    return "file not connected";
+  }
+  return typeof status === "string" ? status : "authorization failed";
+};
 
 export interface FmMcpAdapterOptions {
   /** Base URL of the local FM MCP server (e.g. "http://localhost:3000") */
@@ -29,18 +60,111 @@ export interface FmMcpAdapterOptions {
   connectedFileName: string;
   /** Name of the FM script that executes Data API calls. Defaults to "execute_data_api" */
   scriptName?: string;
+  /** Session ID sent to the bridge. Defaults to FM_MCP_SESSION_ID or a random ID. */
+  sessionId?: string;
+  /** Client name shown in FileMaker authorization prompts. Defaults to FM_MCP_CLIENT_NAME or "ProofKit Typegen". */
+  clientName?: string;
+  /** Client description shown in FileMaker authorization prompts. */
+  clientDescription?: string;
+  /** Idle timeout requested for authorized sessions. Defaults to 3600 seconds. */
+  idleTimeoutSeconds?: number;
+  /** Timeout for /authorizeSession. Defaults to 125 seconds. */
+  authorizationTimeoutMs?: number;
+  /** If true, do not open FileMaker interactive authorization after a 401. */
+  disableInteractiveAuthorization?: boolean;
 }
 
 export class FmMcpAdapter implements Adapter {
   protected baseUrl: string;
   protected connectedFileName: string;
   protected scriptName: string;
+  protected sessionId: string;
+  protected clientName: string;
+  protected clientDescription: string;
+  protected idleTimeoutSeconds: number;
+  protected authorizationTimeoutMs: number;
+  protected disableInteractiveAuthorization: boolean;
+  protected pendingAuthorization?: Promise<void>;
 
   constructor(options: FmMcpAdapterOptions) {
     this.baseUrl = options.baseUrl.replace(TRAILING_SLASHES_REGEX, "");
     this.connectedFileName = options.connectedFileName;
     this.scriptName = options.scriptName ?? "execute_data_api";
+    this.sessionId = options.sessionId ?? envValue("FM_MCP_SESSION_ID") ?? randomSessionId();
+    this.clientName = options.clientName ?? envValue("FM_MCP_CLIENT_NAME") ?? "ProofKit Typegen";
+    this.clientDescription =
+      options.clientDescription ??
+      envValue("FM_MCP_CLIENT_DESCRIPTION") ??
+      "ProofKit Typegen is requesting FileMaker bridge access.";
+    this.idleTimeoutSeconds = Math.min(options.idleTimeoutSeconds ?? DEFAULT_IDLE_TIMEOUT_SECONDS, 3600);
+    this.authorizationTimeoutMs = options.authorizationTimeoutMs ?? DEFAULT_AUTHORIZE_TIMEOUT_MS;
+    this.disableInteractiveAuthorization =
+      options.disableInteractiveAuthorization ?? envValue("FM_MCP_DISABLE_INTERACTIVE_AUTHORIZATION") === "true";
   }
+
+  protected sessionHeaders = (): Headers => {
+    const headers = new Headers();
+    headers.set(SESSION_HEADER_NAME, this.sessionId);
+    headers.set(CLIENT_HEADER_NAME, this.clientName);
+    return headers;
+  };
+
+  protected ensureAuthorized = (): Promise<void> => {
+    if (this.pendingAuthorization) {
+      return this.pendingAuthorization;
+    }
+    this.pendingAuthorization = this.requestAuthorization().finally(() => {
+      this.pendingAuthorization = undefined;
+    });
+    return this.pendingAuthorization;
+  };
+
+  protected requestAuthorization = async (): Promise<void> => {
+    if (this.disableInteractiveAuthorization) {
+      throw new Error("interactive authorization disabled");
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.authorizationTimeoutMs);
+    try {
+      const res = await fetch(`${this.baseUrl}/authorizeSession`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: this.sessionId,
+          fileName: this.connectedFileName,
+          clientName: this.clientName,
+          clientDescription: this.clientDescription,
+          idleTimeoutSeconds: this.idleTimeoutSeconds,
+        }),
+        signal: controller.signal,
+      });
+      const payload = (await res.json().catch(() => null)) as { status?: unknown; error?: unknown } | null;
+      if (res.ok && payload?.status === "approved") {
+        return;
+      }
+      const reason = typeof payload?.error === "string" ? payload.error : statusReason(payload?.status);
+      throw new Error(reason);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error("authorization timed out");
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  protected isUnauthorizedSession = async (res: Response): Promise<boolean> => {
+    if (res.status !== 401) {
+      return false;
+    }
+    const payload = (await res
+      .clone()
+      .json()
+      .catch(() => null)) as { code?: unknown } | null;
+    return payload?.code === "session_not_authorized";
+  };
 
   protected request = async (params: {
     layout: string;
@@ -49,7 +173,7 @@ export class FmMcpAdapter implements Adapter {
     timeout?: number;
     fetchOptions?: RequestInit;
   }): Promise<unknown> => {
-    const { action = "read", layout, body, fetchOptions = {} } = params;
+    const { action = "read", layout, body } = params;
 
     // Normalize underscore-prefixed keys to match FM script expectations
     const normalizedBody: Record<string, unknown> = { ...body } as Record<string, unknown>;
@@ -73,39 +197,14 @@ export class FmMcpAdapter implements Adapter {
       version: "vLatest",
     });
 
-    const controller = new AbortController();
-    let timeout: NodeJS.Timeout | null = null;
-    if (params.timeout) {
-      timeout = setTimeout(() => controller.abort(), params.timeout);
-    }
+    const raw = await this.postCallScript({
+      data: scriptParam,
+      errorMessage: "FM MCP request failed",
+      fetchOptions: params.fetchOptions,
+      scriptName: this.scriptName,
+      timeout: params.timeout,
+    });
 
-    const headers = new Headers(fetchOptions?.headers);
-    headers.set("Content-Type", "application/json");
-
-    let res: Response;
-    try {
-      res = await fetch(`${this.baseUrl}/callScript`, {
-        ...fetchOptions,
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          connectedFileName: this.connectedFileName,
-          scriptName: this.scriptName,
-          data: scriptParam,
-        }),
-        signal: controller.signal,
-      });
-    } finally {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    }
-
-    if (!res.ok) {
-      throw new FileMakerError(String(res.status), `FM MCP request failed (${res.status}): ${await res.text()}`);
-    }
-
-    const raw = await res.json();
     // The /callScript response wraps the script result as a string or object
     let scriptResult: unknown;
     try {
@@ -128,6 +227,59 @@ export class FmMcpAdapter implements Adapter {
     }
 
     return respData.response;
+  };
+
+  protected postCallScript = async (params: {
+    data: string | undefined;
+    errorMessage: string;
+    fetchOptions?: RequestInit;
+    scriptName: string;
+    timeout?: number;
+  }): Promise<Record<string, unknown>> => {
+    const { fetchOptions = {} } = params;
+    const controller = new AbortController();
+    const timeout = params.timeout ? setTimeout(() => controller.abort(), params.timeout) : undefined;
+    const headers = new Headers(this.sessionHeaders());
+    new Headers(fetchOptions.headers).forEach((value, key) => {
+      headers.set(key, value);
+    });
+    headers.set("Content-Type", "application/json");
+    const postCallScript = () =>
+      fetch(`${this.baseUrl}/callScript`, {
+        ...fetchOptions,
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          connectedFileName: this.connectedFileName,
+          scriptName: params.scriptName,
+          data: params.data,
+        }),
+        signal: controller.signal,
+      });
+
+    let res: Response;
+    try {
+      res = await postCallScript();
+      if (await this.isUnauthorizedSession(res)) {
+        try {
+          await this.ensureAuthorized();
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : "authorization failed";
+          throw new Error(`Not authorized to connect to FileMaker file "${this.connectedFileName}": ${reason}`);
+        }
+        res = await postCallScript();
+      }
+    } finally {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    }
+
+    if (!res.ok) {
+      throw new FileMakerError(String(res.status), `${params.errorMessage} (${res.status}): ${await res.text()}`);
+    }
+
+    return (await res.json()) as Record<string, unknown>;
   };
 
   list = async (opts: ListOptions): Promise<GetResponse> => {
@@ -198,21 +350,13 @@ export class FmMcpAdapter implements Adapter {
   };
 
   executeScript = async (opts: ExecuteScriptOptions): Promise<ScriptResponse> => {
-    const res = await fetch(`${this.baseUrl}/callScript`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        connectedFileName: this.connectedFileName,
-        scriptName: opts.script,
-        data: opts.scriptParam,
-      }),
+    const raw = await this.postCallScript({
+      data: opts.scriptParam,
+      errorMessage: "FM MCP executeScript failed",
+      fetchOptions: opts.fetch,
+      scriptName: opts.script,
+      timeout: opts.timeout,
     });
-
-    if (!res.ok) {
-      throw new FileMakerError(String(res.status), `FM MCP executeScript failed (${res.status}): ${await res.text()}`);
-    }
-
-    const raw = await res.json();
     return {
       scriptResult: typeof raw.result === "string" ? raw.result : JSON.stringify(raw.result),
     } as ScriptResponse;

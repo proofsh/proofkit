@@ -332,6 +332,13 @@ describe("resolveInitRequest", () => {
       success: [],
       note: [],
     };
+    const tracker = {
+      commands: [],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+      localFmMcpAuthorizations: [],
+    };
 
     const request = await Effect.runPromise(
       resolveInitRequest("demo", {
@@ -349,6 +356,7 @@ describe("resolveInitRequest", () => {
           packageManager: "pnpm",
           nonInteractive: false,
           console: consoleTranscript,
+          tracker,
           fileMaker: {
             localFmMcp: {
               healthy: true,
@@ -363,6 +371,12 @@ describe("resolveInitRequest", () => {
       mode: "local-fm-mcp",
       fileName: "LocalFile.fmp12",
     });
+    expect(tracker.localFmMcpAuthorizations).toEqual([
+      {
+        clientName: "ProofKit CLI (demo)",
+        clientDescription: "ProofKit CLI wants to read layouts from your FileMaker file to help set up your project.",
+      },
+    ]);
     expect(consoleTranscript.info).toContain("Using ProofKit plugin file: LocalFile.fmp12");
   });
 

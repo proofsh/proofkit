@@ -15,6 +15,7 @@ export interface EnvValues {
   password: string | undefined;
   fmMcpBaseUrl: string | undefined;
   fmMcpConnectedFileName: string | undefined;
+  fmMcpPersistentToken: string | undefined;
 }
 
 type StandardAuth =
@@ -35,6 +36,7 @@ export type EnvValidationResult =
       mode: "fmMcp";
       baseUrl: string;
       connectedFileName: string;
+      persistentToken?: string;
     }
   | {
       success: false;
@@ -44,7 +46,7 @@ export type EnvValidationResult =
 interface EnvValidationOptions {
   fmMcp?: boolean;
   allowClarisId?: boolean;
-  fmMcpConfig?: { baseUrl?: string; connectedFileName?: string };
+  fmMcpConfig?: { baseUrl?: string; connectedFileName?: string; persistentToken?: string };
 }
 
 /**
@@ -96,9 +98,14 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
     envNames?.fmMcp && "connectedFileName" in envNames.fmMcp
       ? getEnvName(envNames.fmMcp.connectedFileName, defaultEnvNames.fmMcpConnectedFileName)
       : defaultEnvNames.fmMcpConnectedFileName;
+  const fmMcpPersistentTokenEnvName =
+    envNames?.fmMcp && "persistentToken" in envNames.fmMcp
+      ? getEnvName(envNames.fmMcp.persistentToken, defaultEnvNames.fmMcpPersistentToken)
+      : defaultEnvNames.fmMcpPersistentToken;
 
   const fmMcpBaseUrl = process.env[fmMcpBaseUrlEnvName];
   const fmMcpConnectedFileName = process.env[fmMcpConnectedFileNameEnvName];
+  const fmMcpPersistentToken = process.env[fmMcpPersistentTokenEnvName];
 
   return {
     server,
@@ -110,6 +117,7 @@ export function getEnvValues(envNames?: EnvNames): EnvValues {
     password,
     fmMcpBaseUrl,
     fmMcpConnectedFileName,
+    fmMcpPersistentToken,
   };
 }
 
@@ -132,17 +140,20 @@ export function validateEnvValues(
     password,
     fmMcpBaseUrl,
     fmMcpConnectedFileName,
+    fmMcpPersistentToken,
   } = envValues;
 
   if (options?.fmMcp) {
     const resolvedBaseUrl = options.fmMcpConfig?.baseUrl || fmMcpBaseUrl || defaultFmMcpBaseUrl;
     const resolvedConnectedFileName = options.fmMcpConfig?.connectedFileName || fmMcpConnectedFileName;
+    const resolvedPersistentToken = options.fmMcpConfig?.persistentToken || fmMcpPersistentToken;
 
     return {
       success: true,
       mode: "fmMcp",
       baseUrl: resolvedBaseUrl,
       connectedFileName: resolvedConnectedFileName ?? "",
+      persistentToken: resolvedPersistentToken,
     };
   }
 

@@ -201,6 +201,83 @@ describe("FmMcpAdapter", () => {
       const client = createClient();
       await expect(client.list()).rejects.toBeInstanceOf(FileMakerError);
     });
+
+    it("authorizes after session 401 and retries once", async () => {
+      const spy = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ code: "session_not_authorized" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ status: "approved" }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify(
+              successEnvelope({
+                data: [],
+                dataInfo: { totalRecordCount: 0, foundCount: 0, returnedCount: 0 },
+              }),
+            ),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
+        );
+      vi.stubGlobal("fetch", spy);
+
+      const adapter = new FmMcpAdapter({
+        baseUrl: "http://localhost:3000",
+        connectedFileName: "MyFile",
+        sessionId: "test-session",
+        clientName: "Typegen Test",
+        clientDescription: "Test description",
+        idleTimeoutSeconds: 120,
+      });
+      const client = createClient(adapter);
+      await expect(client.list()).resolves.toHaveProperty("data");
+
+      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy.mock.calls[1][0]).toBe("http://localhost:3000/authorizeSession");
+      const authorizeBody = JSON.parse(spy.mock.calls[1][1]?.body as string);
+      expect(authorizeBody).toMatchObject({
+        sessionId: "test-session",
+        fileName: "MyFile",
+        clientName: "Typegen Test",
+        clientDescription: "Test description",
+        idleTimeoutSeconds: 120,
+      });
+      const headers = spy.mock.calls[0][1]?.headers as Headers;
+      expect(headers.get("X-ProofKit-Session")).toBe("test-session");
+      expect(headers.get("X-ProofKit-Client")).toBe("Typegen Test");
+    });
+
+    it("fails unauthorized request when interactive authorization is disabled", async () => {
+      const spy = vi.fn<typeof fetch>().mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: "session_not_authorized" }), {
+          status: 401,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", spy);
+
+      const client = createClient(
+        new FmMcpAdapter({
+          baseUrl: "http://localhost:3000",
+          connectedFileName: "MyFile",
+          disableInteractiveAuthorization: true,
+        }),
+      );
+
+      await expect(client.list()).rejects.toThrow(
+        'Not authorized to connect to FileMaker file "MyFile": interactive authorization disabled',
+      );
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("string result parsing", () => {

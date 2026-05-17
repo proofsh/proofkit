@@ -8,11 +8,34 @@ import { parse } from "jsonc-parser";
 import z from "zod/v4";
 import { generateTypedClients } from "../typegen";
 import { typegenConfig, typegenConfigSingle, typegenConfigSingleForValidation } from "../types";
-import { createClientFromConfig, createDataApiClient, createOdataClientFromConfig } from "./createDataApiClient";
+import {
+  createClientFromConfig,
+  createDataApiClient,
+  createOdataClientFromConfig,
+  fmMcpUiIdleTimeoutSeconds,
+  getFmMcpUiClientIdentity,
+} from "./createDataApiClient";
 
 export interface ApiContext {
   cwd: string;
   configPath: string;
+}
+
+const debugLogsEnabled = process.env.PROOFKIT_TYPEGEN_UI_DEBUG === "true" || process.env.DEBUG === "proofkit:typegen";
+
+function logServer(message: string) {
+  console.log(`[typegen-ui] ${message}`);
+}
+
+function debugServer(message: string, value?: unknown) {
+  if (!debugLogsEnabled) {
+    return;
+  }
+  if (value === undefined) {
+    console.log(`[typegen-ui:debug] ${message}`);
+    return;
+  }
+  console.log(`[typegen-ui:debug] ${message}:`, JSON.stringify(value, null, 2));
 }
 
 /**
@@ -71,6 +94,7 @@ export function createApiApp(context: ApiContext) {
 
     // GET /api/config
     .get("/config", (c) => {
+      logServer(`GET /config ${context.configPath}`);
       const { configPath, cwd } = context;
       const fullPath = path.resolve(cwd, configPath);
 
@@ -99,7 +123,7 @@ export function createApiApp(context: ApiContext) {
           postGenerateCommand: parsed.postGenerateCommand,
         });
       } catch (err) {
-        console.log("error from get config", err);
+        logServer(`failed to read config: ${err instanceof Error ? err.message : String(err)}`);
         return c.json(
           {
             error: err instanceof Error ? err.message : "Failed to read config",
@@ -121,7 +145,8 @@ export function createApiApp(context: ApiContext) {
       async (c) => {
         try {
           const data = c.req.valid("json");
-          console.log("[Server POST /config] Received data:", JSON.stringify(data, null, 2));
+          logServer(`saving config to ${context.configPath}`);
+          debugServer("POST /config received", data);
 
           // Transform validated data using runtime schema (applies transforms)
           const transformedData = {
@@ -134,11 +159,11 @@ export function createApiApp(context: ApiContext) {
                   : { ...(config as Record<string, unknown>), type: "fmdapi" as const };
               // Parse with runtime schema to apply transforms
               const parsed = typegenConfigSingle.parse(configWithType);
-              console.log("[Server POST /config] After parse, config:", JSON.stringify(parsed, null, 2));
+              debugServer("POST /config parsed entry", parsed);
               return parsed;
             }),
           };
-          console.log("[Server POST /config] Transformed data:", JSON.stringify(transformedData, null, 2));
+          debugServer("POST /config transformed", transformedData);
 
           // Validate with Zod (data is already { config: [...], postGenerateCommand?: string })
           const validation = typegenConfig.safeParse(transformedData);
@@ -174,17 +199,19 @@ export function createApiApp(context: ApiContext) {
           const fullPath = path.resolve(context.cwd, context.configPath);
           // Add $schema at the top of the config
           const configData = validation.data as Record<string, unknown>;
-          console.log("[Server POST /config] Validation data to write:", JSON.stringify(configData, null, 2));
+          debugServer("POST /config validated", configData);
           const { $schema: _, ...rest } = configData;
           const configWithSchema = {
             $schema: "https://proofkit.proof.sh/typegen-config-schema.json",
             ...rest,
           };
           const jsonContent = `${JSON.stringify(configWithSchema, null, 2)}\n`;
-          console.log("[Server POST /config] Final JSON content:\n", jsonContent);
+          debugServer("POST /config final JSON", configWithSchema);
 
           await fs.ensureDir(path.dirname(fullPath));
           await fs.writeFile(fullPath, jsonContent, "utf8");
+          const configCount = Array.isArray(validation.data.config) ? validation.data.config.length : 1;
+          logServer(`config saved (${configCount} connection${configCount === 1 ? "" : "s"})`);
 
           const response = z
             .object({
@@ -235,6 +262,7 @@ export function createApiApp(context: ApiContext) {
       ),
       async (c, next) => {
         const rawData = c.req.valid("json");
+        logServer("POST /run starting typegen");
         // Transform validated data using runtime schema (applies transforms)
         const configArray = Array.isArray(rawData.config) ? rawData.config : [rawData.config];
         const transformedConfig = configArray.map((config) => {
@@ -270,7 +298,10 @@ export function createApiApp(context: ApiContext) {
         await generateTypedClients(config, {
           cwd: context.cwd,
           postGenerateCommand,
+          fmMcpClientIdentity: getFmMcpUiClientIdentity(context.cwd),
+          fmMcpIdleTimeoutSeconds: fmMcpUiIdleTimeoutSeconds,
         });
+        logServer("POST /run finished typegen");
 
         await next();
       },
@@ -279,6 +310,7 @@ export function createApiApp(context: ApiContext) {
     .get("/layouts", zValidator("query", z.object({ configIndex: z.coerce.number() })), async (c) => {
       const input = c.req.valid("query");
       const configIndex = input.configIndex;
+      logServer(`GET /layouts config=${configIndex}`);
 
       const result = await createDataApiClient(context, configIndex);
 
@@ -327,6 +359,7 @@ export function createApiApp(context: ApiContext) {
 
         // Flatten the nested layout/folder structure into a flat list with full paths
         const flatLayouts = flattenLayouts(layouts);
+        logServer(`GET /layouts config=${configIndex} returned ${flatLayouts.length} layout${flatLayouts.length === 1 ? "" : "s"}`);
 
         return c.json({ layouts: flatLayouts });
       } catch (err) {
@@ -487,6 +520,7 @@ export function createApiApp(context: ApiContext) {
       async (c) => {
         try {
           const rawData = c.req.valid("json");
+          logServer("POST /test-connection");
           // Transform validated data using runtime schema (applies transforms)
           const configWithType =
             "type" in rawData.config && rawData.config.type
@@ -497,7 +531,7 @@ export function createApiApp(context: ApiContext) {
           // Validate config type
           if (config.type === "fmdapi") {
             // Create client from config
-            const clientResult = await createClientFromConfig(config);
+            const clientResult = await createClientFromConfig(config, { projectRoot: context.cwd });
 
             // Check if client creation failed
             if ("error" in clientResult) {

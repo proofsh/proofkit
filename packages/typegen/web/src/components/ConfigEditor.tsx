@@ -24,6 +24,7 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
   const {
     control,
     formState: { errors },
+    getValues,
     setValue,
     watch,
   } = useFormContext<{ config: SingleConfig[] }>();
@@ -43,6 +44,10 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
     control,
     name: `config.${index}.webviewerScriptName` as const,
   });
+  const fmMcp = useWatch({
+    control,
+    name: `config.${index}.fmMcp` as const,
+  });
   const [usingWebviewer, setUsingWebviewer] = useState(!!webviewerScriptName);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const { runTypegen, isRunning } = useRunTypegen();
@@ -59,6 +64,18 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
     if (!checked) {
       setValue(`config.${index}.webviewerScriptName` as const, "");
     }
+  };
+
+  const handleFmMcpToggle = (checked: boolean) => {
+    const existingFmMcp = getValues(`config.${index}.fmMcp` as const);
+    setValue(
+      `config.${index}.fmMcp` as const,
+      { ...existingFmMcp, enabled: checked },
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+      },
+    );
   };
 
   const handleRunTypegen = async (e: React.MouseEvent) => {
@@ -321,6 +338,65 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
                           </FormLabel>
                           <FormControl>
                             <Input required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {configType === "fmdapi" && (
+              <div className="space-y-4 rounded-md border p-4">
+                <SwitchField
+                  checked={!!fmMcp && fmMcp.enabled !== false}
+                  infoTooltip="Use the local FileMaker MCP bridge for metadata discovery in this UI and typegen runs. Authorization is kept in memory while the UI server is running unless you provide a persistent token env var."
+                  label="Use FileMaker Bridge"
+                  onCheckedChange={handleFmMcpToggle}
+                />
+
+                {!!fmMcp && fmMcp.enabled !== false && (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <FormField
+                      control={control}
+                      name={`config.${index}.fmMcp.baseUrl` as const}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bridge URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="http://127.0.0.1:1365" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name={`config.${index}.fmMcp.connectedFileName` as const}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            File Name <InfoTooltip label="Optional when exactly one FileMaker file is connected." />
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="MyFile" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name={`config.${index}.fmMcp.scriptName` as const}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Script Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="execute_data_api" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

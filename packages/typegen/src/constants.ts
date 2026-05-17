@@ -33,6 +33,7 @@ export const defaultEnvNames = {
   db: "FM_DATABASE",
   fmMcpBaseUrl: "FM_MCP_BASE_URL",
   fmMcpConnectedFileName: "FM_CONNECTED_FILE_NAME",
+  fmMcpPersistentToken: "FM_MCP_PERSISTENT_TOKEN",
 };
 
 export const defaultFmMcpBaseUrl = "http://127.0.0.1:1365";

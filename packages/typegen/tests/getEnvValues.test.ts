@@ -17,6 +17,7 @@ describe("getEnvValues + validateEnvValues", () => {
       "FM_PASSWORD",
       "FM_MCP_BASE_URL",
       "FM_CONNECTED_FILE_NAME",
+      "FM_MCP_PERSISTENT_TOKEN",
       "CUSTOM_SERVER",
       "CUSTOM_DB",
       "CUSTOM_KEY",
@@ -24,6 +25,7 @@ describe("getEnvValues + validateEnvValues", () => {
       "CUSTOM_CLARIS_PASS",
       "CUSTOM_HTTP_URL",
       "CUSTOM_HTTP_FILE",
+      "CUSTOM_HTTP_TOKEN",
     ]) {
       originalEnv[key] = process.env[key];
       delete process.env[key];
@@ -60,6 +62,7 @@ describe("getEnvValues + validateEnvValues", () => {
   it("validates fmMcp mode with default env names", () => {
     process.env.FM_MCP_BASE_URL = "http://127.0.0.1:1365";
     process.env.FM_CONNECTED_FILE_NAME = "MyFile";
+    process.env.FM_MCP_PERSISTENT_TOKEN = "persistent-token";
 
     const envValues = getEnvValues();
     const result = validateEnvValues(envValues, undefined, { fmMcp: true });
@@ -69,6 +72,7 @@ describe("getEnvValues + validateEnvValues", () => {
       expect(result.mode).toBe("fmMcp");
       expect(result.baseUrl).toBe("http://127.0.0.1:1365");
       expect(result.connectedFileName).toBe("MyFile");
+      expect(result.persistentToken).toBe("persistent-token");
     }
   });
 
@@ -120,17 +124,23 @@ describe("getEnvValues + validateEnvValues", () => {
   it("uses config values over env vars for fmMcp", () => {
     process.env.FM_MCP_BASE_URL = "http://env-url:9999";
     process.env.FM_CONNECTED_FILE_NAME = "EnvFile";
+    process.env.FM_MCP_PERSISTENT_TOKEN = "env-token";
 
     const envValues = getEnvValues();
     const result = validateEnvValues(envValues, undefined, {
       fmMcp: true,
-      fmMcpConfig: { baseUrl: "http://config-url:1234", connectedFileName: "ConfigFile" },
+      fmMcpConfig: {
+        baseUrl: "http://config-url:1234",
+        connectedFileName: "ConfigFile",
+        persistentToken: "config-token",
+      },
     });
 
     expect(result.success).toBe(true);
     if (result.success && result.mode === "fmMcp") {
       expect(result.baseUrl).toBe("http://config-url:1234");
       expect(result.connectedFileName).toBe("ConfigFile");
+      expect(result.persistentToken).toBe("config-token");
     }
   });
 
@@ -142,6 +152,7 @@ describe("getEnvValues + validateEnvValues", () => {
     process.env.CUSTOM_CLARIS_PASS = "claris-pass";
     process.env.CUSTOM_HTTP_URL = "http://127.0.0.1:1365";
     process.env.CUSTOM_HTTP_FILE = "CustomFile";
+    process.env.CUSTOM_HTTP_TOKEN = "CustomToken";
 
     const envValues = getEnvValues({
       server: "CUSTOM_SERVER",
@@ -151,7 +162,11 @@ describe("getEnvValues + validateEnvValues", () => {
         clarisIdUsername: "CUSTOM_CLARIS_USER",
         clarisIdPassword: "CUSTOM_CLARIS_PASS",
       },
-      fmMcp: { baseUrl: "CUSTOM_HTTP_URL", connectedFileName: "CUSTOM_HTTP_FILE" },
+      fmMcp: {
+        baseUrl: "CUSTOM_HTTP_URL",
+        connectedFileName: "CUSTOM_HTTP_FILE",
+        persistentToken: "CUSTOM_HTTP_TOKEN",
+      },
     });
 
     expect(envValues.server).toBe("https://custom.example.com");
@@ -161,5 +176,6 @@ describe("getEnvValues + validateEnvValues", () => {
     expect(envValues.clarisIdPassword).toBe("claris-pass");
     expect(envValues.fmMcpBaseUrl).toBe("http://127.0.0.1:1365");
     expect(envValues.fmMcpConnectedFileName).toBe("CustomFile");
+    expect(envValues.fmMcpPersistentToken).toBe("CustomToken");
   });
 });

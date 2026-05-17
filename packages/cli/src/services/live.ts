@@ -364,6 +364,55 @@ const fileMakerService = {
           cause,
         }),
     }),
+  authorizeLocalFmMcp: ({
+    baseUrl,
+    fileName,
+    interactive,
+    clientName,
+    clientDescription,
+  }: {
+    baseUrl: string;
+    fileName: string;
+    interactive: boolean;
+    clientName: string;
+    clientDescription: string;
+  }) =>
+    Effect.tryPromise({
+      try: async () => {
+        if (!interactive) {
+          throw new Error("interactive authorization disabled");
+        }
+        const sessionToken = `pk_${randomUUID().replaceAll("-", "")}`;
+        const response = await postJson<{ status?: unknown; error?: unknown }>(
+          `${baseUrl}/authorizeSession`,
+          {
+            sessionId: sessionToken,
+            fileName,
+            clientName,
+            clientDescription,
+          },
+          { timeout: 125_000 },
+        );
+        if (response.status >= 200 && response.status < 300 && response.data?.status === "approved") {
+          return { sessionToken };
+        }
+        const status = response.data?.status;
+        let reason = "authorization failed";
+        if (typeof response.data?.error === "string") {
+          reason = response.data.error;
+        } else if (status === "rejected") {
+          reason = "authorization rejected";
+        } else if (status === "timeout") {
+          reason = "authorization timed out";
+        }
+        throw new Error(reason);
+      },
+      catch: (cause) =>
+        new FileMakerSetupError({
+          message: `Not authorized to connect to FileMaker file "${fileName}".`,
+          cause,
+        }),
+    }),
   installLocalWebViewerAddon: () =>
     Effect.tryPromise({
       try: async () => {

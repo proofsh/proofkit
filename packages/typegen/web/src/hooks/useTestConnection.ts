@@ -24,7 +24,7 @@ export interface TestConnectionResult {
   ok: boolean;
   server?: string;
   db?: string;
-  authType?: "apiKey" | "username" | "clarisId";
+  authType?: "apiKey" | "username" | "clarisId" | "fmMcp";
   error?: string;
   statusCode?: number;
   details?: {
@@ -34,7 +34,9 @@ export interface TestConnectionResult {
       auth?: boolean;
       password?: boolean;
       clarisIdPassword?: boolean;
+      connectedFileName?: boolean;
     };
+    connectedFiles?: string[];
   };
   kind?: "missing_env" | "adapter_error" | "connection_error" | "unknown";
   suspectedField?: "server" | "db" | "auth";
@@ -59,6 +61,8 @@ export function useTestConnection(configIndex: number, options?: { enabled?: boo
         server: envNames.server,
         db: envNames.db,
         auth: envNames.auth,
+        fmMcp: envNames.fmMcp,
+        configFmMcp: config?.type === "fmdapi" ? config.fmMcp : undefined,
       })
     : "";
 

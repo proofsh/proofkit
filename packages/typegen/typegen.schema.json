@@ -162,7 +162,7 @@
               "description": "If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema20"
+                  "$ref": "#/definitions/__schema26"
                 }
               ]
             },
@@ -173,7 +173,7 @@
               "description": "If true (default), field names will always be updated to match metadata, even when matching by entity ID. If false, existing field names are preserved when matching by entity ID.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema21"
+                  "$ref": "#/definitions/__schema27"
                 }
               ]
             },
@@ -182,7 +182,7 @@
               "description": "Required array of tables to generate. Only the tables specified here will be downloaded and generated. Each table can have field-level overrides for excluding fields, renaming variables, and overriding field types.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema22"
+                  "$ref": "#/definitions/__schema28"
                 }
               ]
             },
@@ -190,7 +190,7 @@
               "description": "If true, all fields will be included by default. If false, only fields that are explicitly listed in the `fields` array will be included.",
               "allOf": [
                 {
-                  "$ref": "#/definitions/__schema30"
+                  "$ref": "#/definitions/__schema36"
                 }
               ]
             }
@@ -228,6 +228,12 @@
             },
             "password": {
               "type": "string"
+            },
+            "clarisIdUsername": {
+              "type": "string"
+            },
+            "clarisIdPassword": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -239,6 +245,9 @@
               "type": "string"
             },
             "connectedFileName": {
+              "type": "string"
+            },
+            "persistentToken": {
               "type": "string"
             }
           },
@@ -317,7 +326,7 @@
           ]
         },
         "scriptName": {
-          "description": "The FM script the HTTP proxy calls to execute Data API operations. Overrides webviewerScriptName for the proxy call. Defaults to \"execute_data_api\".",
+          "description": "The FM script the FM MCP bridge calls to execute Data API operations. Overrides webviewerScriptName for the bridge call. Defaults to \"execute_data_api\".",
           "allOf": [
             {
               "$ref": "#/definitions/__schema17"
@@ -325,7 +334,7 @@
           ]
         },
         "baseUrl": {
-          "description": "Base URL of the local FM MCP server. Defaults to \"http://127.0.0.1:1365\". Can also be set via FM_HTTP_BASE_URL env var.",
+          "description": "Base URL of the local FM MCP server. Defaults to \"http://127.0.0.1:1365\". Can also be set via FM_MCP_BASE_URL env var.",
           "allOf": [
             {
               "$ref": "#/definitions/__schema18"
@@ -337,6 +346,54 @@
           "allOf": [
             {
               "$ref": "#/definitions/__schema19"
+            }
+          ]
+        },
+        "sessionId": {
+          "description": "Session ID sent to the FileMaker bridge for authorization. Defaults to FM_MCP_SESSION_ID or a random ID.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema20"
+            }
+          ]
+        },
+        "persistentToken": {
+          "description": "Persistent token value to use as the FileMaker bridge session ID. If also registered in FileMaker, requests are already authorized. Prefer envNames.fmMcp.persistentToken for secrets.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema21"
+            }
+          ]
+        },
+        "clientName": {
+          "description": "Client name shown in FileMaker authorization prompts. Defaults to FM_MCP_CLIENT_NAME or \"ProofKit Typegen\".",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema22"
+            }
+          ]
+        },
+        "clientDescription": {
+          "description": "Client description shown in FileMaker authorization prompts.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema23"
+            }
+          ]
+        },
+        "authorizationTimeoutMs": {
+          "description": "Timeout for FileMaker bridge authorization requests. Defaults to 125000 ms.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema24"
+            }
+          ]
+        },
+        "disableInteractiveAuthorization": {
+          "description": "If true, fail on unauthorized bridge requests instead of opening an authorization prompt.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/__schema25"
             }
           ]
         }
@@ -357,13 +414,32 @@
       "type": "string"
     },
     "__schema20": {
-      "type": "boolean"
+      "type": "string"
     },
     "__schema21": {
+      "type": "string"
+    },
+    "__schema22": {
+      "type": "string"
+    },
+    "__schema23": {
+      "type": "string"
+    },
+    "__schema24": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "__schema25": {
+      "type": "boolean"
+    },
+    "__schema26": {
+      "type": "boolean"
+    },
+    "__schema27": {
       "default": true,
       "type": "boolean"
     },
-    "__schema22": {
+    "__schema28": {
       "type": "array",
       "items": {
         "type": "object",
@@ -376,7 +452,7 @@
             "description": "Override the generated TypeScript variable name. The original entity set name is still used for the OData path.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema23"
+                "$ref": "#/definitions/__schema29"
               }
             ]
           },
@@ -384,7 +460,7 @@
             "description": "Field-specific overrides as an array",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema24"
+                "$ref": "#/definitions/__schema30"
               }
             ]
           },
@@ -392,7 +468,7 @@
             "description": "If undefined, the top-level setting will be used. If true, reduced OData annotations will be requested from the server to reduce payload size. This will prevent comments, entity ids, and other properties from being generated.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema27"
+                "$ref": "#/definitions/__schema33"
               }
             ]
           },
@@ -400,7 +476,7 @@
             "description": "If undefined, the top-level setting will be used. If true, field names will always be updated to match metadata, even when matching by entity ID. If false, existing field names are preserved when matching by entity ID.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema28"
+                "$ref": "#/definitions/__schema34"
               }
             ]
           },
@@ -408,7 +484,7 @@
             "description": "If true, all fields will be included by default. If false, only fields that are explicitly listed in the `fields` array will be included.",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema29"
+                "$ref": "#/definitions/__schema35"
               }
             ]
           }
@@ -417,10 +493,10 @@
         "additionalProperties": false
       }
     },
-    "__schema23": {
+    "__schema29": {
       "type": "string"
     },
-    "__schema24": {
+    "__schema30": {
       "type": "array",
       "items": {
         "type": "object",
@@ -433,7 +509,7 @@
             "description": "If true, this field will be excluded from generation",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema25"
+                "$ref": "#/definitions/__schema31"
               }
             ]
           },
@@ -441,7 +517,7 @@
             "description": "Override the inferred field type from metadata. Options: text, number, boolean, date, timestamp, container, list",
             "allOf": [
               {
-                "$ref": "#/definitions/__schema26"
+                "$ref": "#/definitions/__schema32"
               }
             ]
           }
@@ -450,10 +526,10 @@
         "additionalProperties": false
       }
     },
-    "__schema25": {
+    "__schema31": {
       "type": "boolean"
     },
-    "__schema26": {
+    "__schema32": {
       "type": "string",
       "enum": [
         "text",
@@ -465,16 +541,16 @@
         "list"
       ]
     },
-    "__schema27": {
+    "__schema33": {
       "type": "boolean"
     },
-    "__schema28": {
+    "__schema34": {
       "type": "boolean"
     },
-    "__schema29": {
+    "__schema35": {
       "type": "boolean"
     },
-    "__schema30": {
+    "__schema36": {
       "default": true,
       "type": "boolean"
     }

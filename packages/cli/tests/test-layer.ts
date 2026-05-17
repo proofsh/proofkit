@@ -66,6 +66,7 @@ export function makeTestLayer(options: {
     codegens: number;
     filemakerBootstraps: number;
     addonInstalls?: number;
+    localFmMcpAuthorizations?: { clientName: string; clientDescription: string }[];
   };
   fileMaker?: {
     localFmMcp?:
@@ -422,6 +423,15 @@ export function makeTestLayer(options: {
           tracker.addonInstalls = (tracker.addonInstalls ?? 0) + 1;
         }
         return Effect.void;
+      },
+      authorizeLocalFmMcp: (input) => {
+        tracker?.localFmMcpAuthorizations?.push({
+          clientName: input.clientName,
+          clientDescription: input.clientDescription,
+        });
+        return Effect.succeed({
+          sessionToken: "test-session-token",
+        });
       },
       validateHostedServerUrl: (serverUrl: string) => {
         if (options.failures?.validateHostedServerUrl) {

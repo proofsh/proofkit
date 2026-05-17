@@ -41,6 +41,7 @@ export const envNamesBase = z
       .object({
         baseUrl: z.string().optional(),
         connectedFileName: z.string().optional(),
+        persistentToken: z.string().optional(),
       })
       .optional(),
   })
@@ -74,6 +75,7 @@ const envNames = envNamesBase
         ? {
             baseUrl: val.fmMcp.baseUrl === "" ? undefined : val.fmMcp.baseUrl,
             connectedFileName: val.fmMcp.connectedFileName === "" ? undefined : val.fmMcp.connectedFileName,
+            persistentToken: val.fmMcp.persistentToken === "" ? undefined : val.fmMcp.persistentToken,
           }
         : undefined,
     };
@@ -209,6 +211,27 @@ const fmMcpFieldObject = z.object({
   connectedFileName: z.string().optional().meta({
     description:
       "Name of the connected FileMaker file. If not provided, it will be auto-discovered from the FM MCP server's /connectedFiles endpoint and written back to your config. Can also be set via FM_CONNECTED_FILE_NAME env var.",
+  }),
+  sessionId: z.string().optional().meta({
+    description:
+      "Session ID sent to the FileMaker bridge for authorization. Defaults to FM_MCP_SESSION_ID or a random ID.",
+  }),
+  persistentToken: z.string().optional().meta({
+    description:
+      "Persistent token value to use as the FileMaker bridge session ID. If also registered in FileMaker, requests are already authorized. Prefer envNames.fmMcp.persistentToken for secrets.",
+  }),
+  clientName: z.string().optional().meta({
+    description:
+      'Client name shown in FileMaker authorization prompts. Defaults to FM_MCP_CLIENT_NAME or "ProofKit Typegen".',
+  }),
+  clientDescription: z.string().optional().meta({
+    description: "Client description shown in FileMaker authorization prompts.",
+  }),
+  authorizationTimeoutMs: z.number().positive().optional().meta({
+    description: "Timeout for FileMaker bridge authorization requests. Defaults to 125000 ms.",
+  }),
+  disableInteractiveAuthorization: z.boolean().optional().meta({
+    description: "If true, fail on unauthorized bridge requests instead of opening an authorization prompt.",
   }),
 });
 

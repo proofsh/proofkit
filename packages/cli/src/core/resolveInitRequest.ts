@@ -479,6 +479,7 @@ function resolveFileMakerInputs({
   flags,
   appType,
   nonInteractive,
+  projectName,
 }: {
   prompt: PromptService;
   console: ConsoleService;
@@ -486,6 +487,7 @@ function resolveFileMakerInputs({
   flags: CliFlags;
   appType: AppType;
   nonInteractive: boolean;
+  projectName: string;
 }) {
   return Effect.gen(function* () {
     if (flags.dataSource !== "filemaker") {
@@ -544,6 +546,16 @@ function resolveFileMakerInputs({
         yield* fileMakerService.installLocalWebViewerAddon();
         const selectedFile = localFmMcp.healthy ? yield* resolveLocalFmMcpFile(localFmMcp.connectedFiles) : undefined;
         if (localFmMcp.healthy && selectedFile) {
+          if (!nonInteractive) {
+            yield* fileMakerService.authorizeLocalFmMcp({
+              baseUrl: localFmMcp.baseUrl,
+              fileName: selectedFile,
+              interactive: true,
+              clientName: `ProofKit CLI (${projectName})`,
+              clientDescription:
+                "ProofKit CLI wants to read layouts from your FileMaker file to help set up your project.",
+            });
+          }
           console.info(`Using ProofKit plugin file: ${selectedFile}`);
           return {
             fileMaker: {
@@ -749,6 +761,8 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       );
     }
 
+    const [scopedAppName, appDir] = parseNameAndPath(projectName);
+
     const { fileMaker, skipFileMakerSetup } = yield* resolveFileMakerInputs({
       prompt,
       console,
@@ -756,9 +770,8 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       flags: { ...flags, dataSource },
       appType,
       nonInteractive,
+      projectName: scopedAppName,
     });
-
-    const [scopedAppName, appDir] = parseNameAndPath(projectName);
 
     return {
       projectName,
