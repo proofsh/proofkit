@@ -176,7 +176,7 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.commands).toContain("pnpm install --force");
     expect(tracker.commands.filter((command) => command === "pnpm exec vite --version")).toHaveLength(2);
     expect(console.warn.join("\n")).toContain("Rolldown native bindings are missing");
-    expect(console.warn.join("\n")).toContain("rm -rf node_modules pnpm-lock.yaml && pnpm install --force");
+    expect(console.warn.join("\n")).toContain("Delete node_modules and pnpm-lock.yaml, then run: pnpm install --force");
   });
 
   it("returns actionable error when Vite validation still fails after repair", async () => {
@@ -244,7 +244,9 @@ describe("executeInitPlan command paths", () => {
       message: expect.stringContaining("Vite native dependency validation still failed after repair"),
     });
     expect(failure).toMatchObject({
-      message: expect.stringContaining("Manual recovery: rm -rf node_modules pnpm-lock.yaml && pnpm install --force"),
+      message: expect.stringContaining(
+        "Manual recovery: Delete node_modules and pnpm-lock.yaml, then run: pnpm install --force",
+      ),
     });
     expect(tracker.commands).toContain("pnpm install --force");
     expect(console.warn.join("\n")).toContain("Validation output");

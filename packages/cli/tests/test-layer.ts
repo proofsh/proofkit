@@ -350,7 +350,7 @@ export function makeTestLayer(options: {
         const processCommand = [command, ...args].join(" ");
         tracker?.commands.push(processCommand);
         const scriptedResult = options.processRuns?.[processCommand]?.shift();
-        if (scriptedResult) {
+        if (scriptedResult !== undefined) {
           if (
             typeof scriptedResult === "object" &&
             scriptedResult !== null &&

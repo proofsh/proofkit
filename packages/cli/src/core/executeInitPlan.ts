@@ -41,7 +41,7 @@ const IMPORT_ALIAS_WILDCARD_REGEX = /\*/g;
 const IMPORT_ALIAS_TRAILING_SLASH_REGEX = /\/?$/;
 const ROLLDOWN_NATIVE_BINDING_REGEX =
   /Cannot find native binding|@rolldown[/+]binding-[\w-]+|rolldown[\s\S]*native binding/i;
-const PNPM_ROLLDOWN_REPAIR_COMMAND = "rm -rf node_modules pnpm-lock.yaml && pnpm install --force";
+const PNPM_ROLLDOWN_REPAIR_INSTRUCTION = "Delete node_modules and pnpm-lock.yaml, then run: pnpm install --force";
 const chalk = new Chalk({ level: 1 });
 
 const formatCommand = (command: string) => chalk.cyan(command);
@@ -464,7 +464,7 @@ export const executeInitPlan = (plan: InitPlan) =>
             [
               "Vite native dependency validation failed because Rolldown native bindings are missing.",
               validationDetails ? `Validation output:\n${validationDetails}` : undefined,
-              `Repairing install: ${PNPM_ROLLDOWN_REPAIR_COMMAND}`,
+              `Repairing install: ${PNPM_ROLLDOWN_REPAIR_INSTRUCTION}`,
             ]
               .filter(Boolean)
               .join("\n"),
@@ -488,7 +488,7 @@ export const executeInitPlan = (plan: InitPlan) =>
                   "Vite native dependency repair failed.",
                   "Repair command: pnpm install --force",
                   repairDetails ? `Repair output:\n${repairDetails}` : undefined,
-                  `Manual recovery: ${PNPM_ROLLDOWN_REPAIR_COMMAND}`,
+                  `Manual recovery: ${PNPM_ROLLDOWN_REPAIR_INSTRUCTION}`,
                 ]
                   .filter(Boolean)
                   .join("\n"),
@@ -516,7 +516,7 @@ export const executeInitPlan = (plan: InitPlan) =>
                   "Vite native dependency validation still failed after repair.",
                   "Validation command: pnpm exec vite --version",
                   repairedValidationDetails ? `Validation output:\n${repairedValidationDetails}` : undefined,
-                  `Manual recovery: ${PNPM_ROLLDOWN_REPAIR_COMMAND}`,
+                  `Manual recovery: ${PNPM_ROLLDOWN_REPAIR_INSTRUCTION}`,
                 ]
                   .filter(Boolean)
                   .join("\n"),
