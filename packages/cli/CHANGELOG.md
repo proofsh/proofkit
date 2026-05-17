@@ -1,5 +1,11 @@
 # @proofgeist/kit
 
+## 2.0.6
+
+### Patch Changes
+
+- cfa4f59: Handle ProofKit Plugin authorization and clarify FM MCP authorization prompts.
+
 ## 2.0.5
 
 ### Patch Changes

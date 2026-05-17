@@ -1,5 +1,11 @@
 # @proofkit/fmdapi
 
+## 5.1.2
+
+### Patch Changes
+
+- cfa4f59: Handle ProofKit Plugin authorization and clarify FM MCP authorization prompts.
+
 ## 5.1.1
 
 ### Patch Changes
