@@ -16,7 +16,13 @@ import {
   PromptService,
   SettingsService,
 } from "~/core/context.js";
-import { DirectoryConflictError, FileSystemError, isCliError, UserCancelledError } from "~/core/errors.js";
+import {
+  DirectoryConflictError,
+  ExternalCommandError,
+  FileSystemError,
+  isCliError,
+  UserCancelledError,
+} from "~/core/errors.js";
 import { applyPackageJsonMutations } from "~/core/planInit.js";
 import type { InitPlan } from "~/core/types.js";
 import { getIntentInstallCommand } from "~/helpers/intent.js";
@@ -33,6 +39,9 @@ import { sortPackageJson } from "~/utils/sortPackageJson.js";
 const AGENT_METADATA_DIRS = new Set([".agents", ".claude", ".clawed", ".clinerules", ".cursor", ".windsurf"]);
 const IMPORT_ALIAS_WILDCARD_REGEX = /\*/g;
 const IMPORT_ALIAS_TRAILING_SLASH_REGEX = /\/?$/;
+const ROLLDOWN_NATIVE_BINDING_REGEX =
+  /Cannot find native binding|@rolldown[/+]binding-[\w-]+|rolldown[\s\S]*native binding/i;
+const PNPM_ROLLDOWN_REPAIR_COMMAND = "rm -rf node_modules pnpm-lock.yaml && pnpm install --force";
 const chalk = new Chalk({ level: 1 });
 
 const formatCommand = (command: string) => chalk.cyan(command);
@@ -92,6 +101,36 @@ function getPackageScriptCommand(plan: InitPlan, scriptName: string) {
     throw new Error(`Unable to resolve ${scriptName} command for ${plan.request.packageManager}.`);
   }
   return { command, args };
+}
+
+function getErrorDetails(error: unknown): string {
+  const parts: string[] = [];
+  const add = (value: unknown) => {
+    if (typeof value === "string" && value.trim()) {
+      parts.push(value.trim());
+    }
+  };
+  if (error instanceof Error) {
+    add(error.message);
+  } else if (typeof error === "string") {
+    add(error);
+  } else if (typeof error === "object" && error !== null) {
+    add("message" in error ? error.message : undefined);
+  }
+  const cause = typeof error === "object" && error !== null && "cause" in error ? error.cause : undefined;
+  if (typeof cause === "object" && cause !== null) {
+    add("message" in cause ? cause.message : undefined);
+    add("stdout" in cause ? cause.stdout : undefined);
+    add("stderr" in cause ? cause.stderr : undefined);
+    add("shortMessage" in cause ? cause.shortMessage : undefined);
+  } else {
+    add(cause);
+  }
+  return Array.from(new Set(parts)).join("\n");
+}
+
+function isRolldownNativeBindingError(error: unknown): boolean {
+  return ROLLDOWN_NATIVE_BINDING_REGEX.test(getErrorDetails(error));
 }
 
 function getMeaningfulDirectoryEntries(entries: string[]) {
@@ -405,6 +444,91 @@ export const executeInitPlan = (plan: InitPlan) =>
         stdout: "pipe",
         stderr: "pipe",
       });
+
+      if (plan.request.appType === "webviewer" && plan.request.packageManager === "pnpm") {
+        consoleService.info("Validating Vite native dependencies...");
+        const validateVite = processService.run("pnpm", ["exec", "vite", "--version"], {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        const validationResult = yield* Effect.either(validateVite);
+
+        if (validationResult._tag === "Left") {
+          if (!isRolldownNativeBindingError(validationResult.left)) {
+            return yield* Effect.fail(validationResult.left);
+          }
+
+          const validationDetails = getErrorDetails(validationResult.left);
+          consoleService.warn(
+            [
+              "Vite native dependency validation failed because Rolldown native bindings are missing.",
+              validationDetails ? `Validation output:\n${validationDetails}` : undefined,
+              `Repairing install: ${PNPM_ROLLDOWN_REPAIR_COMMAND}`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          );
+
+          yield* fs.remove(path.join(plan.targetDir, "node_modules"));
+          yield* fs.remove(path.join(plan.targetDir, "pnpm-lock.yaml"));
+          const repairResult = yield* Effect.either(
+            processService.run("pnpm", ["install", "--force"], {
+              cwd: plan.targetDir,
+              stdout: "pipe",
+              stderr: "pipe",
+            }),
+          );
+
+          if (repairResult._tag === "Left") {
+            const repairDetails = getErrorDetails(repairResult.left);
+            return yield* Effect.fail(
+              new ExternalCommandError({
+                message: [
+                  "Vite native dependency repair failed.",
+                  "Repair command: pnpm install --force",
+                  repairDetails ? `Repair output:\n${repairDetails}` : undefined,
+                  `Manual recovery: ${PNPM_ROLLDOWN_REPAIR_COMMAND}`,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+                command: "pnpm",
+                args: ["install", "--force"],
+                cwd: plan.targetDir,
+                cause: repairResult.left,
+              }),
+            );
+          }
+
+          const repairedValidation = yield* Effect.either(
+            processService.run("pnpm", ["exec", "vite", "--version"], {
+              cwd: plan.targetDir,
+              stdout: "pipe",
+              stderr: "pipe",
+            }),
+          );
+
+          if (repairedValidation._tag === "Left") {
+            const repairedValidationDetails = getErrorDetails(repairedValidation.left);
+            return yield* Effect.fail(
+              new ExternalCommandError({
+                message: [
+                  "Vite native dependency validation still failed after repair.",
+                  "Validation command: pnpm exec vite --version",
+                  repairedValidationDetails ? `Validation output:\n${repairedValidationDetails}` : undefined,
+                  `Manual recovery: ${PNPM_ROLLDOWN_REPAIR_COMMAND}`,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+                command: "pnpm",
+                args: ["exec", "vite", "--version"],
+                cwd: plan.targetDir,
+                cause: repairedValidation.left,
+              }),
+            );
+          }
+        }
+      }
     }
 
     if (plan.tasks.runUltraciteInit) {

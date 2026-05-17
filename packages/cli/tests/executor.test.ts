@@ -63,6 +63,7 @@ describe("executeInitPlan command paths", () => {
 
     expect(tracker.commands).toEqual([
       "pnpm install",
+      "pnpm exec vite --version",
       [
         "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors universal cursor",
         "--agents universal claude codex --hooks cursor windsurf codebuddy claude --integrations husky lint-staged",
@@ -85,6 +86,168 @@ describe("executeInitPlan command paths", () => {
     expect(pnpmWorkspaceFile).toContain("trustPolicy: no-downgrade");
     expect(pnpmWorkspaceFile).toContain("trustPolicyIgnoreAfter: 43200");
     expect(pnpmWorkspaceFile).toContain("blockExoticSubdeps: true");
+  });
+
+  it("validates Vite native dependencies after webviewer pnpm install", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-vite-validate-ok-"));
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "webviewer",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: false,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("vite-wv"),
+        packageManagerVersion: "11.0.0",
+      },
+    );
+
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", tracker })));
+
+    expect(tracker.commands).toContain("pnpm install");
+    expect(tracker.commands).toContain("pnpm exec vite --version");
+    expect(tracker.commands).not.toContain("pnpm install --force");
+  });
+
+  it("repairs pnpm webviewer install when Rolldown native binding is missing", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-vite-validate-repair-"));
+    const projectDir = path.join(cwd, "demo-app");
+    const console = {
+      error: [] as string[],
+      info: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+      success: [] as string[],
+      warn: [] as string[],
+    };
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "webviewer",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: false,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("vite-wv"),
+        packageManagerVersion: "11.0.0",
+      },
+    );
+
+    await Effect.runPromise(
+      executeInitPlan(plan).pipe(
+        makeTestLayer({
+          console,
+          cwd,
+          packageManager: "pnpm",
+          processRuns: {
+            "pnpm exec vite --version": [
+              new ExternalCommandError({
+                message: "Cannot find native binding. Missing @rolldown/binding-darwin-arm64",
+                command: "pnpm",
+                args: ["exec", "vite", "--version"],
+                cwd: projectDir,
+              }),
+              { stdout: "vite/8.0.13", stderr: "" },
+            ],
+          },
+          tracker,
+        }),
+      ),
+    );
+
+    expect(tracker.commands).toContain("pnpm install --force");
+    expect(tracker.commands.filter((command) => command === "pnpm exec vite --version")).toHaveLength(2);
+    expect(console.warn.join("\n")).toContain("Rolldown native bindings are missing");
+    expect(console.warn.join("\n")).toContain("rm -rf node_modules pnpm-lock.yaml && pnpm install --force");
+  });
+
+  it("returns actionable error when Vite validation still fails after repair", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-vite-validate-repair-fail-"));
+    const projectDir = path.join(cwd, "demo-app");
+    const console = {
+      error: [] as string[],
+      info: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+      success: [] as string[],
+      warn: [] as string[],
+    };
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "webviewer",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: false,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("vite-wv"),
+        packageManagerVersion: "11.0.0",
+      },
+    );
+
+    const failure = await getFailure(
+      executeInitPlan(plan).pipe(
+        makeTestLayer({
+          console,
+          cwd,
+          packageManager: "pnpm",
+          processRuns: {
+            "pnpm exec vite --version": [
+              new ExternalCommandError({
+                message: "Cannot find native binding. Missing @rolldown/binding-darwin-arm64",
+                command: "pnpm",
+                args: ["exec", "vite", "--version"],
+                cwd: projectDir,
+              }),
+              new ExternalCommandError({
+                message: "Cannot find native binding. Missing @rolldown/binding-darwin-arm64",
+                command: "pnpm",
+                args: ["exec", "vite", "--version"],
+                cwd: projectDir,
+              }),
+            ],
+            "pnpm install --force": [{ stdout: "reinstalled", stderr: "" }],
+          },
+          tracker,
+        }),
+      ),
+    );
+
+    expect(failure).toMatchObject({
+      _tag: "ExternalCommandError",
+      message: expect.stringContaining("Vite native dependency validation still failed after repair"),
+    });
+    expect(failure).toMatchObject({
+      message: expect.stringContaining("Manual recovery: rm -rf node_modules pnpm-lock.yaml && pnpm install --force"),
+    });
+    expect(tracker.commands).toContain("pnpm install --force");
+    expect(console.warn.join("\n")).toContain("Validation output");
   });
 
   it("runs Ultracite with browser framework presets", async () => {

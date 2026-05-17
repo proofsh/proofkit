@@ -88,6 +88,7 @@ export function makeTestLayer(options: {
     deployDemoFile?: unknown;
     packageManagerGetVersion?: Partial<Record<PackageManager, unknown>>;
   };
+  processRuns?: Record<string, Array<unknown | { stdout: string; stderr: string }>>;
 }) {
   const tracker = options.tracker;
   const promptScript = {
@@ -348,6 +349,18 @@ export function makeTestLayer(options: {
       run: (command: string, args: string[]) => {
         const processCommand = [command, ...args].join(" ");
         tracker?.commands.push(processCommand);
+        const scriptedResult = options.processRuns?.[processCommand]?.shift();
+        if (scriptedResult) {
+          if (
+            typeof scriptedResult === "object" &&
+            scriptedResult !== null &&
+            "stdout" in scriptedResult &&
+            "stderr" in scriptedResult
+          ) {
+            return Effect.succeed(scriptedResult as { stdout: string; stderr: string });
+          }
+          return Effect.fail(scriptedResult as ExternalCommandError);
+        }
         const processRunFailure = options.failures?.processRun;
         if (options.failProcessCommand === processCommand) {
           if (!processRunFailure) {
