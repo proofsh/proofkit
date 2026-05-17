@@ -22,6 +22,21 @@ interface FmMcpClientIdentity {
 }
 
 const typegenCliIdleTimeoutSeconds = 120;
+const connectedFilesTimeoutMs = 5000;
+const trailingSlashesRegex = /\/+$/;
+
+const normalizeFmMcpBaseUrl = (baseUrl: string) => {
+  const trimmedBaseUrl = baseUrl.trim().replace(trailingSlashesRegex, "");
+  try {
+    const url = new URL(trimmedBaseUrl);
+    url.pathname = url.pathname.replace(trailingSlashesRegex, "");
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(trailingSlashesRegex, "");
+  } catch {
+    return trimmedBaseUrl;
+  }
+};
 
 const getProjectName = (cwd: string) => {
   try {
@@ -230,14 +245,19 @@ const generateTypedClientsSingle = async (
   let fmMcpSessionId: string | undefined;
 
   if (validationResult.mode === "fmMcp") {
-    fmMcpBaseUrl = validationResult.baseUrl;
+    fmMcpBaseUrl = normalizeFmMcpBaseUrl(validationResult.baseUrl);
     fmMcpConnectedFileName = validationResult.connectedFileName;
     fmMcpPersistentToken = validationResult.persistentToken;
 
     // Auto-discover connectedFileName if not provided
     if (!fmMcpConnectedFileName) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), connectedFilesTimeoutMs);
       try {
-        const res = await fetch(`${fmMcpBaseUrl}/connectedFiles`);
+        const res = await fetch(`${fmMcpBaseUrl}/connectedFiles`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
         if (res.ok) {
           const files = (await res.json()) as string[];
           if (files.length === 1) {
@@ -302,7 +322,12 @@ const generateTypedClientsSingle = async (
           console.log(chalk.red(`ERROR: Failed to auto-discover connected files from ${fmMcpBaseUrl}/connectedFiles`));
           return;
         }
-      } catch (_err) {
+      } catch (err) {
+        clearTimeout(timeout);
+        if (err instanceof Error && err.name === "AbortError") {
+          console.log(chalk.red(`ERROR: Timed out reading connected files from ${fmMcpBaseUrl}/connectedFiles`));
+          return;
+        }
         console.log(chalk.red(`ERROR: Could not reach FM MCP server at ${fmMcpBaseUrl}`));
         console.log(chalk.yellow("Ensure the FM MCP server is running and accessible."));
         return;

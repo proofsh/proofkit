@@ -64,7 +64,21 @@ type SupportedAuth = ApiKeyAuth | UsernameAuth | ClarisIdAuth;
 
 const trailingSlashesRegex = /\/+$/;
 const defaultAuthorizeTimeoutMs = 125_000;
+const connectedFilesTimeoutMs = 5000;
 export const fmMcpUiIdleTimeoutSeconds = 900;
+
+const normalizeFmMcpBaseUrl = (baseUrl: string) => {
+  const trimmedBaseUrl = baseUrl.trim().replace(trailingSlashesRegex, "");
+  try {
+    const url = new URL(trimmedBaseUrl);
+    url.pathname = url.pathname.replace(trailingSlashesRegex, "");
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(trailingSlashesRegex, "");
+  } catch {
+    return trimmedBaseUrl;
+  }
+};
 
 const getStatusReason = (status: unknown): string => {
   if (status === "rejected") {
@@ -425,15 +439,20 @@ export async function createClientFromConfig(
       defaultEnvNames.fmMcpPersistentToken,
     );
 
-    const baseUrl = fmMcpObj?.baseUrl || process.env[baseUrlEnvName] || defaultFmMcpBaseUrl;
+    const baseUrl = normalizeFmMcpBaseUrl(fmMcpObj?.baseUrl || process.env[baseUrlEnvName] || defaultFmMcpBaseUrl);
     let connectedFileName = fmMcpObj?.connectedFileName || process.env[connectedFileNameEnvName];
     const persistentToken = fmMcpObj?.persistentToken || process.env[persistentTokenEnvName];
     const projectRoot = options?.projectRoot ?? process.cwd();
     const fmMcpClientIdentity = getFmMcpUiClientIdentity(projectRoot);
 
     if (!connectedFileName) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), connectedFilesTimeoutMs);
       try {
-        const res = await fetch(`${baseUrl.replace(trailingSlashesRegex, "")}/connectedFiles`);
+        const res = await fetch(`${baseUrl.replace(trailingSlashesRegex, "")}/connectedFiles`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
         if (!res.ok) {
           return {
             error: "Failed to discover connected FileMaker files",
@@ -474,6 +493,16 @@ export async function createClientFromConfig(
           };
         }
       } catch (err) {
+        clearTimeout(timeout);
+        if (err instanceof Error && err.name === "AbortError") {
+          return {
+            error: "Timed out discovering connected FileMaker files",
+            statusCode: 400,
+            kind: "connection_error",
+            suspectedField: "server",
+            message: `Timed out reading connected files from ${baseUrl}`,
+          };
+        }
         return {
           error: err instanceof Error ? err.message : "Failed to reach FM MCP server",
           statusCode: 400,

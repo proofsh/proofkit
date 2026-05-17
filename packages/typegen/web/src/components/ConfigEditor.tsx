@@ -24,6 +24,7 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
   const {
     control,
     formState: { errors },
+    getValues,
     setValue,
     watch,
   } = useFormContext<{ config: SingleConfig[] }>();
@@ -66,10 +67,15 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
   };
 
   const handleFmMcpToggle = (checked: boolean) => {
-    setValue(`config.${index}.fmMcp` as const, checked ? { enabled: true } : undefined, {
-      shouldDirty: true,
-      shouldTouch: true,
-    });
+    const existingFmMcp = getValues(`config.${index}.fmMcp` as const);
+    setValue(
+      `config.${index}.fmMcp` as const,
+      { ...existingFmMcp, enabled: checked },
+      {
+        shouldDirty: true,
+        shouldTouch: true,
+      },
+    );
   };
 
   const handleRunTypegen = async (e: React.MouseEvent) => {
