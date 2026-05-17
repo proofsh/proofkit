@@ -109,6 +109,8 @@ jobs:
 
       - name: Build
         run: pnpm ci:build
+        env:
+          PROOFKIT_MANIFEST_REVALIDATE_SECRET: ci-build-placeholder
 
   cli-smoke:
     name: CLI External Integration Smoke Tests
@@ -182,6 +184,8 @@ jobs:
 
       - name: Build
         run: pnpm ci:build
+        env:
+          PROOFKIT_MANIFEST_REVALIDATE_SECRET: ci-build-placeholder
 
       - name: Publish preview packages
         run: |
