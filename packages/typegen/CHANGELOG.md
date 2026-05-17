@@ -1,5 +1,14 @@
 # @proofkit/typegen
 
+## 1.1.2
+
+### Patch Changes
+
+- cfa4f59: Handle ProofKit Plugin authorization and clarify FM MCP authorization prompts.
+- b9a3d32: Support ProofKit Plugin auth reuse in typegen UI.
+- Updated dependencies [cfa4f59]
+  - @proofkit/fmdapi@5.1.2
+
 ## 1.1.1
 
 ### Patch Changes
