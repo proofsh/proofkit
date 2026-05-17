@@ -10,7 +10,8 @@ const getBearerToken = (request: Request) => {
 };
 
 export const POST = (request: Request): Response => {
-  if (getBearerToken(request) !== ENV.PROOFKIT_MANIFEST_REVALIDATE_SECRET) {
+  const secret = ENV.PROOFKIT_MANIFEST_REVALIDATE_SECRET;
+  if (!secret || getBearerToken(request) !== secret) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
