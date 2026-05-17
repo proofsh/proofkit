@@ -22,6 +22,7 @@ import type {
 
 const TRAILING_SLASHES_REGEX = /\/+$/;
 const DEFAULT_AUTHORIZE_TIMEOUT_MS = 125_000;
+const DEFAULT_IDLE_TIMEOUT_SECONDS = 3600;
 const SESSION_HEADER_NAME = "X-ProofKit-Session";
 const CLIENT_HEADER_NAME = "X-ProofKit-Client";
 
@@ -65,6 +66,8 @@ export interface FmMcpAdapterOptions {
   clientName?: string;
   /** Client description shown in FileMaker authorization prompts. */
   clientDescription?: string;
+  /** Idle timeout requested for authorized sessions. Defaults to 3600 seconds. */
+  idleTimeoutSeconds?: number;
   /** Timeout for /authorizeSession. Defaults to 125 seconds. */
   authorizationTimeoutMs?: number;
   /** If true, do not open FileMaker interactive authorization after a 401. */
@@ -78,6 +81,7 @@ export class FmMcpAdapter implements Adapter {
   protected sessionId: string;
   protected clientName: string;
   protected clientDescription: string;
+  protected idleTimeoutSeconds: number;
   protected authorizationTimeoutMs: number;
   protected disableInteractiveAuthorization: boolean;
   protected pendingAuthorization?: Promise<void>;
@@ -92,6 +96,7 @@ export class FmMcpAdapter implements Adapter {
       options.clientDescription ??
       envValue("FM_MCP_CLIENT_DESCRIPTION") ??
       "ProofKit Typegen is requesting FileMaker bridge access.";
+    this.idleTimeoutSeconds = Math.min(options.idleTimeoutSeconds ?? DEFAULT_IDLE_TIMEOUT_SECONDS, 3600);
     this.authorizationTimeoutMs = options.authorizationTimeoutMs ?? DEFAULT_AUTHORIZE_TIMEOUT_MS;
     this.disableInteractiveAuthorization =
       options.disableInteractiveAuthorization ?? envValue("FM_MCP_DISABLE_INTERACTIVE_AUTHORIZATION") === "true";
@@ -130,6 +135,7 @@ export class FmMcpAdapter implements Adapter {
           fileName: this.connectedFileName,
           clientName: this.clientName,
           clientDescription: this.clientDescription,
+          idleTimeoutSeconds: this.idleTimeoutSeconds,
         }),
         signal: controller.signal,
       });

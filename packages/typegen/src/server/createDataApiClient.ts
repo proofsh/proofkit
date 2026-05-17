@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import { parse } from "jsonc-parser";
 import type { z } from "zod/v4";
 import { defaultEnvNames, defaultFmMcpBaseUrl } from "../constants";
+import { getFmMcpSessionId } from "../fmMcpSession";
 import { rethrowMissingDependency } from "../optionalDeps";
 import { typegenConfig, type typegenConfigSingle } from "../types";
 import type { ApiContext } from "./app";
@@ -61,6 +62,68 @@ interface ClarisIdAuth {
 
 type SupportedAuth = ApiKeyAuth | UsernameAuth | ClarisIdAuth;
 
+const trailingSlashesRegex = /\/+$/;
+const defaultAuthorizeTimeoutMs = 125_000;
+export const fmMcpUiIdleTimeoutSeconds = 900;
+
+const getStatusReason = (status: unknown): string => {
+  if (status === "rejected") {
+    return "authorization rejected";
+  }
+  if (status === "timeout") {
+    return "authorization timed out";
+  }
+  if (status === "file_not_connected") {
+    return "file not connected";
+  }
+  return typeof status === "string" ? status : "authorization failed";
+};
+
+const authorizeFmMcpSession = async (options: {
+  baseUrl: string;
+  connectedFileName: string;
+  sessionId: string;
+  clientName: string;
+  clientDescription: string;
+  idleTimeoutSeconds: number;
+  authorizationTimeoutMs?: number;
+  disableInteractiveAuthorization?: boolean;
+}) => {
+  if (options.disableInteractiveAuthorization) {
+    throw new Error("interactive authorization disabled");
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.authorizationTimeoutMs ?? defaultAuthorizeTimeoutMs);
+  try {
+    const res = await fetch(`${options.baseUrl.replace(trailingSlashesRegex, "")}/authorizeSession`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: options.sessionId,
+        fileName: options.connectedFileName,
+        clientName: options.clientName,
+        clientDescription: options.clientDescription,
+        idleTimeoutSeconds: options.idleTimeoutSeconds,
+      }),
+      signal: controller.signal,
+    });
+    const payload = (await res.json().catch(() => null)) as { status?: unknown; error?: unknown } | null;
+    if (res.ok && payload?.status === "approved") {
+      return;
+    }
+    const reason = typeof payload?.error === "string" ? payload.error : getStatusReason(payload?.status);
+    throw new Error(reason);
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("authorization timed out");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const getProjectName = (cwd: string) => {
   try {
     const packageJson = JSON.parse(fs.readFileSync(path.join(cwd, "package.json"), "utf8")) as { name?: unknown };
@@ -73,11 +136,12 @@ const getProjectName = (cwd: string) => {
   return path.basename(cwd);
 };
 
-const getFmMcpClientIdentity = (cwd: string) => {
+export const getFmMcpUiClientIdentity = (cwd: string) => {
   const projectName = getProjectName(cwd);
   return {
-    clientName: `${projectName} from ProofKit Typegen`,
-    clientDescription: `ProofKit Typegen is requesting FileMaker bridge access for ${projectName}.`,
+    clientName: `ProofKit Typegen UI (${projectName})`,
+    clientDescription:
+      "ProofKit Typegen UI wants to read layout metadata from your FileMaker file to help configure generated field names and field types.",
   };
 };
 
@@ -362,9 +426,63 @@ export async function createClientFromConfig(
     );
 
     const baseUrl = fmMcpObj?.baseUrl || process.env[baseUrlEnvName] || defaultFmMcpBaseUrl;
-    const connectedFileName = fmMcpObj?.connectedFileName || process.env[connectedFileNameEnvName];
+    let connectedFileName = fmMcpObj?.connectedFileName || process.env[connectedFileNameEnvName];
     const persistentToken = fmMcpObj?.persistentToken || process.env[persistentTokenEnvName];
-    const fmMcpClientIdentity = getFmMcpClientIdentity(options?.projectRoot ?? process.cwd());
+    const projectRoot = options?.projectRoot ?? process.cwd();
+    const fmMcpClientIdentity = getFmMcpUiClientIdentity(projectRoot);
+
+    if (!connectedFileName) {
+      try {
+        const res = await fetch(`${baseUrl.replace(trailingSlashesRegex, "")}/connectedFiles`);
+        if (!res.ok) {
+          return {
+            error: "Failed to discover connected FileMaker files",
+            statusCode: 400,
+            kind: "connection_error",
+            suspectedField: "server",
+            message: `Could not read connected files from ${baseUrl}`,
+          };
+        }
+        const connectedFiles = (await res.json()) as unknown;
+        if (!(Array.isArray(connectedFiles) && connectedFiles.every((fileName) => typeof fileName === "string"))) {
+          return {
+            error: "Invalid connected files response",
+            statusCode: 400,
+            kind: "connection_error",
+            suspectedField: "server",
+            message: "FM MCP server returned invalid connected files",
+          };
+        }
+        if (connectedFiles.length === 1) {
+          connectedFileName = connectedFiles[0];
+        } else if (connectedFiles.length > 1) {
+          return {
+            error: "Multiple connected FileMaker files found",
+            statusCode: 400,
+            kind: "missing_env",
+            details: { connectedFiles },
+            suspectedField: "db",
+            message: `Set connectedFileName in your fmMcp config or ${connectedFileNameEnvName} env var`,
+          };
+        } else {
+          return {
+            error: "No connected FileMaker files found",
+            statusCode: 400,
+            kind: "missing_env",
+            suspectedField: "db",
+            message: "Connect a FileMaker file to the FM MCP server",
+          };
+        }
+      } catch (err) {
+        return {
+          error: err instanceof Error ? err.message : "Failed to reach FM MCP server",
+          statusCode: 400,
+          kind: "connection_error",
+          suspectedField: "server",
+          message: `Could not reach FM MCP server at ${baseUrl}`,
+        };
+      }
+    }
 
     if (!connectedFileName) {
       return {
@@ -378,23 +496,57 @@ export async function createClientFromConfig(
     }
 
     try {
+      const resolvedConnectedFileName = connectedFileName;
+      const clientName = fmMcpObj?.clientName ?? fmMcpClientIdentity.clientName;
+      const clientDescription = fmMcpObj?.clientDescription ?? fmMcpClientIdentity.clientDescription;
+      const sessionKey = {
+        cwd: projectRoot,
+        baseUrl,
+        connectedFileName: resolvedConnectedFileName,
+        clientName,
+      };
+      const sessionId = getFmMcpSessionId(sessionKey, persistentToken ?? fmMcpObj?.sessionId);
+      const authorize = () =>
+        authorizeFmMcpSession({
+          baseUrl,
+          connectedFileName: resolvedConnectedFileName,
+          sessionId,
+          clientName,
+          clientDescription,
+          idleTimeoutSeconds: fmMcpUiIdleTimeoutSeconds,
+          authorizationTimeoutMs: fmMcpObj?.authorizationTimeoutMs,
+          disableInteractiveAuthorization: fmMcpObj?.disableInteractiveAuthorization,
+        });
       const client = DataApi({
         adapter: new FmMcpAdapter({
           baseUrl,
-          connectedFileName,
+          connectedFileName: resolvedConnectedFileName,
           scriptName: fmMcpObj?.scriptName ?? config.webviewerScriptName,
-          sessionId: persistentToken ?? fmMcpObj?.sessionId,
-          clientName: fmMcpObj?.clientName ?? fmMcpClientIdentity.clientName,
-          clientDescription: fmMcpObj?.clientDescription ?? fmMcpClientIdentity.clientDescription,
+          sessionId,
+          clientName,
+          clientDescription,
+          idleTimeoutSeconds: fmMcpUiIdleTimeoutSeconds,
           authorizationTimeoutMs: fmMcpObj?.authorizationTimeoutMs,
           disableInteractiveAuthorization: fmMcpObj?.disableInteractiveAuthorization,
         }),
         layout: "",
       });
+      const clientWithLayouts = {
+        ...client,
+        layouts: async () => {
+          await authorize();
+          return {
+            layouts: config.layouts.map((layout) => ({
+              name: layout.layoutName,
+              table: layout.layoutName,
+            })),
+          };
+        },
+      };
       return {
-        client: client as CreateClientResult["client"],
+        client: clientWithLayouts as CreateClientResult["client"],
         server: baseUrl,
-        db: connectedFileName,
+        db: resolvedConnectedFileName,
         authType: "fmMcp",
       };
     } catch (err) {

@@ -676,6 +676,7 @@ describe("typegen unit tests", () => {
       fileName: "TestFile",
       clientName: "Typegen Config Test",
       clientDescription: "Typegen config authorization",
+      idleTimeoutSeconds: 120,
     });
   });
 

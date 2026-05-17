@@ -9,12 +9,19 @@ import type { z } from "zod/v4";
 import { buildLayoutClient } from "./buildLayoutClient";
 import { buildOverrideFile, buildSchema } from "./buildSchema";
 import { commentHeader, defaultEnvNames, overrideCommentHeader } from "./constants";
+import { getFmMcpSessionId } from "./fmMcpSession";
 import { formatAndSaveSourceFiles, runPostGenerateCommand } from "./formatting";
 import { getEnvValues, validateAndLogEnvValues } from "./getEnvValues";
 import { rethrowMissingDependency } from "./optionalDeps";
 import { type BuildSchemaArgs, typegenConfig, type typegenConfigSingle } from "./types";
 
 type GlobalOptions = Omit<z.infer<typeof typegenConfig>, "config">;
+interface FmMcpClientIdentity {
+  clientName: string;
+  clientDescription: string;
+}
+
+const typegenCliIdleTimeoutSeconds = 120;
 
 const getProjectName = (cwd: string) => {
   try {
@@ -31,14 +38,21 @@ const getProjectName = (cwd: string) => {
 const getFmMcpClientIdentity = (cwd: string) => {
   const projectName = getProjectName(cwd);
   return {
-    clientName: `${projectName} from ProofKit Typegen`,
-    clientDescription: `ProofKit Typegen is requesting FileMaker bridge access for ${projectName}.`,
+    clientName: `ProofKit Typegen (${projectName})`,
+    clientDescription:
+      "ProofKit Typegen wants to read layout metadata from your FileMaker file to generate correct field names and field types into your codebase.",
   };
 };
 
 export const generateTypedClients = async (
   config: z.infer<typeof typegenConfig>["config"],
-  options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string; configPath?: string },
+  options?: GlobalOptions & {
+    resetOverrides?: boolean;
+    cwd?: string;
+    configPath?: string;
+    fmMcpClientIdentity?: FmMcpClientIdentity;
+    fmMcpIdleTimeoutSeconds?: number;
+  },
 ): Promise<
   | {
       successCount: number;
@@ -100,6 +114,8 @@ export const generateTypedClients = async (
         cwd,
         configPath: options?.configPath,
         configIndex: isConfigArray ? configIndex : undefined,
+        fmMcpClientIdentity: options?.fmMcpClientIdentity,
+        fmMcpIdleTimeoutSeconds: options?.fmMcpIdleTimeoutSeconds,
       });
       if (result) {
         totalSuccessCount += result.successCount;
@@ -130,7 +146,14 @@ export const generateTypedClients = async (
 
 const generateTypedClientsSingle = async (
   config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }>,
-  options?: GlobalOptions & { resetOverrides?: boolean; cwd?: string; configPath?: string; configIndex?: number },
+  options?: GlobalOptions & {
+    resetOverrides?: boolean;
+    cwd?: string;
+    configPath?: string;
+    configIndex?: number;
+    fmMcpClientIdentity?: FmMcpClientIdentity;
+    fmMcpIdleTimeoutSeconds?: number;
+  },
 ) => {
   const {
     envNames,
@@ -204,6 +227,7 @@ const generateTypedClientsSingle = async (
   let fmMcpBaseUrl: string | undefined;
   let fmMcpConnectedFileName: string | undefined;
   let fmMcpPersistentToken: string | undefined;
+  let fmMcpSessionId: string | undefined;
 
   if (validationResult.mode === "fmMcp") {
     fmMcpBaseUrl = validationResult.baseUrl;
@@ -284,6 +308,20 @@ const generateTypedClientsSingle = async (
         return;
       }
     }
+    if (!fmMcpConnectedFileName) {
+      console.log(chalk.red("ERROR: Missing connected FileMaker file name for FM MCP mode."));
+      return;
+    }
+    const sessionClientIdentity = options?.fmMcpClientIdentity ?? getFmMcpClientIdentity(cwd);
+    fmMcpSessionId = getFmMcpSessionId(
+      {
+        cwd,
+        baseUrl: fmMcpBaseUrl,
+        connectedFileName: fmMcpConnectedFileName,
+        clientName: fmMcpObj?.clientName ?? sessionClientIdentity.clientName,
+      },
+      fmMcpPersistentToken ?? fmMcpObj?.sessionId,
+    );
   } else {
     server = validationResult.server;
     db = validationResult.db;
@@ -326,7 +364,7 @@ const generateTypedClientsSingle = async (
   let successCount = 0;
   let errorCount = 0;
   let totalCount = 0;
-  const fmMcpClientIdentity = getFmMcpClientIdentity(cwd);
+  const fmMcpClientIdentity = options?.fmMcpClientIdentity ?? getFmMcpClientIdentity(cwd);
 
   for await (const item of layouts) {
     totalCount++;
@@ -337,9 +375,10 @@ const generateTypedClientsSingle = async (
           baseUrl: fmMcpBaseUrl as string,
           connectedFileName: fmMcpConnectedFileName as string,
           scriptName: fmMcpObj?.scriptName ?? config.webviewerScriptName,
-          sessionId: fmMcpPersistentToken ?? fmMcpObj?.sessionId,
+          sessionId: fmMcpSessionId,
           clientName: fmMcpObj?.clientName ?? fmMcpClientIdentity.clientName,
           clientDescription: fmMcpObj?.clientDescription ?? fmMcpClientIdentity.clientDescription,
+          idleTimeoutSeconds: options?.fmMcpIdleTimeoutSeconds ?? typegenCliIdleTimeoutSeconds,
           authorizationTimeoutMs: fmMcpObj?.authorizationTimeoutMs,
           disableInteractiveAuthorization: fmMcpObj?.disableInteractiveAuthorization,
         }),

@@ -430,8 +430,7 @@ export function makeTestLayer(options: {
           clientDescription: input.clientDescription,
         });
         return Effect.succeed({
-          persistentToken: "test-persistent-token",
-          persistentTokenEnvName: "FM_MCP_PERSISTENT_TOKEN",
+          sessionToken: "test-session-token",
         });
       },
       validateHostedServerUrl: (serverUrl: string) => {
@@ -505,7 +504,6 @@ export function makeTestLayer(options: {
             envNames: inputs.mode === "hosted-otto" ? envNames : undefined,
             fmMcpBaseUrl: inputs.mode === "local-fm-mcp" ? inputs.fmMcpBaseUrl : undefined,
             connectedFileName: inputs.mode === "local-fm-mcp" ? inputs.fileName : undefined,
-            persistentTokenEnvName: inputs.mode === "local-fm-mcp" ? inputs.persistentTokenEnvName : undefined,
             layoutName: inputs.layoutName,
             schemaName: inputs.schemaName,
             appType,
@@ -539,12 +537,6 @@ export function makeTestLayer(options: {
                 `FM_DATABASE=${inputs.fileName}\nFM_SERVER=${inputs.server}\nOTTO_API_KEY=${inputs.dataApiKey}\n`,
               );
               await fs.writeFile(envPath, content, "utf8");
-            } else if (inputs.persistentToken) {
-              const envPath = path.join(projectDir, ".env");
-              const content = (await fs.readFile(envPath, "utf8")).concat(
-                `${inputs.persistentTokenEnvName ?? "FM_MCP_PERSISTENT_TOKEN"}=${inputs.persistentToken}\n`,
-              );
-              await fs.writeFile(envPath, content, "utf8");
             }
             await updateTypegenConfig(
               {
@@ -559,7 +551,6 @@ export function makeTestLayer(options: {
                 envNames: inputs.mode === "hosted-otto" ? createDataSourceEnvNames("filemaker") : undefined,
                 fmMcpBaseUrl: inputs.mode === "local-fm-mcp" ? inputs.fmMcpBaseUrl : undefined,
                 connectedFileName: inputs.mode === "local-fm-mcp" ? inputs.fileName : undefined,
-                persistentTokenEnvName: inputs.mode === "local-fm-mcp" ? inputs.persistentTokenEnvName : undefined,
                 layoutName: inputs.layoutName,
                 schemaName: inputs.schemaName,
               },

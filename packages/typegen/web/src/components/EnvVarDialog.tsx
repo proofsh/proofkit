@@ -53,6 +53,11 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
     control,
     name: `config.${index}.envNames.auth` as const,
   });
+  const config = useWatch({
+    control,
+    name: `config.${index}` as const,
+  });
+  const isFmMcp = config?.type === "fmdapi" && !!config.fmMcp && config.fmMcp.enabled !== false;
 
   // Determine the actual env names to use (from form or defaults)
   const apiKeyEnvName =
@@ -162,16 +167,17 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
   const hasAuth = hasApiKeyAuth || hasClarisIdAuth || hasUsernamePasswordAuth;
 
   const hasUndefinedValues =
-    (!serverLoading && (serverValue === undefined || serverValue === null || serverValue === "")) ||
-    (!dbLoading && (dbValue === undefined || dbValue === null || dbValue === "")) ||
-    !(
-      apiKeyLoading ||
-      clarisIdUsernameLoading ||
-      clarisIdPasswordLoading ||
-      usernameLoading ||
-      passwordLoading ||
-      hasAuth
-    );
+    !isFmMcp &&
+    ((!serverLoading && (serverValue === undefined || serverValue === null || serverValue === "")) ||
+      (!dbLoading && (dbValue === undefined || dbValue === null || dbValue === "")) ||
+      !(
+        apiKeyLoading ||
+        clarisIdUsernameLoading ||
+        clarisIdPasswordLoading ||
+        usernameLoading ||
+        passwordLoading ||
+        hasAuth
+      ));
 
   // Initialize auth fields if not already set
   useEffect(() => {
@@ -201,6 +207,8 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
     authTypeLabel = "API Key";
   } else if (testData?.authType === "clarisId") {
     authTypeLabel = "Claris ID";
+  } else if (testData?.authType === "fmMcp") {
+    authTypeLabel = "FileMaker Bridge";
   }
 
   return (
@@ -403,7 +411,7 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
                         </div>
                         {errorDetails.details?.missing && (
                           <div className="space-y-0.5">
-                            <div className="font-medium">Missing environment variables:</div>
+                            <div className="font-medium">Missing connection values:</div>
                             <ul className="list-inside list-disc space-y-0.5">
                               {errorDetails.details.missing.server && (
                                 <li>Server ({errorDetails.suspectedField === "server" && "⚠️"})</li>
@@ -420,6 +428,7 @@ export function EnvVarDialog({ index }: EnvVarDialogProps) {
                               {errorDetails.details.missing.clarisIdPassword && (
                                 <li>Claris ID Password ({errorDetails.suspectedField === "auth" && "⚠️"})</li>
                               )}
+                              {errorDetails.details.missing.connectedFileName && <li>Connected File Name</li>}
                             </ul>
                           </div>
                         )}

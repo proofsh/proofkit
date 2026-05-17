@@ -546,15 +546,16 @@ function resolveFileMakerInputs({
         yield* fileMakerService.installLocalWebViewerAddon();
         const selectedFile = localFmMcp.healthy ? yield* resolveLocalFmMcpFile(localFmMcp.connectedFiles) : undefined;
         if (localFmMcp.healthy && selectedFile) {
-          const authorization = nonInteractive
-            ? undefined
-            : yield* fileMakerService.authorizeLocalFmMcp({
-                baseUrl: localFmMcp.baseUrl,
-                fileName: selectedFile,
-                interactive: true,
-                clientName: `${projectName} from ProofKit`,
-                clientDescription: `ProofKit is requesting FileMaker bridge access for ${projectName}.`,
-              });
+          if (!nonInteractive) {
+            yield* fileMakerService.authorizeLocalFmMcp({
+              baseUrl: localFmMcp.baseUrl,
+              fileName: selectedFile,
+              interactive: true,
+              clientName: `ProofKit CLI (${projectName})`,
+              clientDescription:
+                "ProofKit CLI wants to read layouts from your FileMaker file to help set up your project.",
+            });
+          }
           console.info(`Using ProofKit plugin file: ${selectedFile}`);
           return {
             fileMaker: {
@@ -563,8 +564,6 @@ function resolveFileMakerInputs({
               envNames: createDataSourceEnvNames("filemaker"),
               fmMcpBaseUrl: localFmMcp.baseUrl,
               fileName: selectedFile,
-              persistentToken: authorization?.persistentToken,
-              persistentTokenEnvName: authorization?.persistentTokenEnvName,
               layoutName: flags.layoutName,
               schemaName: flags.schemaName,
             } satisfies FileMakerInputs,

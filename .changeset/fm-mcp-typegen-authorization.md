@@ -4,4 +4,4 @@
 "@proofkit/cli": patch
 ---
 
-Handle FileMaker bridge session authorization during FM MCP setup and typegen.
+Handle FileMaker bridge session authorization and clarify FM MCP authorization prompts.

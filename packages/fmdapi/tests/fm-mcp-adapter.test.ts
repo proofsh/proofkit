@@ -236,6 +236,7 @@ describe("FmMcpAdapter", () => {
         sessionId: "test-session",
         clientName: "Typegen Test",
         clientDescription: "Test description",
+        idleTimeoutSeconds: 120,
       });
       const client = createClient(adapter);
       await expect(client.list()).resolves.toHaveProperty("data");
@@ -248,6 +249,7 @@ describe("FmMcpAdapter", () => {
         fileName: "MyFile",
         clientName: "Typegen Test",
         clientDescription: "Test description",
+        idleTimeoutSeconds: 120,
       });
       const headers = spy.mock.calls[0][1]?.headers as Headers;
       expect(headers.get("X-ProofKit-Session")).toBe("test-session");

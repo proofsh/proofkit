@@ -7,6 +7,7 @@ import chalk from "chalk";
 import { config } from "dotenv";
 import fs from "fs-extra";
 import { parse } from "jsonc-parser";
+import { getFriendlyTypegenError } from "./cli-errors";
 import { typegenConfig } from "./types";
 
 const defaultConfigPaths = ["proofkit-typegen.config.jsonc", "proofkit-typegen.config.json"];
@@ -91,6 +92,11 @@ async function runCodegen({ configLocation, resetOverrides = false }: ConfigArgs
     postGenerateCommand: configParsed.data.postGenerateCommand,
     configPath: configLocation,
   }).catch((err: unknown) => {
+    const friendlyError = getFriendlyTypegenError(err);
+    if (friendlyError) {
+      console.error(chalk.red(friendlyError));
+      return process.exit(1);
+    }
     console.error(err);
     return process.exit(1);
   });

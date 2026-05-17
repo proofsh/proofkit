@@ -370,13 +370,11 @@ describe("resolveInitRequest", () => {
     expect(request.fileMaker).toMatchObject({
       mode: "local-fm-mcp",
       fileName: "LocalFile.fmp12",
-      persistentToken: "test-persistent-token",
-      persistentTokenEnvName: "FM_MCP_PERSISTENT_TOKEN",
     });
     expect(tracker.localFmMcpAuthorizations).toEqual([
       {
-        clientName: "demo from ProofKit",
-        clientDescription: "ProofKit is requesting FileMaker bridge access for demo.",
+        clientName: "ProofKit CLI (demo)",
+        clientDescription: "ProofKit CLI wants to read layouts from your FileMaker file to help set up your project.",
       },
     ]);
     expect(consoleTranscript.info).toContain("Using ProofKit plugin file: LocalFile.fmp12");
