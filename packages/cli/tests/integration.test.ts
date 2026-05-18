@@ -70,7 +70,7 @@ describe("integration scaffold generation", () => {
     expect(packageJson.packageManager).toBeUndefined();
     expect(packageJson.devEngines?.packageManager).toEqual({
       name: "pnpm",
-      version: "^11.1.0",
+      version: "11.1.0",
       onFail: "download",
     });
     expect(packageJson.devEngines?.runtime).toBeUndefined();

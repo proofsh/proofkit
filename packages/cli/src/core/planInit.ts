@@ -18,6 +18,7 @@ import {
 } from "~/utils/projectFiles.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
+const VERSION_RANGE_PREFIX_REGEX = /^\^/;
 const SHARED_PNPM_BUILD_POLICY = {
   "@parcel/watcher": true,
   esbuild: true,
@@ -109,7 +110,7 @@ export function planInit(
       ? {
           packageManager: {
             name: request.packageManager,
-            version: formatPackageManagerVersionRange(options.packageManagerVersion),
+            version: formatPackageManagerVersion(options.packageManagerVersion),
             onFail: "download",
           },
         }
@@ -227,8 +228,8 @@ export function planInit(
   };
 }
 
-function formatPackageManagerVersionRange(version: string) {
-  return version.startsWith("^") ? version : `^${version}`;
+function formatPackageManagerVersion(version: string) {
+  return version.replace(VERSION_RANGE_PREFIX_REGEX, "");
 }
 
 export function applyPackageJsonMutations(

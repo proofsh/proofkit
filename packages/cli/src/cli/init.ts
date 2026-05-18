@@ -29,6 +29,8 @@ import { promptForFileMakerDataSource } from "./add/data-source/filemaker.js";
 import { select, text } from "./prompts.js";
 import { abortIfCancel } from "./utils.js";
 
+const VERSION_RANGE_PREFIX_REGEX = /^\^/;
+
 interface CliFlags {
   noGit: boolean;
   noInstall: boolean;
@@ -307,7 +309,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     pkgJson.devEngines = {
       packageManager: {
         name: pkgManager,
-        version: pkgManagerVersion.startsWith("^") ? pkgManagerVersion : `^${pkgManagerVersion}`,
+        version: pkgManagerVersion.replace(VERSION_RANGE_PREFIX_REGEX, ""),
         onFail: "download",
       },
     };
