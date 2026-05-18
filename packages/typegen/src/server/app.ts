@@ -359,7 +359,9 @@ export function createApiApp(context: ApiContext) {
 
         // Flatten the nested layout/folder structure into a flat list with full paths
         const flatLayouts = flattenLayouts(layouts);
-        logServer(`GET /layouts config=${configIndex} returned ${flatLayouts.length} layout${flatLayouts.length === 1 ? "" : "s"}`);
+        logServer(
+          `GET /layouts config=${configIndex} returned ${flatLayouts.length} layout${flatLayouts.length === 1 ? "" : "s"}`,
+        );
 
         return c.json({ layouts: flatLayouts });
       } catch (err) {
