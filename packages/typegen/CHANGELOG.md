@@ -1,5 +1,11 @@
 # @proofkit/typegen
 
+## 1.1.3
+
+### Patch Changes
+
+- 8f78104: Support transient ProofKit token passthrough.
+
 ## 1.1.2
 
 ### Patch Changes
