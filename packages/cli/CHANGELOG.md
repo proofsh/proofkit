@@ -1,5 +1,12 @@
 # @proofgeist/kit
 
+## 2.0.7
+
+### Patch Changes
+
+- c19e10a: Fix no-install init post setup.
+- bbed9c8: Remove generated devEngines runtime block and loosen package manager version.
+
 ## 2.0.6
 
 ### Patch Changes
