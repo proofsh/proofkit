@@ -111,11 +111,6 @@ export interface InitPlan {
         version: string;
         onFail: "download";
       };
-      runtime: {
-        name: "node";
-        version: string;
-        onFail: "download";
-      };
     };
     engines: {
       node: string;

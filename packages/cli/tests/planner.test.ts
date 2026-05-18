@@ -29,14 +29,10 @@ describe("planInit", () => {
     expect(plan.packageJson.name).toBe("demo-app");
     expect(plan.packageJson.devEngines?.packageManager).toEqual({
       name: "pnpm",
-      version: "11.0.0",
+      version: "^11.0.0",
       onFail: "download",
     });
-    expect(plan.packageJson.devEngines?.runtime).toEqual({
-      name: "node",
-      version: NODE_RUNTIME_VERSION,
-      onFail: "download",
-    });
+    expect(plan.packageJson.devEngines).not.toHaveProperty("runtime");
     expect(plan.packageJson.engines).toEqual({
       node: NODE_RUNTIME_VERSION,
     });

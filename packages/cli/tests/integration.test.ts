@@ -70,14 +70,10 @@ describe("integration scaffold generation", () => {
     expect(packageJson.packageManager).toBeUndefined();
     expect(packageJson.devEngines?.packageManager).toEqual({
       name: "pnpm",
-      version: "11.1.0",
+      version: "^11.1.0",
       onFail: "download",
     });
-    expect(packageJson.devEngines?.runtime).toEqual({
-      name: "node",
-      version: NODE_RUNTIME_VERSION,
-      onFail: "download",
-    });
+    expect(packageJson.devEngines?.runtime).toBeUndefined();
     expect(packageJson.engines).toEqual({
       node: NODE_RUNTIME_VERSION,
     });
