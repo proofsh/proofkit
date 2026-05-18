@@ -2,4 +2,4 @@
 "@proofkit/cli": patch
 ---
 
-Fix Ultracite init targets.
+Fix no-install init post setup.

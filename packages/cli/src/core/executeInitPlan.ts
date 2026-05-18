@@ -413,11 +413,19 @@ export const executeInitPlan = (plan: InitPlan) =>
         packageManager: plan.request.packageManager,
         skipInstall: plan.request.noInstall,
       });
-      yield* processService.run(ultraciteCommand.command, ultraciteCommand.args, {
-        cwd: plan.targetDir,
-        stdout: "pipe",
-        stderr: "pipe",
-      });
+      const ultraciteResult = yield* Effect.either(
+        processService.run(ultraciteCommand.command, ultraciteCommand.args, {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        }),
+      );
+      if (ultraciteResult._tag === "Left") {
+        if (!plan.request.noInstall) {
+          return yield* Effect.fail(ultraciteResult.left);
+        }
+        consoleService.warn("Ultracite setup did not succeed; continuing setup.");
+      }
 
       if (plan.request.appType === "browser") {
         yield* fs.writeFile(path.join(plan.targetDir, "oxlint.config.ts"), getBrowserOxlintConfig());
@@ -426,11 +434,19 @@ export const executeInitPlan = (plan: InitPlan) =>
 
     if (plan.tasks.runIntentInstall) {
       const intentCommand = getIntentInstallCommand(plan.request.packageManager);
-      yield* processService.run(intentCommand.command, intentCommand.args, {
-        cwd: plan.targetDir,
-        stdout: "pipe",
-        stderr: "pipe",
-      });
+      const intentResult = yield* Effect.either(
+        processService.run(intentCommand.command, intentCommand.args, {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        }),
+      );
+      if (intentResult._tag === "Left") {
+        if (!plan.request.noInstall) {
+          return yield* Effect.fail(intentResult.left);
+        }
+        consoleService.warn("Agent setup did not succeed; continuing setup.");
+      }
     }
 
     if (plan.tasks.runInitialCodegen) {

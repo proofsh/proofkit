@@ -125,6 +125,64 @@ describe("executeInitPlan command paths", () => {
     expect(npmrcFile).toContain("min-release-age=1");
   });
 
+  it("warns and continues when no-install post setup fails", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-no-install-post-setup-"));
+    const console = {
+      error: [] as string[],
+      info: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+      success: [] as string[],
+      warn: [] as string[],
+    };
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+    };
+
+    const plan = planInit(
+      makeInitRequest({
+        appType: "browser",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: true,
+        noGit: true,
+        cwd,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+      },
+    );
+
+    await Effect.runPromise(
+      executeInitPlan(plan).pipe(
+        makeTestLayer({
+          console,
+          cwd,
+          failProcessCommand: [
+            "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react next",
+            "--editors cursor --agents claude codex --hooks cursor windsurf",
+            "--integrations husky lint-staged --skip-install",
+          ].join(" "),
+          failures: {
+            processRun: new ExternalCommandError({
+              args: ["ultracite"],
+              command: "pnpx",
+              cwd,
+              message: "ultracite failed",
+            }),
+          },
+          packageManager: "pnpm",
+          tracker,
+        }),
+      ),
+    );
+
+    expect(tracker.commands).toContain("pnpx @tanstack/intent@latest install");
+    expect(console.warn).toContain("Ultracite setup did not succeed; continuing setup.");
+  });
+
   it("warns and continues when final lint fails", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-lint-fix-warn-"));
     const console = {
