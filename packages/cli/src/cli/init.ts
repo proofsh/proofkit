@@ -137,11 +137,6 @@ type ProofKitPackageJSON = PackageJson & {
       version: string;
       onFail: "download";
     };
-    runtime: {
-      name: "node";
-      version: string;
-      onFail: "download";
-    };
   };
   engines?: {
     node: string;
@@ -312,12 +307,7 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     pkgJson.devEngines = {
       packageManager: {
         name: pkgManager,
-        version: pkgManagerVersion,
-        onFail: "download",
-      },
-      runtime: {
-        name: "node",
-        version: NODE_RUNTIME_VERSION,
+        version: pkgManagerVersion.startsWith("^") ? pkgManagerVersion : `^${pkgManagerVersion}`,
         onFail: "download",
       },
     };

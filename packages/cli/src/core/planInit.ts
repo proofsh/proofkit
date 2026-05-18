@@ -109,12 +109,7 @@ export function planInit(
       ? {
           packageManager: {
             name: request.packageManager,
-            version: options.packageManagerVersion,
-            onFail: "download",
-          },
-          runtime: {
-            name: "node",
-            version: NODE_RUNTIME_VERSION,
+            version: formatPackageManagerVersionRange(options.packageManagerVersion),
             onFail: "download",
           },
         }
@@ -230,6 +225,10 @@ export function planInit(
       formatPackageManagerCommand(request.packageManager, "proofkit"),
     ],
   };
+}
+
+function formatPackageManagerVersionRange(version: string) {
+  return version.startsWith("^") ? version : `^${version}`;
 }
 
 export function applyPackageJsonMutations(

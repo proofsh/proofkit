@@ -181,11 +181,7 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
     expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
-    expect(packageJson.devEngines?.runtime).toEqual({
-      name: "node",
-      version: NODE_RUNTIME_VERSION,
-      onFail: "download",
-    });
+    expect(packageJson.devEngines?.runtime).toBeUndefined();
     expect(packageJson.engines?.node).toBe(NODE_RUNTIME_VERSION);
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
@@ -245,11 +241,7 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
     expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
-    expect(packageJson.devEngines?.runtime).toEqual({
-      name: "node",
-      version: NODE_RUNTIME_VERSION,
-      onFail: "download",
-    });
+    expect(packageJson.devEngines?.runtime).toBeUndefined();
     expect(packageJson.engines?.node).toBe(NODE_RUNTIME_VERSION);
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(webviewerProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
