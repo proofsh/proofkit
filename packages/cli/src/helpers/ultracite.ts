@@ -2,9 +2,9 @@ import type { AppType } from "~/core/types.js";
 import type { PackageManager } from "~/utils/packageManager.js";
 import { getTemplatePackageExecuteCommand, parseCommandString } from "~/utils/projectFiles.js";
 
-const ULTRACITE_EDITORS = ["universal", "cursor"] as const;
-const ULTRACITE_AGENTS = ["universal", "claude", "codex"] as const;
-const ULTRACITE_HOOKS = ["cursor", "windsurf", "codebuddy", "claude"] as const;
+const ULTRACITE_EDITORS = ["cursor"] as const;
+const ULTRACITE_AGENTS = ["claude", "codex"] as const;
+const ULTRACITE_HOOKS = ["cursor", "windsurf"] as const;
 const ULTRACITE_INTEGRATIONS = ["husky", "lint-staged"] as const;
 
 function splitExecuteCommand(packageManager: PackageManager) {

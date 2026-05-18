@@ -64,8 +64,8 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.commands).toEqual([
       "pnpm install",
       [
-        "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors universal cursor",
-        "--agents universal claude codex --hooks cursor windsurf codebuddy claude --integrations husky lint-staged",
+        "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors cursor",
+        "--agents claude codex --hooks cursor windsurf --integrations husky lint-staged",
       ].join(" "),
       "pnpx @tanstack/intent@latest install",
       "pnpm fix",
@@ -117,8 +117,8 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.commands).toEqual([
       [
         "npx ultracite init --quiet --linter oxlint --pm npm --frameworks react next",
-        "--editors universal cursor --agents universal claude codex",
-        "--hooks cursor windsurf codebuddy claude --integrations husky lint-staged --skip-install",
+        "--editors cursor --agents claude codex",
+        "--hooks cursor windsurf --integrations husky lint-staged --skip-install",
       ].join(" "),
       "npx @tanstack/intent@latest install",
     ]);
