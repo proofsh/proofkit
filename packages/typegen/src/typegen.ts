@@ -65,6 +65,7 @@ export const generateTypedClients = async (
     resetOverrides?: boolean;
     cwd?: string;
     configPath?: string;
+    proofkitToken?: string;
     fmMcpClientIdentity?: FmMcpClientIdentity;
     fmMcpIdleTimeoutSeconds?: number;
   },
@@ -129,6 +130,7 @@ export const generateTypedClients = async (
         cwd,
         configPath: options?.configPath,
         configIndex: isConfigArray ? configIndex : undefined,
+        proofkitToken: options?.proofkitToken,
         fmMcpClientIdentity: options?.fmMcpClientIdentity,
         fmMcpIdleTimeoutSeconds: options?.fmMcpIdleTimeoutSeconds,
       });
@@ -166,6 +168,7 @@ const generateTypedClientsSingle = async (
     cwd?: string;
     configPath?: string;
     configIndex?: number;
+    proofkitToken?: string;
     fmMcpClientIdentity?: FmMcpClientIdentity;
     fmMcpIdleTimeoutSeconds?: number;
   },
@@ -243,6 +246,7 @@ const generateTypedClientsSingle = async (
   let fmMcpConnectedFileName: string | undefined;
   let fmMcpPersistentToken: string | undefined;
   let fmMcpSessionId: string | undefined;
+  const proofkitToken = options?.proofkitToken ?? process.env.FM_MCP_SESSION_ID;
 
   if (validationResult.mode === "fmMcp") {
     fmMcpBaseUrl = normalizeFmMcpBaseUrl(validationResult.baseUrl);
@@ -254,7 +258,12 @@ const generateTypedClientsSingle = async (
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), connectedFilesTimeoutMs);
       try {
+        const headers = new Headers();
+        if (proofkitToken) {
+          headers.set("X-ProofKit-Session", proofkitToken);
+        }
         const res = await fetch(`${fmMcpBaseUrl}/connectedFiles`, {
+          headers,
           signal: controller.signal,
         });
         clearTimeout(timeout);
@@ -345,7 +354,7 @@ const generateTypedClientsSingle = async (
         connectedFileName: fmMcpConnectedFileName,
         clientName: fmMcpObj?.clientName ?? sessionClientIdentity.clientName,
       },
-      fmMcpPersistentToken ?? fmMcpObj?.sessionId,
+      proofkitToken ?? fmMcpPersistentToken ?? fmMcpObj?.sessionId,
     );
   } else {
     server = validationResult.server;

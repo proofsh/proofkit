@@ -41,6 +41,7 @@ describe("typegen unit tests", () => {
     originalEnv.FM_PASSWORD = process.env.FM_PASSWORD;
     originalEnv.FM_HTTP_BASE_URL = process.env.FM_HTTP_BASE_URL;
     originalEnv.FM_CONNECTED_FILE_NAME = process.env.FM_CONNECTED_FILE_NAME;
+    originalEnv.FM_MCP_SESSION_ID = process.env.FM_MCP_SESSION_ID;
     // Set mock env values for tests
     // Use valid Otto API key format (KEY_ prefix for Otto v3)
     process.env.OTTO_API_KEY = "KEY_test_api_key_12345";
@@ -712,5 +713,65 @@ describe("typegen unit tests", () => {
     const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
     expect(headers.get("X-ProofKit-Session")).toBe("registered-persistent-token");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses FM_MCP_SESSION_ID as proofkit token", async () => {
+    process.env.FM_MCP_BASE_URL = "http://127.0.0.1:1365";
+    process.env.FM_CONNECTED_FILE_NAME = "TestFile";
+    process.env.FM_MCP_SESSION_ID = "env-proofkit-token";
+
+    const fetchMock = vi.fn(
+      createLayoutMetadataMock({
+        FmMcpLayout: mockLayoutMetadata["basic-layout"],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+
+    const config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }> = {
+      type: "fmdapi",
+      layouts: [{ layoutName: "FmMcpLayout", schemaName: "fmMcpEnvTokenSchema" }],
+      path: "unit-typegen-output/fm-mcp-env-token",
+      generateClient: true,
+      validator: false,
+      fmMcp: { enabled: true },
+    };
+
+    await generateTypedClients(config, { cwd: import.meta.dirname });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
+    expect(headers.get("X-ProofKit-Session")).toBe("env-proofkit-token");
+
+    const clientPath = path.join(__dirname, "unit-typegen-output/fm-mcp-env-token/client/fmMcpEnvTokenSchema.ts");
+    const content = await fs.readFile(clientPath, "utf-8");
+    expect(content).not.toContain("env-proofkit-token");
+  });
+
+  it("uses proofkit token option before FM_MCP_SESSION_ID", async () => {
+    process.env.FM_MCP_BASE_URL = "http://127.0.0.1:1365";
+    process.env.FM_CONNECTED_FILE_NAME = "TestFile";
+    process.env.FM_MCP_SESSION_ID = "env-proofkit-token";
+
+    const fetchMock = vi.fn(
+      createLayoutMetadataMock({
+        FmMcpLayout: mockLayoutMetadata["basic-layout"],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
+
+    const config: Extract<z.infer<typeof typegenConfigSingle>, { type: "fmdapi" }> = {
+      type: "fmdapi",
+      layouts: [{ layoutName: "FmMcpLayout", schemaName: "fmMcpFlagTokenSchema" }],
+      path: "unit-typegen-output/fm-mcp-flag-token",
+      validator: false,
+      fmMcp: { enabled: true },
+    };
+
+    await generateTypedClients(config, {
+      cwd: import.meta.dirname,
+      proofkitToken: "flag-proofkit-token",
+    });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
+    expect(headers.get("X-ProofKit-Session")).toBe("flag-proofkit-token");
   });
 });

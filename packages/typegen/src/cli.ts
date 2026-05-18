@@ -15,6 +15,7 @@ const oldConfigPaths = ["fmschema.config.mjs", "fmschema.config.js"];
 interface ConfigArgs {
   configLocation: string;
   resetOverrides?: boolean;
+  proofkitToken?: string;
 }
 
 function init({ configLocation }: ConfigArgs) {
@@ -34,7 +35,7 @@ function init({ configLocation }: ConfigArgs) {
   }
 }
 
-async function runCodegen({ configLocation, resetOverrides = false }: ConfigArgs) {
+async function runCodegen({ configLocation, resetOverrides = false, proofkitToken }: ConfigArgs) {
   if (!fs.existsSync(configLocation)) {
     // but check if they have the old config and just need to upgrade...
     let hasOldConfig = false;
@@ -91,6 +92,7 @@ async function runCodegen({ configLocation, resetOverrides = false }: ConfigArgs
     resetOverrides,
     postGenerateCommand: configParsed.data.postGenerateCommand,
     configPath: configLocation,
+    proofkitToken,
   }).catch((err: unknown) => {
     const friendlyError = getFriendlyTypegenError(err);
     if (friendlyError) {
@@ -117,6 +119,7 @@ program
   .command("generate", { isDefault: true })
   .option("--config <filename>", "optional config file name")
   .option("--env-path <path>", "optional path to your .env file")
+  .option("--proofkit-token <token>", "transient ProofKit token for FM MCP authorization")
   .option(
     "--reset-overrides",
     "Recreate the overrides file(s), even if they already exist. Most useful when upgrading from @proofgeist/fmdapi",
@@ -136,6 +139,7 @@ program
     await runCodegen({
       configLocation,
       resetOverrides: options.resetOverrides,
+      proofkitToken: options.proofkitToken,
     });
   });
 
