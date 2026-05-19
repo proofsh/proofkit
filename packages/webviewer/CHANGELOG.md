@@ -1,5 +1,11 @@
 # @proofkit/webviewer
 
+## 3.1.0
+
+### Minor Changes
+
+- a00a480: Add typed Web Viewer command registry.
+
 ## 3.0.8
 
 ### Patch Changes
