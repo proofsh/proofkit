@@ -1,13 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { initWebViewerCommands } from "@proofkit/webviewer/commands";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
 import "./index.css";
 import { router } from "./router";
-
-initWebViewerCommands();
 
 const queryClient = new QueryClient();
 

@@ -12,12 +12,12 @@
     "runtime-under-the-hood",
     "data-access",
     "filemaker-scripts-as-backend",
+    "commands",
     "platform-notes",
     "deployment-methods",
     "---Reference---",
     "fmFetch",
     "callFmScript",
-    "commands",
     "fm-bridge",
     "fmdapi",
     "troubleshooting"

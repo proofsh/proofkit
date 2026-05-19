@@ -1,6 +1,6 @@
 ---
-title: "FileMaker to JavaScript commands"
-description: Register typed Web Viewer handlers for FileMaker script calls.
+title: "Run JS from FileMaker"
+description: How to use the Perform JavaScript in Web Viewer script step to trigger functions inside your web viewer app.
 ---
 
 FileMaker can call a global Web Viewer namespace. Your app registers typed handlers on that namespace.
@@ -13,14 +13,6 @@ Call `initWebViewerCommands()` once in browser code.
 import { initWebViewerCommands } from "@proofkit/webviewer/commands";
 
 initWebViewerCommands();
-```
-
-The default namespace is `proofkit`, so FileMaker calls `proofkit.openCustomer`.
-
-Use a custom namespace when needed.
-
-```ts
-initWebViewerCommands({ namespace: "__host__" });
 ```
 
 The module is import-safe on the server. `initWebViewerCommands()` returns `undefined` when `window` is unavailable.
