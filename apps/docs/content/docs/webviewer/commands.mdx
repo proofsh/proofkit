@@ -1,0 +1,148 @@
+---
+title: "Run JS from FileMaker"
+description: How to use the Perform JavaScript in Web Viewer script step to trigger functions inside your web viewer app.
+---
+
+FileMaker can call a global Web Viewer namespace. Your app registers typed handlers on that namespace.
+
+## Initialize
+
+Call `initWebViewerCommands()` once in browser code.
+
+```ts
+import { initWebViewerCommands } from "@proofkit/webviewer/commands";
+
+initWebViewerCommands();
+```
+
+The module is import-safe on the server. `initWebViewerCommands()` returns `undefined` when `window` is unavailable.
+
+## Type commands
+
+Declare commands in a `.d.ts` file. Extending `DefineWebViewerCommandRegistry` makes TypeScript check that every command is a function that accepts only string parameters.
+
+```ts
+import type { DefineWebViewerCommandRegistry } from "@proofkit/webviewer/commands";
+
+export {};
+
+declare module "@proofkit/webviewer/commands" {
+  interface WebViewerCommandRegistry
+    extends DefineWebViewerCommandRegistry<{
+    openCustomer: (recordId: string) => void;
+    refreshDashboard: () => void;
+  }> {}
+}
+```
+
+FileMaker passes string parameters, so command parameters must be strings.
+
+You can also wrap individual entries with `WebViewerCommandHandler`.
+
+```ts
+import type { WebViewerCommandHandler } from "@proofkit/webviewer/commands";
+
+declare module "@proofkit/webviewer/commands" {
+  interface WebViewerCommandRegistry {
+    openCustomer: WebViewerCommandHandler<(recordId: string) => void>;
+  }
+}
+```
+
+## Static commands
+
+Use `registerWebViewerCommand` for handlers that do not depend on component state. This example lets FileMaker ask the Web Viewer to load a customer snapshot through `fmFetch`.
+
+```ts
+import { fmFetch } from "@proofkit/webviewer";
+import { registerWebViewerCommand } from "@proofkit/webviewer/commands";
+
+registerWebViewerCommand("loadCustomerSummary", async (recordId) => {
+  const summary = await fmFetch("Load Customer Summary", { recordId });
+  window.dispatchEvent(
+    new CustomEvent("customer-summary-loaded", {
+      detail: summary,
+    })
+  );
+});
+```
+
+## React commands
+
+Use `useWebViewerCommand` when a handler depends on UI state, routing, or component data.
+
+```tsx
+import { useWebViewerCommand } from "@proofkit/webviewer/react";
+
+export function CustomerScreen() {
+  useWebViewerCommand("openCustomer", (recordId) => {
+    console.log(recordId);
+  });
+
+  return null;
+}
+```
+
+The hook registers on mount, unregisters on unmount, and keeps the latest callback after rerenders.
+
+## Next.js
+
+Initialize from Client Components only.
+
+```tsx
+"use client";
+
+import { initWebViewerCommands } from "@proofkit/webviewer/commands";
+import { useEffect } from "react";
+
+export function WebViewerCommandBootstrap() {
+  useEffect(() => {
+    initWebViewerCommands();
+  }, []);
+
+  return null;
+}
+```
+
+Use import-time initialization only in client-only modules.
+
+```tsx
+"use client";
+
+import { initWebViewerCommands } from "@proofkit/webviewer/commands";
+
+initWebViewerCommands();
+```
+
+## Early calls
+
+Missing commands buffer by default. If FileMaker calls before React mounts, the call replays when the command registers.
+
+```ts
+initWebViewerCommands({
+  missingCommand: "buffer",
+  maxBufferedCallsPerCommand: 100,
+});
+```
+
+Other missing-command modes are `drop`, `warn`, and `throw`.
+
+## Migration
+
+Avoid direct `window.proofkit` assignment. It bypasses buffering, cleanup, and type checks.
+
+Before:
+
+```tsx
+useEffect(() => {
+  window.proofkit = {
+    openDialog: () => setOpen(true),
+  };
+}, []);
+```
+
+After:
+
+```tsx
+useWebViewerCommand("openDialog", () => setOpen(true));
+```

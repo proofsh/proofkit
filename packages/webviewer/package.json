@@ -51,6 +51,26 @@
         "default": "./dist/cjs/nextjs.cjs"
       }
     },
+    "./commands": {
+      "import": {
+        "types": "./dist/esm/commands.d.ts",
+        "default": "./dist/esm/commands.js"
+      },
+      "require": {
+        "types": "./dist/cjs/commands.d.cts",
+        "default": "./dist/cjs/commands.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/esm/react.d.ts",
+        "default": "./dist/esm/react.js"
+      },
+      "require": {
+        "types": "./dist/cjs/react.d.cts",
+        "default": "./dist/cjs/react.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -60,6 +80,14 @@
     "next": ">=13.0.0",
     "react": ">=18.0.0"
   },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
     "@proofkit/fmdapi": "workspace:*",
@@ -67,6 +95,7 @@
     "@tanstack/vite-config": "^0.2.1",
     "@types/filemaker-webviewer": "^1.0.3",
     "@types/node": "^22.19.5",
+    "@types/react": "19.2.7",
     "@types/uuid": "^10.0.0",
     "knip": "^5.80.2",
     "publint": "^0.3.16",
