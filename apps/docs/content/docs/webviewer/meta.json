@@ -17,6 +17,7 @@
     "---Reference---",
     "fmFetch",
     "callFmScript",
+    "commands",
     "fm-bridge",
     "fmdapi",
     "troubleshooting"
