@@ -27,30 +27,51 @@ The module is import-safe on the server. `initWebViewerCommands()` returns `unde
 
 ## Type commands
 
-Declare commands in a `.d.ts` file.
+Declare commands in a `.d.ts` file. Extending `DefineWebViewerCommandRegistry` makes TypeScript check that every command is a function that accepts only string parameters.
 
 ```ts
+import type { DefineWebViewerCommandRegistry } from "@proofkit/webviewer/commands";
+
 export {};
 
 declare module "@proofkit/webviewer/commands" {
-  interface WebViewerCommandRegistry {
+  interface WebViewerCommandRegistry
+    extends DefineWebViewerCommandRegistry<{
     openCustomer: (recordId: string) => void;
     refreshDashboard: () => void;
-  }
+  }> {}
 }
 ```
 
 FileMaker passes string parameters, so command parameters must be strings.
 
-## Static commands
-
-Use `registerWebViewerCommand` for handlers that do not depend on component state.
+You can also wrap individual entries with `WebViewerCommandHandler`.
 
 ```ts
+import type { WebViewerCommandHandler } from "@proofkit/webviewer/commands";
+
+declare module "@proofkit/webviewer/commands" {
+  interface WebViewerCommandRegistry {
+    openCustomer: WebViewerCommandHandler<(recordId: string) => void>;
+  }
+}
+```
+
+## Static commands
+
+Use `registerWebViewerCommand` for handlers that do not depend on component state. This example lets FileMaker ask the Web Viewer to load a customer snapshot through `fmFetch`.
+
+```ts
+import { fmFetch } from "@proofkit/webviewer";
 import { registerWebViewerCommand } from "@proofkit/webviewer/commands";
 
-registerWebViewerCommand("refreshDashboard", () => {
-  window.location.reload();
+registerWebViewerCommand("loadCustomerSummary", async (recordId) => {
+  const summary = await fmFetch("Load Customer Summary", { recordId });
+  window.dispatchEvent(
+    new CustomEvent("customer-summary-loaded", {
+      detail: summary,
+    })
+  );
 });
 ```
 

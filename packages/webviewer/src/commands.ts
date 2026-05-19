@@ -6,7 +6,13 @@ export interface WebViewerCommandRegistry {
 
 export type AnyWebViewerCommand = (...args: string[]) => unknown;
 
-export type WebViewerCommandName = keyof WebViewerCommandRegistry & string;
+export type WebViewerCommandHandler<T extends AnyWebViewerCommand = AnyWebViewerCommand> = T;
+
+export type DefineWebViewerCommandRegistry<T extends Record<string, AnyWebViewerCommand>> = T;
+
+export type WebViewerCommandName = {
+  [K in keyof WebViewerCommandRegistry & string]: WebViewerCommandRegistry[K] extends AnyWebViewerCommand ? K : never;
+}[keyof WebViewerCommandRegistry & string];
 
 export type WebViewerCommand<K extends WebViewerCommandName> = WebViewerCommandRegistry[K] extends AnyWebViewerCommand
   ? WebViewerCommandRegistry[K]
