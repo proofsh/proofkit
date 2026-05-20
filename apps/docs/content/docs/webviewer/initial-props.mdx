@@ -1,0 +1,188 @@
+---
+title: "Initial Props"
+description: "Pull bootstrap data from FileMaker into the Web Viewer at startup."
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The **initial props** pattern is how a Web Viewer app gets bootstrap data from FileMaker at startup &mdash; things like the current user, the active record ID, or a starting route.
+
+## Pull, don't push
+
+The Web Viewer asks FileMaker for its initial props. FileMaker does not push them in.
+
+Concretely: the Web Viewer calls a FileMaker script via [`fmFetch`](/docs/webviewer/fmFetch) once it has mounted, and uses the returned data to finish bootstrapping.
+
+<Callout type="warn" title="Don't push from FileMaker">
+  Do **not** seed initial props by:
+
+  - Substituting values into the HTML / web viewer URL before render.
+  - Calling `FileMaker.PerformJavaScriptInWebViewer` from an `OnLayoutEnter` or `OnRecordLoad` script trigger when the viewer opens.
+
+  Both paths race against the web app loading. The script step or substitution can fire before your JavaScript bundle has parsed and your handler is attached, and the props are silently lost.
+</Callout>
+
+The pull direction inverts the timing problem. By the time the Web Viewer makes the `fmFetch` call, it has confirmed three things at once:
+
+1. The JavaScript bundle has loaded and executed.
+2. `window.FileMaker` has been injected by Pro / Go and is callable.
+3. Any handlers the FileMaker script needs to call back into (via the `SendCallBack` script) are wired up.
+
+In the ProofKit Web Viewer template, the `fmFetch` call fires the moment the web code loads &mdash; **before** the router mounts and **before** the first route renders. The router then receives the resolved props as part of its context, so the first screen a user sees can already depend on FileMaker state (the signed-in user, the active record, a starting route) without a flash of empty UI or a post-mount re-render.
+
+## Basic shape
+
+```ts title="bootstrap.ts"
+import { fmFetch } from "@proofkit/webviewer";
+import { z } from "zod";
+
+const initialPropsSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.email(),
+  }),
+  initialRoute: z.string().optional(),
+});
+
+type InitialProps = z.infer<typeof initialPropsSchema>;
+
+export async function getInitialProps(): Promise<InitialProps> {
+  const result = await fmFetch("GetInitialProps");
+  return initialPropsSchema.parse(result);
+}
+```
+
+On the FileMaker side, `GetInitialProps` collects whatever the app needs and sends it back through the standard `fmFetch` callback (see [fmFetch](/docs/webviewer/fmFetch) for the script shape).
+
+<Callout type="info">
+  Validate the script result with [zod](https://zod.dev) (or similar). The Web
+  Viewer cannot trust shape inference across the FileMaker boundary.
+</Callout>
+
+## Example: initial route
+
+A Web Viewer that uses a client-side router (e.g. TanStack Router with hash history) can be told where to start. Useful when one FileMaker layout hosts a viewer that should land on different screens depending on context.
+
+```ts title="src/router.ts"
+import { fmFetch } from "@proofkit/webviewer";
+import { createHashHistory, createRouter } from "@tanstack/react-router";
+import { z } from "zod";
+import { routeTree } from "./route-tree";
+
+const initialPropsSchema = z.object({
+  initialRoute: z.string().optional(),
+});
+
+const GET_INITIAL_PROPS_SCRIPT = "GetInitialProps";
+
+export async function createAppRouter() {
+  const result = await fmFetch(GET_INITIAL_PROPS_SCRIPT);
+  const { initialRoute } = initialPropsSchema.parse(result);
+
+  if (initialRoute && !window.location.hash) {
+    window.location.hash = initialRoute;
+  }
+
+  return createRouter({
+    history: createHashHistory(),
+    routeTree,
+  });
+}
+```
+
+```FileMaker title="GetInitialProps"
+Set Variable [ $json ; Value: Get ( ScriptParameter ) ]
+Set Variable [ $callback ; Value: JSONGetElement ( $json ; "callback" ) ]
+
+# Pick a starting route based on whatever FileMaker context matters.
+If [ not IsEmpty ( Customers::id ) ]
+  Set Variable [ $route ; Value: "/customers/" & Customers::id ]
+Else
+  Set Variable [ $route ; Value: "/" ]
+End If
+
+Set Variable [ $result ; Value: JSONSetElement ( "" ;
+  [ "initialRoute" ; $route ; JSONString ]
+) ]
+
+Set Variable [ $callback ; Value: JSONSetElement ( $callback ;
+  [ "result" ; $result ; JSONObject ] ;
+  [ "webViewerName" ; "web" ; JSONString ]
+) ]
+Perform Script [ Specified: From list ; "SendCallBack" ; Parameter: $callback ]
+```
+
+The check on `window.location.hash` matters: if the user has already navigated inside the viewer, you should not yank them back to the initial route on a refresh.
+
+## Example: current user
+
+Hand the app the user identity it needs to render.
+
+```ts title="src/lib/initial-props.ts"
+import { fmFetch } from "@proofkit/webviewer";
+import { z } from "zod";
+
+export const initialPropsSchema = z.object({
+  user: z.object({
+    accountName: z.string(),
+    fullName: z.string(),
+    privilegeSet: z.string(),
+  }),
+});
+
+export type InitialProps = z.infer<typeof initialPropsSchema>;
+
+export async function fetchInitialProps(): Promise<InitialProps> {
+  const result = await fmFetch("GetInitialProps");
+  return initialPropsSchema.parse(result);
+}
+```
+
+```FileMaker title="GetInitialProps"
+Set Variable [ $json ; Value: Get ( ScriptParameter ) ]
+Set Variable [ $callback ; Value: JSONGetElement ( $json ; "callback" ) ]
+
+Set Variable [ $result ; Value: JSONSetElement ( "" ;
+  [ "user.accountName" ; Get ( AccountName ) ; JSONString ] ;
+  [ "user.fullName" ; Get ( UserName ) ; JSONString ] ;
+  [ "user.privilegeSet" ; Get ( AccountPrivilegeSetName ) ; JSONString ]
+) ]
+
+Set Variable [ $callback ; Value: JSONSetElement ( $callback ;
+  [ "result" ; $result ; JSONObject ] ;
+  [ "webViewerName" ; "web" ; JSONString ]
+) ]
+Perform Script [ Specified: From list ; "SendCallBack" ; Parameter: $callback ]
+```
+
+In the app, gate render on the bootstrap:
+
+```tsx title="src/main.tsx"
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./app";
+import { fetchInitialProps } from "./lib/initial-props";
+
+const propsPromise = fetchInitialProps();
+
+function Boot() {
+  const props = React.use(propsPromise);
+  return <App initialProps={props} />;
+}
+
+ReactDOM.createRoot(document.querySelector("#root")!).render(
+  <React.StrictMode>
+    <React.Suspense fallback={<div>Loading…</div>}>
+      <Boot />
+    </React.Suspense>
+  </React.StrictMode>,
+);
+```
+
+## When initial props are not the right tool
+
+Initial props are for **bootstrap**. They are fetched once. If a value can change while the viewer is open (the active record, a selected portal row, a setting toggled elsewhere in the file), prefer:
+
+- An explicit refresh via [`fmFetch`](/docs/webviewer/fmFetch) triggered by a user action.
+- A FileMaker-initiated push via `FileMaker.PerformJavaScriptInWebViewer` once you know the viewer is ready &mdash; e.g. after the initial-props handshake has completed.
