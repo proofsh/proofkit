@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @proofkit/typegen build && pnpm exec varlock run -- next build",
+    "build": "pnpm --filter @proofkit/typegen build && next build",
     "dev": "portless proofkit next dev",
     "start": "portless proofkit next start",
     "postinstall": "fumadocs-mdx",
@@ -30,7 +30,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fumadocs-core": "16.4.4",
-    "fumadocs-mdx": "14.2.4",
+    "fumadocs-mdx": "14.2.9",
     "fumadocs-twoslash": "^3.1.12",
     "fumadocs-typescript": "^5.0.1",
     "fumadocs-ui": "16.4.4",
@@ -48,7 +48,7 @@
     "tailwind-merge": "^3.4.0",
     "ts-morph": "^26.0.0",
     "twoslash": "^0.3.6",
-    "varlock": "^1.1.0",
+    "varlock": "^1.2.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {
