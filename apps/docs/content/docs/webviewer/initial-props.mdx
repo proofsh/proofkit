@@ -7,6 +7,17 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 The **initial props** pattern is how a Web Viewer app gets bootstrap data from FileMaker at startup &mdash; things like the current user, the active record ID, or a starting route.
 
+## Problems you might be solving
+
+FileMaker and the Web Viewer are separate runtimes with no shared memory. The web app cannot read FileMaker fields or globals directly, and FileMaker cannot safely inject values before the JavaScript has loaded. Initial props bridge that gap.
+
+- **Your web app needs to know the current user at startup** &mdash; account name, display name, or privilege set so the UI can adapt before the first render.
+- **You want the Web Viewer to open to a specific screen** depending on which FileMaker layout, record, or button launched it.
+- **You need the active record ID before the first render** so the app can immediately fetch or display the right data.
+- **Data you inject into the Web Viewer HTML keeps getting lost** &mdash; substitution or script-trigger approaches race against bundle loading and silently fail.
+
+If any of these sound familiar, read on. The rest of this page shows the pattern and gives copy-ready examples.
+
 ## Pull, don't push
 
 The Web Viewer asks FileMaker for its initial props. FileMaker does not push them in.
