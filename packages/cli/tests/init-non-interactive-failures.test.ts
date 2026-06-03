@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+import { TYPEGEN_VERSION } from "../src/package-versions.js";
 
 type ExecFailure = Error & {
   status?: number | null;
@@ -21,11 +22,9 @@ function toText(value: string | Buffer | undefined) {
 }
 
 describe("Init Non-Interactive Failure Paths", () => {
-  const testDir = join(__dirname, "..", "..", "tmp", "init-failure-tests");
-  const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
-  const expectedTypegenVersion = `^${
-    JSON.parse(readFileSync(join(__dirname, "..", "..", "typegen", "package.json"), "utf-8")).version
-  }`;
+  const testDir = join(import.meta.dirname, "..", "..", "tmp", "init-failure-tests");
+  const cliPath = join(import.meta.dirname, "..", "bin", "proofkit.cjs");
+  const expectedTypegenVersion = `^${TYPEGEN_VERSION}`;
 
   beforeEach(() => {
     rmSync(testDir, { recursive: true, force: true });

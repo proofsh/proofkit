@@ -7,16 +7,16 @@ const packageRoot = path.resolve(__dirname, "..");
 const target = `bun-${process.platform}-${process.arch}`;
 
 const result = spawnSync("node", ["./scripts/build-binaries.mjs"], {
-  cwd: packageRoot,
-  stdio: "inherit",
-  env: {
-    ...process.env,
-    PROOFKIT_BINARY_TARGETS: target,
-  },
+	cwd: packageRoot,
+	stdio: "inherit",
+	env: {
+		...process.env,
+		PROOFKIT_BINARY_TARGETS: target,
+	},
 });
 
 if (result.error) {
-  throw result.error;
+	throw result.error;
 }
 
 process.exit(result.status ?? 1);

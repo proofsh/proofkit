@@ -1,5 +1,5 @@
 import { InfinityIcon } from "lucide-react";
 
 export default function AppLogo() {
-  return <InfinityIcon size={32} />;
+	return <InfinityIcon size={32} />;
 }

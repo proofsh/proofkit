@@ -480,6 +480,7 @@ function resolveFileMakerInputs({
   appType,
   nonInteractive,
   projectName,
+  proofkitToken,
 }: {
   prompt: PromptService;
   console: ConsoleService;
@@ -488,6 +489,7 @@ function resolveFileMakerInputs({
   appType: AppType;
   nonInteractive: boolean;
   projectName: string;
+  proofkitToken?: string;
 }) {
   return Effect.gen(function* () {
     if (flags.dataSource !== "filemaker") {
@@ -546,7 +548,7 @@ function resolveFileMakerInputs({
         yield* fileMakerService.installLocalWebViewerAddon();
         const selectedFile = localFmMcp.healthy ? yield* resolveLocalFmMcpFile(localFmMcp.connectedFiles) : undefined;
         if (localFmMcp.healthy && selectedFile) {
-          if (!nonInteractive) {
+          if (!(nonInteractive || proofkitToken)) {
             yield* fileMakerService.authorizeLocalFmMcp({
               baseUrl: localFmMcp.baseUrl,
               fileName: selectedFile,
@@ -566,6 +568,7 @@ function resolveFileMakerInputs({
               fileName: selectedFile,
               layoutName: flags.layoutName,
               schemaName: flags.schemaName,
+              proofkitToken,
             } satisfies FileMakerInputs,
             skipFileMakerSetup: false,
           };
@@ -646,6 +649,7 @@ function resolveFileMakerInputs({
 export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
   Effect.gen(function* () {
     const flags = { ...defaultFlags, ...rawFlags };
+    const proofkitToken = flags.proofkitToken?.trim() || process.env.FM_MCP_SESSION_ID?.trim();
     const prompt = yield* PromptService;
     const console = yield* ConsoleService;
     const fileMakerService = yield* FileMakerService;
@@ -771,6 +775,7 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       appType,
       nonInteractive,
       projectName: scopedAppName,
+      proofkitToken,
     });
 
     return {
@@ -788,6 +793,7 @@ export const resolveInitRequest = (name?: string, rawFlags?: CliFlags) =>
       importAlias: flags.importAlias,
       nonInteractive,
       debug: cliContext.debug,
+      proofkitToken,
       fileMaker,
       skipFileMakerSetup,
       hasExplicitFileMakerInputs,

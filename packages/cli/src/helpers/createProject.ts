@@ -39,7 +39,7 @@ export const createBareProject = async ({
   });
 
   addPackageDependency({
-    dependencies: ["@proofkit/cli", "@types/node"],
+    dependencies: ["@types/node"],
     devMode: true,
   });
 

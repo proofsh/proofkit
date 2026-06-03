@@ -1,6 +1,6 @@
 {
   "name": "@proofkit/cli",
-  "version": "2.0.7",
+  "version": "2.2.2",
   "description": "Interactive CLI to scaffold and manage ProofKit projects",
   "license": "MIT",
   "repository": {
@@ -29,6 +29,8 @@
   },
   "files": [
     "bin/proofkit.cjs",
+    "bin/proofkit-*",
+    "bin/*.exe",
     "dist/**/*.js",
     "dist/**/*.d.ts",
     "template",
@@ -38,22 +40,22 @@
     "package.json"
   ],
   "engines": {
-    "node": "^22.0.0 || ^24.0.0 || ^26.0.0"
+    "node": "^22.12.0 || ^24.0.0"
   },
   "scripts": {
-    "typecheck": "node ./scripts/write-cli-version.mjs && tsc",
+    "typecheck": "node ./scripts/write-cli-version.mjs && tsc --noEmit",
     "build": "node ./scripts/write-cli-version.mjs && NODE_ENV=production tsdown && publint --strict",
     "build:binaries": "node ./scripts/write-cli-version.mjs && node ./scripts/build-binaries.mjs",
     "prepublishOnly": "pnpm build && pnpm build:binaries",
     "dev": "tsdown --watch",
     "clean": "rm -rf dist .turbo node_modules bin/proofkit-* bin/*.exe",
     "start": "node dist/index.js",
-    "lint": "biome check . --write",
-    "lint:summary": "biome check . --reporter=summary",
+    "lint": "cd ../.. && pnpm exec ultracite check packages/cli/src packages/cli/tests packages/cli/package.json packages/cli/tsconfig.json packages/cli/tsdown.config.ts packages/cli/vitest.config.ts",
+    "lint:summary": "pnpm run lint",
     "release": "changeset version",
-    "pub:beta": "NODE_ENV=production pnpm build && npm publish --tag beta --access public",
-    "pub:next": "NODE_ENV=production pnpm build && npm publish --tag next --access public",
-    "pub:release": "NODE_ENV=production pnpm build && npm publish --access public",
+    "pub:beta": "NODE_ENV=production pnpm build && pnpm --package npm@^11 dlx npm publish --tag beta --access public",
+    "pub:next": "NODE_ENV=production pnpm build && pnpm --package npm@^11 dlx npm publish --tag next --access public",
+    "pub:release": "NODE_ENV=production pnpm build && pnpm --package npm@^11 dlx npm publish --access public",
     "test": "pnpm build && node ./scripts/build-current-binary.mjs && PROOFKIT_DISABLE_BUNDLED_BINARY=1 vitest run",
     "test:smoke": "PROOFKIT_RUN_SMOKE_TESTS=1 vitest run --config vitest.smoke.config.ts"
   },
@@ -67,8 +69,10 @@
     "@effect/printer": "0.48.0",
     "@effect/printer-ansi": "0.48.0",
     "@inquirer/prompts": "^8.3.2",
+    "@proofkit/better-auth": "workspace:*",
     "@proofkit/fmdapi": "workspace:*",
     "@proofkit/typegen": "workspace:*",
+    "@proofkit/webviewer": "workspace:*",
     "@types/glob": "^8.1.0",
     "axios": "^1.13.2",
     "chalk": "5.4.1",
@@ -93,7 +97,6 @@
     "type-fest": "^3.13.1",
     "@auth/drizzle-adapter": "^1.11.1",
     "@auth/prisma-adapter": "^1.6.0",
-    "@biomejs/biome": "2.3.11",
     "@libsql/client": "^0.6.2",
     "@planetscale/database": "^1.19.0",
     "@prisma/adapter-planetscale": "^5.22.0",
@@ -127,7 +130,6 @@
     "tailwindcss": "^4.1.18",
     "tsdown": "^0.14.2",
     "typescript": "^5.9.3",
-    "ultracite": "7.0.8",
     "vitest": "^4.0.17",
     "zod": "^4.3.5"
   },

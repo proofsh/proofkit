@@ -37,7 +37,7 @@ import { planInit } from "~/core/planInit.js";
 import { runPrompt } from "~/core/prompt.js";
 import { resolveInitRequest } from "~/core/resolveInitRequest.js";
 import type { CliFlags } from "~/core/types.js";
-import { CLI_VERSION } from "~/generated/package-versions.js";
+import { CLI_VERSION } from "~/package-versions.js";
 import { makeLiveLayer } from "~/services/live.js";
 import { resolveNonInteractiveMode } from "~/utils/nonInteractive.js";
 import { intro } from "~/utils/prompts.js";
@@ -60,13 +60,19 @@ export const runInit = (name?: string, rawFlags?: Partial<CliFlags>) =>
   Effect.gen(function* () {
     const templateService = yield* TemplateService;
     const packageManagerService = yield* PackageManagerService;
-    const request = yield* resolveInitRequest(name, { ...defaultCliFlags, ...rawFlags });
+    const request = yield* resolveInitRequest(name, {
+      ...defaultCliFlags,
+      ...rawFlags,
+    });
     const templateDir = templateService.getTemplateDir(request.appType, request.ui);
     const packageManagerVersionResult = request.noInstall
       ? yield* Effect.either(packageManagerService.getVersion(request.packageManager, request.cwd))
-      : yield* packageManagerService
-          .getVersion(request.packageManager, request.cwd)
-          .pipe(Effect.map((version) => ({ _tag: "Right" as const, right: version })));
+      : yield* packageManagerService.getVersion(request.packageManager, request.cwd).pipe(
+          Effect.map((version) => ({
+            _tag: "Right" as const,
+            right: version,
+          })),
+        );
     const packageManagerVersion =
       packageManagerVersionResult._tag === "Right" ? packageManagerVersionResult.right : undefined;
     const plan = planInit(request, { templateDir, packageManagerVersion });
@@ -312,6 +318,10 @@ function makeInitCommand() {
       layoutName: optionalTextOption("layout-name", "The FileMaker layout name to scaffold"),
       schemaName: optionalTextOption("schema-name", "The generated schema name"),
       dataApiKey: optionalTextOption("data-api-key", "The Otto Data API key to use"),
+      proofkitToken: optionalTextOption(
+        "proofkit-token",
+        "ProofKit session token to pass through to local FileMaker MCP setup",
+      ),
       dataSource: optionalChoiceOption("data-source", ["filemaker", "none"] as const, "The data source to use"),
       noGit: booleanOption("no-git").pipe(withOptionDescription("Skip git initialization")),
       noInstall: booleanOption("no-install").pipe(withOptionDescription("Skip package installation")),
@@ -341,6 +351,7 @@ function makeInitCommand() {
         layoutName: getOrUndefined(options.layoutName),
         schemaName: getOrUndefined(options.schemaName),
         dataApiKey: getOrUndefined(options.dataApiKey),
+        proofkitToken: getOrUndefined(options.proofkitToken),
         dataSource: getOrUndefined(options.dataSource),
         noGit: options.noGit,
         noInstall: options.noInstall,
@@ -387,7 +398,10 @@ function makeAddCommand() {
           });
           state.baseCommand = "add";
           state.projectDir = process.cwd();
-          await runAdd(getOrUndefined(name), { noInstall, target: getOrUndefined(target) });
+          await runAdd(getOrUndefined(name), {
+            noInstall,
+            target: getOrUndefined(target),
+          });
         },
         { nonInteractive: CI || nonInteractive, debug },
       ),
@@ -591,9 +605,15 @@ function isMainEntrypoint(argvPath: string | undefined, moduleUrl: string) {
 const isMainModule = isMainEntrypoint(process.argv[1], import.meta.url);
 
 const debugFlagNames = new Set(["--debug"]);
+const versionFlagNames = new Set(["-v", "--version"]);
 
 function shouldShowDebugDetails(argv: readonly string[]) {
   return argv.some((arg) => debugFlagNames.has(arg));
+}
+
+function isVersionRequest(argv: readonly string[]) {
+  const args = argv.slice(2);
+  return args.length === 1 && versionFlagNames.has(args[0] ?? "");
 }
 
 export function renderFailure(cause: Cause.Cause<unknown>, showDebugDetails: boolean) {
@@ -629,6 +649,11 @@ async function main(argv: readonly string[]) {
 }
 
 if (isMainModule) {
+  if (isVersionRequest(process.argv)) {
+    console.log(getCliVersion());
+    process.exit(0);
+  }
+
   renderTitle(getCliVersion());
   main(process.argv).catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));

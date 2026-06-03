@@ -3,6 +3,7 @@ import path from "node:path";
 import { applyEdits, modify, parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { PKG_ROOT } from "~/consts.js";
 import type { FileMakerEnvNames } from "~/core/types.js";
+import { getVersion } from "~/utils/getProofKitVersion.js";
 import type { PackageManager } from "~/utils/packageManager.js";
 
 const commonFileMakerLayoutPrefixes = ["API_", "API ", "dapi_", "dapi"];
@@ -325,11 +326,18 @@ export async function updateTypegenConfig(
 }
 
 export function getScaffoldVersion() {
+  const generatedVersion = getVersion();
+  if (generatedVersion && generatedVersion !== "0.0.0-private") {
+    return generatedVersion;
+  }
+
   const candidates = [path.resolve(PKG_ROOT, "package.json"), path.resolve(PKG_ROOT, "../cli/package.json")];
 
   for (const candidate of candidates) {
     try {
-      const packageJson = JSON.parse(readFileSync(candidate, "utf8")) as { version?: string };
+      const packageJson = JSON.parse(readFileSync(candidate, "utf8")) as {
+        version?: string;
+      };
       if (packageJson.version && packageJson.version !== "0.0.0-private") {
         return packageJson.version;
       }

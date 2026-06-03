@@ -1,7 +1,7 @@
 "use client";
 
-import { primaryRoutes } from "@/app/navigation";
 import { useRouter } from "next/navigation";
+import { primaryRoutes } from "@/app/navigation";
 
 /**
  * DO NOT REMOVE / RENAME THIS FILE
@@ -12,33 +12,33 @@ import { useRouter } from "next/navigation";
  * If you don't want it to be used, you may return null or an empty fragment
  */
 export function SlotHeaderMobileMenuContent({
-  closeMenu,
+	closeMenu,
 }: {
-  closeMenu: () => void;
+	closeMenu: () => void;
 }) {
-  const router = useRouter();
-  return (
-    <div className="flex flex-col">
-      {primaryRoutes.map((route) => (
-          <button
-            key={route.label}
-            className="flex items-center gap-2 rounded px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          onClick={() => {
-            closeMenu();
-            if (route.type === "function") {
-              route.onClick();
-            } else if (route.type === "link") {
-              router.push(route.href);
-              }
-            }}
-            type="button"
-          >
-          {route.icon}
-          <span>{route.label}</span>
-        </button>
-      ))}
-    </div>
-  );
+	const router = useRouter();
+	return (
+		<div className="flex flex-col">
+			{primaryRoutes.map((route) => (
+				<button
+					key={route.label}
+					className="flex items-center gap-2 rounded px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
+					onClick={() => {
+						closeMenu();
+						if (route.type === "function") {
+							route.onClick();
+						} else if (route.type === "link") {
+							router.push(route.href);
+						}
+					}}
+					type="button"
+				>
+					{route.icon}
+					<span>{route.label}</span>
+				</button>
+			))}
+		</div>
+	);
 }
 
 export default SlotHeaderMobileMenuContent;

@@ -8,35 +8,35 @@ import { forgotPasswordAction } from "./actions";
 import { forgotPasswordSchema } from "./schema";
 
 export default function ForgotForm() {
-  const { form, handleSubmitWithAction, action } = useHookFormAction(
-    forgotPasswordAction,
-    zodResolver(forgotPasswordSchema),
-    {}
-  );
+	const { form, handleSubmitWithAction, action } = useHookFormAction(
+		forgotPasswordAction,
+		zodResolver(forgotPasswordSchema),
+		{},
+	);
 
-  return (
-    <form onSubmit={handleSubmitWithAction}>
-      <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-        <Stack>
-          <TextInput
-            autoFocus
-            label="Email"
-            placeholder="you@proofkit.proof.sh"
-            required
-            withAsterisk={false}
-            {...form.register("email")}
-            error={form.formState.errors.email?.message}
-          />
+	return (
+		<form onSubmit={handleSubmitWithAction}>
+			<Paper withBorder shadow="md" p={30} mt={30} radius="md">
+				<Stack>
+					<TextInput
+						autoFocus
+						label="Email"
+						placeholder="you@proofkit.proof.sh"
+						required
+						withAsterisk={false}
+						{...form.register("email")}
+						error={form.formState.errors.email?.message}
+					/>
 
-          {action.result.data?.error && (
-            <Text c="red">{action.result.data.error}</Text>
-          )}
+					{action.result.data?.error && (
+						<Text c="red">{action.result.data.error}</Text>
+					)}
 
-          <Button fullWidth type="submit" loading={action.isPending}>
-            Send Reset Email
-          </Button>
-        </Stack>
-      </Paper>
-    </form>
-  );
+					<Button fullWidth type="submit" loading={action.isPending}>
+						Send Reset Email
+					</Button>
+				</Stack>
+			</Paper>
+		</form>
+	);
 }

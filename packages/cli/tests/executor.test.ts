@@ -64,8 +64,8 @@ describe("executeInitPlan command paths", () => {
     expect(tracker.commands).toEqual([
       "pnpm install",
       [
-        "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react --editors cursor",
-        "--agents claude codex --hooks cursor windsurf --integrations husky lint-staged",
+        "pnpx ultracite@^7 init --quiet --linter oxlint --pm pnpm --frameworks react --editors cursor",
+        "--agents claude codex --hooks cursor windsurf",
       ].join(" "),
       "pnpx @tanstack/intent@latest install",
       "pnpm fix",
@@ -87,7 +87,7 @@ describe("executeInitPlan command paths", () => {
     expect(pnpmWorkspaceFile).toContain("blockExoticSubdeps: true");
   });
 
-  it("runs Ultracite with browser framework presets", async () => {
+  it("writes browser Ultracite config without external init in no-install mode", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-ultracite-browser-"));
     const tracker = {
       commands: [] as string[],
@@ -112,75 +112,11 @@ describe("executeInitPlan command paths", () => {
 
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "npm", tracker })));
 
-    const { npmrcFile } = await readScaffoldArtifacts(path.join(cwd, "demo-app"));
+    const { huskyPreCommitFile, npmrcFile } = await readScaffoldArtifacts(path.join(cwd, "demo-app"));
 
-    expect(tracker.commands).toEqual([
-      [
-        "npx ultracite init --quiet --linter oxlint --pm npm --frameworks react next",
-        "--editors cursor --agents claude codex",
-        "--hooks cursor windsurf --integrations husky lint-staged --skip-install",
-      ].join(" "),
-      "npx @tanstack/intent@latest install",
-    ]);
+    expect(tracker.commands).toEqual([]);
+    expect(huskyPreCommitFile).toContain("pnpm exec lint-staged");
     expect(npmrcFile).toContain("min-release-age=1");
-  });
-
-  it("warns and continues when no-install post setup fails", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-no-install-post-setup-"));
-    const console = {
-      error: [] as string[],
-      info: [] as string[],
-      note: [] as Array<{ message: string; title?: string }>,
-      success: [] as string[],
-      warn: [] as string[],
-    };
-    const tracker = {
-      commands: [] as string[],
-      gitInits: 0,
-      codegens: 0,
-      filemakerBootstraps: 0,
-    };
-
-    const plan = planInit(
-      makeInitRequest({
-        appType: "browser",
-        dataSource: "none",
-        packageManager: "pnpm",
-        noInstall: true,
-        noGit: true,
-        cwd,
-      }),
-      {
-        templateDir: getSharedTemplateDir("nextjs-shadcn"),
-      },
-    );
-
-    await Effect.runPromise(
-      executeInitPlan(plan).pipe(
-        makeTestLayer({
-          console,
-          cwd,
-          failProcessCommand: [
-            "pnpx ultracite init --quiet --linter oxlint --pm pnpm --frameworks react next",
-            "--editors cursor --agents claude codex --hooks cursor windsurf",
-            "--integrations husky lint-staged --skip-install",
-          ].join(" "),
-          failures: {
-            processRun: new ExternalCommandError({
-              args: ["ultracite"],
-              command: "pnpx",
-              cwd,
-              message: "ultracite failed",
-            }),
-          },
-          packageManager: "pnpm",
-          tracker,
-        }),
-      ),
-    );
-
-    expect(tracker.commands).toContain("pnpx @tanstack/intent@latest install");
-    expect(console.warn).toContain("Ultracite setup did not succeed; continuing setup.");
   });
 
   it("warns and continues when final lint fails", async () => {
@@ -319,9 +255,63 @@ describe("executeInitPlan command paths", () => {
     expect(typegenConfig).toContain('"connectedFileName": "Selected.fmp12"');
   });
 
+  it("does not persist local MCP token into typegen config", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-local-mcp-token-config-"));
+
+    const plan = planInit(
+      makeInitRequest({
+        projectName: "local-mcp-token-app",
+        scopedAppName: "local-mcp-token-app",
+        appDir: "local-mcp-token-app",
+        appType: "webviewer",
+        ui: "shadcn",
+        dataSource: "filemaker",
+        packageManager: "pnpm",
+        noInstall: true,
+        noGit: true,
+        force: false,
+        cwd,
+        importAlias: "~/",
+        nonInteractive: true,
+        debug: false,
+        proofkitToken: "secret-session-token",
+        skipFileMakerSetup: false,
+        hasExplicitFileMakerInputs: true,
+        fileMaker: {
+          mode: "local-fm-mcp",
+          dataSourceName: "filemaker",
+          envNames: {
+            database: "FM_DATABASE",
+            server: "FM_SERVER",
+            apiKey: "OTTO_API_KEY",
+          },
+          fmMcpBaseUrl: "http://127.0.0.1:1365",
+          fileName: "Selected.fmp12",
+          proofkitToken: "secret-session-token",
+        },
+      }),
+      {
+        templateDir: getSharedTemplateDir("vite-wv"),
+      },
+    );
+
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm" })));
+
+    const { typegenConfig } = await readScaffoldArtifacts(path.join(cwd, "local-mcp-token-app"));
+    expect(typegenConfig).not.toContain("secret-session-token");
+    expect(typegenConfig).not.toContain("proofkitToken");
+  });
+
   it("persists the single auto-selected local MCP file into typegen config", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-local-mcp-single-"));
 
+    const tracker = {
+      commands: [] as string[],
+      gitInits: 0,
+      codegens: 0,
+      codegenTokens: [] as Array<string | undefined>,
+      filemakerBootstraps: 0,
+    };
     const plan = planInit(
       makeInitRequest({
         projectName: "single-local-mcp-app",
@@ -338,6 +328,7 @@ describe("executeInitPlan command paths", () => {
         importAlias: "~/",
         nonInteractive: true,
         debug: false,
+        proofkitToken: "initial-codegen-token",
         skipFileMakerSetup: false,
         hasExplicitFileMakerInputs: false,
         fileMaker: {
@@ -356,8 +347,11 @@ describe("executeInitPlan command paths", () => {
         templateDir: getSharedTemplateDir("vite-wv"),
       },
     );
+    plan.tasks.runInitialCodegen = true;
 
-    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm" })));
+    await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", tracker })));
+
+    expect(tracker.codegenTokens).toEqual(["initial-codegen-token"]);
 
     const { typegenConfig } = await readScaffoldArtifacts(path.join(cwd, "single-local-mcp-app"));
     expect(typegenConfig).toContain('"connectedFileName": "OnlyOpen.fmp12"');
@@ -499,6 +493,111 @@ describe("executeInitPlan command paths", () => {
     );
   });
 
+  it("fails with a typed directory conflict when overwrite prompt is cancelled", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-overwrite-cancel-"));
+    const projectDir = path.join(cwd, "cancel-app");
+    await fs.ensureDir(projectDir);
+    await fs.writeFile(path.join(projectDir, "README.md"), "existing");
+
+    const plan = planInit(
+      makeInitRequest({
+        projectName: "cancel-app",
+        scopedAppName: "cancel-app",
+        appDir: "cancel-app",
+        appType: "browser",
+        ui: "shadcn",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: true,
+        noGit: true,
+        force: false,
+        cwd,
+        importAlias: "~/",
+        nonInteractive: false,
+        debug: false,
+        skipFileMakerSetup: false,
+        hasExplicitFileMakerInputs: false,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+      },
+    );
+
+    expect(
+      await getFailure(
+        executeInitPlan(plan).pipe(
+          makeTestLayer({
+            cwd,
+            packageManager: "pnpm",
+            nonInteractive: false,
+            prompts: {
+              select: ["__cancel_value__"],
+            },
+          }),
+        ),
+      ),
+    ).toMatchObject(
+      new DirectoryConflictError({
+        message: "Unable to choose how to handle the existing directory.",
+        path: projectDir,
+      }),
+    );
+  });
+
+  it("fails with a typed directory conflict when clear confirmation is cancelled", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-clear-cancel-"));
+    const projectDir = path.join(cwd, "clear-cancel-app");
+    const existingFile = path.join(projectDir, "README.md");
+    await fs.ensureDir(projectDir);
+    await fs.writeFile(existingFile, "existing");
+
+    const plan = planInit(
+      makeInitRequest({
+        projectName: "clear-cancel-app",
+        scopedAppName: "clear-cancel-app",
+        appDir: "clear-cancel-app",
+        appType: "browser",
+        ui: "shadcn",
+        dataSource: "none",
+        packageManager: "pnpm",
+        noInstall: true,
+        noGit: true,
+        force: false,
+        cwd,
+        importAlias: "~/",
+        nonInteractive: false,
+        debug: false,
+        skipFileMakerSetup: false,
+        hasExplicitFileMakerInputs: false,
+      }),
+      {
+        templateDir: getSharedTemplateDir("nextjs-shadcn"),
+      },
+    );
+
+    expect(
+      await getFailure(
+        executeInitPlan(plan).pipe(
+          makeTestLayer({
+            cwd,
+            packageManager: "pnpm",
+            nonInteractive: false,
+            prompts: {
+              select: ["clear"],
+              confirm: ["__cancel_value__"],
+            },
+          }),
+        ),
+      ),
+    ).toMatchObject(
+      new DirectoryConflictError({
+        message: "Unable to confirm directory clearing.",
+        path: projectDir,
+      }),
+    );
+    await expect(fs.pathExists(existingFile)).resolves.toBe(true);
+  });
+
   it("prints pnpm warning in npm next steps", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-npm-warning-"));
     const console = {
@@ -558,11 +657,18 @@ describe("executeInitPlan command paths", () => {
 
     await Effect.runPromise(executeInitPlan(plan).pipe(makeTestLayer({ cwd, packageManager: "pnpm", console })));
 
-    expect(console.info.join("\n")).toContain("pnpx @tanstack/intent@latest install");
+    expect(console.info.join("\n")).not.toContain("pnpx @tanstack/intent@latest install");
   });
 
   it("fails with a typed external command error when install fails", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-install-fail-"));
+    const consoleTranscript = {
+      info: [] as string[],
+      warn: [] as string[],
+      error: [] as string[],
+      success: [] as string[],
+      note: [] as Array<{ message: string; title?: string }>,
+    };
     const plan = planInit(
       makeInitRequest({
         projectName: "install-fail",
@@ -593,6 +699,7 @@ describe("executeInitPlan command paths", () => {
           makeTestLayer({
             cwd,
             packageManager: "npm",
+            console: consoleTranscript,
             failures: {
               processRun: new ExternalCommandError({
                 message: "install failed",
@@ -612,6 +719,16 @@ describe("executeInitPlan command paths", () => {
         cwd,
       }),
     );
+    const installError = consoleTranscript.error.at(-1) ?? "";
+    expect(installError).toContain("Install failed.");
+    expect(installError).toContain("Project root:");
+    expect(installError).toContain("Failed command:");
+    expect(installError).toContain("npm install");
+    expect(installError).toContain("Succeeded before failure:");
+    expect(installError).toContain("scaffold files");
+    expect(installError).toContain("Continue troubleshooting:");
+    expect(installError).toContain("cd install-fail");
+    expect(installError).toContain("Start over:");
   });
 
   it("fails with a typed codegen error when initial codegen fails", async () => {

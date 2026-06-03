@@ -144,11 +144,23 @@ const promptService = {
   searchSelect: async <T extends string>(options: {
     message: string;
     emptyMessage?: string;
-    options: Array<{ value: T; label: string; hint?: string; keywords?: string[]; disabled?: boolean | string }>;
+    options: Array<{
+      value: T;
+      label: string;
+      hint?: string;
+      keywords?: string[];
+      disabled?: boolean | string;
+    }>;
   }) => unwrap(await searchSelectPrompt(options)) as T,
   multiSearchSelect: async <T extends string>(options: {
     message: string;
-    options: Array<{ value: T; label: string; hint?: string; keywords?: string[]; disabled?: boolean | string }>;
+    options: Array<{
+      value: T;
+      label: string;
+      hint?: string;
+      keywords?: string[];
+      disabled?: boolean | string;
+    }>;
     required?: boolean;
   }) => unwrap(await multiSearchSelectPrompt(options)),
   confirm: async (options: { message: string; initialValue?: boolean }) =>
@@ -171,6 +183,7 @@ const consoleService = {
 const fileSystemService = {
   exists: (targetPath: string) => withFsError("exists", targetPath, () => fs.pathExists(targetPath)),
   readdir: (targetPath: string) => withFsError("readdir", targetPath, () => fs.readdir(targetPath)),
+  ensureDir: (targetPath: string) => withFsError("ensureDir", targetPath, () => fs.ensureDir(targetPath)),
   emptyDir: (targetPath: string) => withFsError("emptyDir", targetPath, () => fs.emptyDir(targetPath)),
   copyDir: (from: string, to: string, options?: { overwrite?: boolean }) =>
     withFsError("copyDir", `${from} -> ${to}`, () => fs.copy(from, to, { overwrite: options?.overwrite ?? true })),
@@ -248,7 +261,9 @@ const gitService = {
 const settingsService = {
   writeSettings: (projectDir: string, settings: ProofKitSettings) =>
     withFsError("writeSettings", path.join(projectDir, "proofkit.json"), () =>
-      fs.writeJson(path.join(projectDir, "proofkit.json"), settings, { spaces: 2 }),
+      fs.writeJson(path.join(projectDir, "proofkit.json"), settings, {
+        spaces: 2,
+      }),
     ),
   appendEnvVars: (projectDir: string, vars: Record<string, string>) =>
     withFsError("appendEnvVars", path.join(projectDir, ".env"), async () => {
@@ -340,11 +355,15 @@ const fileMakerService = {
     Effect.tryPromise({
       try: async () => {
         try {
-          const health = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(3000) });
+          const health = await fetch(`${baseUrl}/health`, {
+            signal: AbortSignal.timeout(3000),
+          });
           if (!health.ok) {
             return { baseUrl, healthy: false, connectedFiles: [] };
           }
-          const connectedFiles = await fetch(`${baseUrl}/connectedFiles`, { signal: AbortSignal.timeout(3000) })
+          const connectedFiles = await fetch(`${baseUrl}/connectedFiles`, {
+            signal: AbortSignal.timeout(3000),
+          })
             .then(async (response) => (response.ok ? ((await response.json()) as unknown) : []))
             .catch(() => []);
           return {
@@ -506,14 +525,15 @@ const fileMakerService = {
   listFiles: ({ url, token }: { url: URL; token: string }) =>
     Effect.gen(function* () {
       const response = yield* withFileMakerSetupError("Unable to list FileMaker files from OttoFMS.", () =>
-        getJson<{ response?: { databases?: Array<{ filename?: string; status?: string }> } }>(
-          `${url.origin}/otto/fmi/admin/api/v2/databases`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        getJson<{
+          response?: {
+            databases?: Array<{ filename?: string; status?: string }>;
+          };
+        }>(`${url.origin}/otto/fmi/admin/api/v2/databases`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        ),
+        }),
       );
       const databases = Array.isArray(response.data?.response?.databases) ? response.data.response.databases : [];
       return databases
@@ -538,7 +558,14 @@ const fileMakerService = {
       const apiKeys = Array.isArray(response.data?.response?.["api-keys"]) ? response.data.response["api-keys"] : [];
       return apiKeys
         .filter(
-          (apiKey): apiKey is { key: string; user: string; database: string; label: string } =>
+          (
+            apiKey,
+          ): apiKey is {
+            key: string;
+            user: string;
+            database: string;
+            label: string;
+          } =>
             typeof apiKey.key === "string" &&
             typeof apiKey.user === "string" &&
             typeof apiKey.database === "string" &&
@@ -755,7 +782,7 @@ const fileMakerService = {
 };
 
 const codegenService = {
-  runInitial: (projectDir: string, packageManager: CliContextValue["packageManager"]) => {
+  runInitial: (projectDir: string, packageManager: CliContextValue["packageManager"], proofkitToken?: string) => {
     let commandParts: string[];
     if (packageManager === "npm") {
       commandParts = ["npm", "run", "typegen"];
@@ -781,7 +808,10 @@ const codegenService = {
       args,
       projectDir,
       async () => {
-        await execa(command, args, { cwd: projectDir });
+        await execa(command, args, {
+          cwd: projectDir,
+          env: proofkitToken ? { FM_MCP_SESSION_ID: proofkitToken } : undefined,
+        });
       },
       "Initial codegen failed",
     );

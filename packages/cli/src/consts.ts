@@ -7,13 +7,19 @@ const distPath = path.dirname(__filename);
 export const PKG_ROOT = process.env.PROOFKIT_PKG_ROOT ?? path.join(distPath, "../");
 
 export const DEFAULT_APP_NAME = "my-proofkit-app";
-export const NODE_RUNTIME_VERSION = "^22.0.0 || ^24.0.0 || ^26.0.0";
+export const NODE_RUNTIME_VERSION = "^22.12.0 || ^24.0.0";
 export const cliName = "proofkit";
 export const npmName = "@proofkit/cli";
 export const DOCS_URL = "https://proofkit.proof.sh";
 
 export function getAgentInstructions() {
-  return "Use the ProofKit docs as the primary reference for this project: https://proofkit.proof.sh/docs";
+  return `
+  ## ProofKit Documentation
+  ProofKit is a set of packages and opinions designed to work really well with FileMaker.	Use the ProofKit docs as the primary reference for this project: https://proofkit.proof.sh/llms.txt
+
+## Data Loading
+Always use tanstack/react-query instead of useState and useEffect when loading data or calling FileMaker scripts with fmFetch.
+  `;
 }
 
 // Registry URL is injected at build time via tsdown define.

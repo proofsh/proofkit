@@ -8,7 +8,6 @@ import {
   getProofkitDependencyVersion,
   getProofkitWebviewerVersion,
   getTypegenVersion,
-  getVersion,
 } from "~/utils/getProofKitVersion.js";
 import {
   formatPackageManagerCommand,
@@ -18,7 +17,6 @@ import {
 } from "~/utils/projectFiles.js";
 import { getNodeMajorVersion } from "~/utils/versioning.js";
 
-const VERSION_RANGE_PREFIX_REGEX = /^\^/;
 const SHARED_PNPM_BUILD_POLICY = {
   "@parcel/watcher": true,
   esbuild: true,
@@ -29,6 +27,10 @@ const SHARED_PNPM_BUILD_POLICY = {
 const NPM_PACKAGE_MANAGER_WARNING =
   "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";
 const NPM_MIN_RELEASE_AGE_DAYS = 1;
+
+function createPackageManagerVersionRange(version: string) {
+  return version.startsWith("^") ? version : `^${version}`;
+}
 
 export function createPnpmWorkspaceFileContent(appType: InitRequest["appType"]) {
   const buildPolicy = {
@@ -91,7 +93,6 @@ export function planInit(
   options: { templateDir: string; packageManagerVersion?: string },
 ): InitPlan {
   const targetDir = path.resolve(request.cwd, request.appDir);
-  const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
   const proofkitFmdapiVersion = getProofkitDependencyVersion(getFmdapiVersion());
   const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
   const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
@@ -110,7 +111,12 @@ export function planInit(
       ? {
           packageManager: {
             name: request.packageManager,
-            version: formatPackageManagerVersion(options.packageManagerVersion),
+            version: createPackageManagerVersionRange(options.packageManagerVersion),
+            onFail: "download",
+          },
+          runtime: {
+            name: "node",
+            version: NODE_RUNTIME_VERSION,
             onFail: "download",
           },
         }
@@ -121,7 +127,6 @@ export function planInit(
     },
     dependencies: {},
     devDependencies: {
-      "@proofkit/cli": proofkitCliVersion,
       "@types/node": `^${getNodeMajorVersion()}`,
     },
   };
@@ -148,7 +153,7 @@ export function planInit(
     packageJson.devDependencies["@proofkit/typegen"] = proofkitTypegenVersion;
     packageJson.devDependencies["@tailwindcss/vite"] = "^4.2.1";
     packageJson.devDependencies.oxlint = "^1.39.0";
-    packageJson.devDependencies.ultracite = "7.0.8";
+    packageJson.devDependencies.ultracite = "^7.0.0";
   }
 
   const shouldRunInitialCodegen =
@@ -194,7 +199,7 @@ export function planInit(
     commands: [
       ...(request.noInstall ? [] : [{ type: "install" as const }]),
       { type: "ultracite-init" as const },
-      { type: "intent-install" as const },
+      ...(request.noInstall ? [] : [{ type: "intent-install" as const }]),
       ...(shouldRunInitialCodegen ? [{ type: "codegen" as const }] : []),
       ...(request.noInstall ? [] : [{ type: "fix" as const }]),
       ...(request.noInstall ? [] : [{ type: "lint" as const }]),
@@ -205,7 +210,7 @@ export function planInit(
       checkWebViewerAddon: request.appType === "webviewer",
       runInstall: !request.noInstall,
       runUltraciteInit: true,
-      runIntentInstall: true,
+      runIntentInstall: !request.noInstall,
       runInitialCodegen: shouldRunInitialCodegen,
       runFix: !request.noInstall,
       runLint: !request.noInstall,
@@ -215,7 +220,6 @@ export function planInit(
       `cd ${request.appDir}`,
       ...(request.packageManager === "npm" ? [NPM_PACKAGE_MANAGER_WARNING] : []),
       ...(request.noInstall ? [request.packageManager === "yarn" ? "yarn" : `${request.packageManager} install`] : []),
-      `${packageManagerExecuteCommand} @tanstack/intent@latest install`,
       formatPackageManagerCommand(request.packageManager, "dev"),
       ...(request.appType === "webviewer"
         ? [
@@ -223,13 +227,8 @@ export function planInit(
             formatPackageManagerCommand(request.packageManager, "launch-fm"),
           ]
         : []),
-      formatPackageManagerCommand(request.packageManager, "proofkit"),
     ],
   };
-}
-
-function formatPackageManagerVersion(version: string) {
-  return version.replace(VERSION_RANGE_PREFIX_REGEX, "");
 }
 
 export function applyPackageJsonMutations(

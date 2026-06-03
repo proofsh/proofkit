@@ -16,11 +16,23 @@ import {
   PromptService,
   SettingsService,
 } from "~/core/context.js";
-import { DirectoryConflictError, FileSystemError, isCliError, UserCancelledError } from "~/core/errors.js";
+import {
+  type CliError,
+  DirectoryConflictError,
+  type ExternalCommandError,
+  FileSystemError,
+  isCliError,
+  UserCancelledError,
+} from "~/core/errors.js";
 import { applyPackageJsonMutations } from "~/core/planInit.js";
 import type { InitPlan } from "~/core/types.js";
 import { getIntentInstallCommand } from "~/helpers/intent.js";
-import { getBrowserOxlintConfig, getUltraciteInitCommand } from "~/helpers/ultracite.js";
+import {
+  getBrowserOxlintConfig,
+  getHuskyPreCommitHook,
+  getUltraciteInitCommand,
+  getWebViewerOxlintConfig,
+} from "~/helpers/ultracite.js";
 import {
   formatPackageManagerCommand,
   normalizeImportAlias,
@@ -28,6 +40,7 @@ import {
   replaceTextInFiles,
   updateTypegenConfig,
 } from "~/utils/projectFiles.js";
+import { isCancel } from "~/utils/prompts.js";
 import { sortPackageJson } from "~/utils/sortPackageJson.js";
 
 const AGENT_METADATA_DIRS = new Set([".agents", ".claude", ".clawed", ".clinerules", ".cursor", ".windsurf"]);
@@ -41,14 +54,64 @@ const formatPath = (value: string) => chalk.yellow(value);
 const NPM_PACKAGE_MANAGER_WARNING =
   "Warning: We strongly suggest using PNPM 11 or greater as your package manager to better protect your computer and your app.";
 
-function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
+function getCauseText(cause: unknown) {
+  if (typeof cause !== "object" || cause === null) {
+    return cause ? String(cause) : undefined;
+  }
+
+  const details = cause as {
+    shortMessage?: unknown;
+    message?: unknown;
+    stderr?: unknown;
+    stdout?: unknown;
+  };
+
+  return [details.shortMessage, details.stderr, details.stdout, details.message]
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .find((value) => value.length > 0);
+}
+
+function formatExternalCommand(error: ExternalCommandError) {
+  return [error.command, ...error.args].join(" ");
+}
+
+function isExternalCommandError(error: CliError): error is ExternalCommandError {
+  return error._tag === "ExternalCommandError";
+}
+
+function renderInstallFailure(plan: InitPlan, error: CliError) {
+  const failedCommand = isExternalCommandError(error)
+    ? formatExternalCommand(error)
+    : `${plan.request.packageManager} install`;
   const lines = [
-    `${formatHeading("Project root:")} ${formatCommand(`cd ${formatPath(plan.request.appDir)}`)}`,
-    "",
-    formatHeading("Agent setup:"),
-    "Have your agent run this in the new project and complete the interactive prompt so it can load the right skills:",
-    `  ${formatCommand(`${plan.packageManagerExecuteCommand} @tanstack/intent@latest install`)}`,
+    chalk.red(formatHeading("Install failed.")),
+    `${formatHeading("Project root:")} ${formatPath(plan.targetDir)}`,
+    `${formatHeading("Failed command:")} ${formatCommand(failedCommand)}`,
+    `${formatHeading("Succeeded before failure:")} scaffold files, package.json, proofkit.json, env file, editor config files`,
   ];
+  const causeText = getCauseText("cause" in error ? error.cause : undefined);
+  if (causeText && causeText !== error.message) {
+    lines.push(`${formatHeading("Reason:")} ${causeText}`);
+  } else {
+    lines.push(`${formatHeading("Reason:")} ${error.message}`);
+  }
+
+  lines.push(
+    "",
+    formatHeading("Continue troubleshooting:"),
+    `  ${formatCommand(`cd ${plan.request.appDir}`)}`,
+    `  ${formatCommand(failedCommand)}`,
+    "",
+    formatHeading("Start over:"),
+    `  Remove ${formatPath(plan.targetDir)}, then rerun the init command.`,
+  );
+
+  return lines.join("\n");
+}
+
+function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
+  const lines = [`${formatHeading("Project root:")} ${formatCommand(`cd ${formatPath(plan.request.appDir)}`)}`];
 
   if (plan.request.noInstall) {
     lines.push(
@@ -77,12 +140,6 @@ function renderNextSteps(plan: InitPlan, additionalSteps: string[] = []) {
     }
   }
 
-  lines.push(
-    "",
-    formatHeading("More ProofKit commands:"),
-    `  ${formatCommand(`${plan.packageManagerCommand} proofkit`)}`,
-  );
-
   return lines.join("\n");
 }
 
@@ -109,15 +166,24 @@ function getMeaningfulDirectoryEntries(entries: string[]) {
   });
 }
 
-function promptEffect<A>(message: string, run: () => Promise<A>) {
+function promptEffect<A>(message: string, run: () => Promise<A>, targetPath = "") {
   return Effect.tryPromise({
-    try: run,
+    try: async () => {
+      const value = await run();
+      if (isCancel(value)) {
+        throw new DirectoryConflictError({
+          message,
+          path: targetPath,
+        });
+      }
+      return value;
+    },
     catch: (cause) =>
       isCliError(cause)
         ? cause
         : new DirectoryConflictError({
             message,
-            path: "",
+            path: targetPath,
           }),
   });
 }
@@ -154,15 +220,21 @@ export const prepareDirectory = (plan: InitPlan) =>
       );
     }
 
-    const overwriteMode = yield* promptEffect("Unable to choose how to handle the existing directory.", () =>
-      prompts.select({
-        message: `${plan.request.appDir} already exists and isn't empty. How would you like to proceed?`,
-        options: [
-          { value: "abort", label: "Abort installation" },
-          { value: "clear", label: "Clear the directory and continue" },
-          { value: "overwrite", label: "Continue and overwrite conflicting files" },
-        ],
-      }),
+    const overwriteMode = yield* promptEffect(
+      "Unable to choose how to handle the existing directory.",
+      () =>
+        prompts.select({
+          message: `${plan.request.appDir} already exists and isn't empty. How would you like to proceed?`,
+          options: [
+            { value: "abort", label: "Abort installation" },
+            { value: "clear", label: "Clear the directory and continue" },
+            {
+              value: "overwrite",
+              label: "Continue and overwrite conflicting files",
+            },
+          ],
+        }),
+      plan.targetDir,
     );
 
     if (overwriteMode === "abort") {
@@ -174,11 +246,14 @@ export const prepareDirectory = (plan: InitPlan) =>
     }
 
     if (overwriteMode === "clear") {
-      const confirmed = yield* promptEffect("Unable to confirm directory clearing.", () =>
-        prompts.confirm({
-          message: "Are you sure you want to clear the directory?",
-          initialValue: false,
-        }),
+      const confirmed = yield* promptEffect(
+        "Unable to confirm directory clearing.",
+        () =>
+          prompts.confirm({
+            message: "Are you sure you want to clear the directory?",
+            initialValue: false,
+          }),
+        plan.targetDir,
       );
       if (!confirmed) {
         return yield* Effect.fail(
@@ -400,57 +475,51 @@ export const executeInitPlan = (plan: InitPlan) =>
       if (plan.request.packageManager === "yarn") {
         installArgs = [];
       }
-      yield* processService.run(plan.request.packageManager, installArgs, {
+      const installResult = yield* Effect.either(
+        processService.run(plan.request.packageManager, installArgs, {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        }),
+      );
+      if (installResult._tag === "Left") {
+        consoleService.error(renderInstallFailure(plan, installResult.left));
+        return yield* Effect.fail(installResult.left);
+      }
+    }
+
+    if (plan.tasks.runUltraciteInit) {
+      if (!plan.request.noInstall) {
+        const ultraciteCommand = getUltraciteInitCommand({
+          appType: plan.request.appType,
+          packageManager: plan.request.packageManager,
+          skipInstall: plan.request.noInstall,
+        });
+        yield* processService.run(ultraciteCommand.command, ultraciteCommand.args, {
+          cwd: plan.targetDir,
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+      }
+
+      const oxlintConfigContent =
+        plan.request.appType === "browser" ? getBrowserOxlintConfig() : getWebViewerOxlintConfig();
+      yield* fs.writeFile(path.join(plan.targetDir, "oxlint.config.ts"), oxlintConfigContent);
+      yield* fs.ensureDir(path.join(plan.targetDir, ".husky"));
+      yield* fs.writeFile(path.join(plan.targetDir, ".husky/pre-commit"), getHuskyPreCommitHook());
+    }
+
+    if (plan.tasks.runIntentInstall) {
+      const intentCommand = getIntentInstallCommand(plan.request.packageManager);
+      yield* processService.run(intentCommand.command, intentCommand.args, {
         cwd: plan.targetDir,
         stdout: "pipe",
         stderr: "pipe",
       });
     }
 
-    if (plan.tasks.runUltraciteInit) {
-      const ultraciteCommand = getUltraciteInitCommand({
-        appType: plan.request.appType,
-        packageManager: plan.request.packageManager,
-        skipInstall: plan.request.noInstall,
-      });
-      const ultraciteResult = yield* Effect.either(
-        processService.run(ultraciteCommand.command, ultraciteCommand.args, {
-          cwd: plan.targetDir,
-          stdout: "pipe",
-          stderr: "pipe",
-        }),
-      );
-      if (ultraciteResult._tag === "Left") {
-        if (!plan.request.noInstall) {
-          return yield* Effect.fail(ultraciteResult.left);
-        }
-        consoleService.warn("Ultracite setup did not succeed; continuing setup.");
-      }
-
-      if (plan.request.appType === "browser") {
-        yield* fs.writeFile(path.join(plan.targetDir, "oxlint.config.ts"), getBrowserOxlintConfig());
-      }
-    }
-
-    if (plan.tasks.runIntentInstall) {
-      const intentCommand = getIntentInstallCommand(plan.request.packageManager);
-      const intentResult = yield* Effect.either(
-        processService.run(intentCommand.command, intentCommand.args, {
-          cwd: plan.targetDir,
-          stdout: "pipe",
-          stderr: "pipe",
-        }),
-      );
-      if (intentResult._tag === "Left") {
-        if (!plan.request.noInstall) {
-          return yield* Effect.fail(intentResult.left);
-        }
-        consoleService.warn("Agent setup did not succeed; continuing setup.");
-      }
-    }
-
     if (plan.tasks.runInitialCodegen) {
-      yield* codegenService.runInitial(plan.targetDir, plan.request.packageManager);
+      yield* codegenService.runInitial(plan.targetDir, plan.request.packageManager, plan.request.proofkitToken);
     }
 
     // plan.tasks.runFix is non-blocking: getPackageScriptCommand/processService.run can fail on fresh scaffolds.
@@ -486,9 +555,12 @@ export const executeInitPlan = (plan: InitPlan) =>
 
     const packageManagerVersionResult = plan.request.noInstall
       ? yield* Effect.either(packageManagerService.getVersion(plan.request.packageManager, plan.targetDir))
-      : yield* packageManagerService
-          .getVersion(plan.request.packageManager, plan.targetDir)
-          .pipe(Effect.map((version) => ({ _tag: "Right" as const, right: version })));
+      : yield* packageManagerService.getVersion(plan.request.packageManager, plan.targetDir).pipe(
+          Effect.map((version) => ({
+            _tag: "Right" as const,
+            right: version,
+          })),
+        );
     const packageManagerVersion =
       packageManagerVersionResult._tag === "Right" ? packageManagerVersionResult.right : undefined;
 

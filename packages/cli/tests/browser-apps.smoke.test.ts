@@ -28,7 +28,7 @@ describeWhenSmokeEnvPresent("External integration smoke tests (non-interactive C
   }
 
   const testDir = join(tmpdir(), "proofkit-cli-tests");
-  const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
+  const cliPath = join(import.meta.dirname, "..", "bin", "proofkit.cjs");
   const projectName = "test-fm-project";
   const projectDir = join(testDir, projectName);
 

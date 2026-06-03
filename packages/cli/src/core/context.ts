@@ -32,16 +32,33 @@ export interface PromptService {
   }) => Promise<string>;
   readonly select: <T extends string>(options: {
     message: string;
-    options: Array<{ value: T; label: string; hint?: string; disabled?: boolean | string }>;
+    options: Array<{
+      value: T;
+      label: string;
+      hint?: string;
+      disabled?: boolean | string;
+    }>;
   }) => Promise<T>;
   readonly searchSelect: <T extends string>(options: {
     message: string;
     emptyMessage?: string;
-    options: Array<{ value: T; label: string; hint?: string; keywords?: string[]; disabled?: boolean | string }>;
+    options: Array<{
+      value: T;
+      label: string;
+      hint?: string;
+      keywords?: string[];
+      disabled?: boolean | string;
+    }>;
   }) => Promise<T>;
   readonly multiSearchSelect: <T extends string>(options: {
     message: string;
-    options: Array<{ value: T; label: string; hint?: string; keywords?: string[]; disabled?: boolean | string }>;
+    options: Array<{
+      value: T;
+      label: string;
+      hint?: string;
+      keywords?: string[];
+      disabled?: boolean | string;
+    }>;
     required?: boolean;
   }) => Promise<T[]>;
   readonly confirm: (options: { message: string; initialValue?: boolean }) => Promise<boolean>;
@@ -62,6 +79,7 @@ export const ConsoleService = Context.GenericTag<ConsoleService>("@proofkit/cli/
 export interface FileSystemService {
   readonly exists: (path: string) => Eff<boolean, CliError>;
   readonly readdir: (path: string) => Eff<string[], CliError>;
+  readonly ensureDir: (path: string) => Eff<void, CliError>;
   readonly emptyDir: (path: string) => Eff<void, CliError>;
   readonly copyDir: (from: string, to: string, options?: { overwrite?: boolean }) => Eff<void, CliError>;
   readonly rename: (from: string, to: string) => Eff<void, CliError>;
@@ -213,7 +231,11 @@ export interface FileMakerService {
 export const FileMakerService = Context.GenericTag<FileMakerService>("@proofkit/cli/FileMakerService");
 
 export interface CodegenService {
-  readonly runInitial: (projectDir: string, packageManager: PackageManager) => Eff<void, CliError>;
+  readonly runInitial: (
+    projectDir: string,
+    packageManager: PackageManager,
+    proofkitToken?: string,
+  ) => Eff<void, CliError>;
 }
 
 export const CodegenService = Context.GenericTag<CodegenService>("@proofkit/cli/CodegenService");

@@ -121,7 +121,9 @@ export function compareAddonVersions(installedVersion: string, latestVersion: st
 async function readAddonVersionFromDirectory(addonPath: string): Promise<string | undefined> {
   const sidecarJsonPath = `${addonPath}.proofkit.json`;
   if (await fs.pathExists(sidecarJsonPath)) {
-    const sidecarJson = (await fs.readJson(sidecarJsonPath)) as { version?: string | number };
+    const sidecarJson = (await fs.readJson(sidecarJsonPath)) as {
+      version?: string | number;
+    };
     if (typeof sidecarJson.version === "string" || typeof sidecarJson.version === "number") {
       return String(sidecarJson.version);
     }
@@ -138,7 +140,9 @@ async function readAddonVersionFromDirectory(addonPath: string): Promise<string 
 
   const infoJsonPath = path.join(addonPath, "info.json");
   if (await fs.pathExists(infoJsonPath)) {
-    const infoJson = (await fs.readJson(infoJsonPath)) as { Version?: string | number };
+    const infoJson = (await fs.readJson(infoJsonPath)) as {
+      Version?: string | number;
+    };
     if (typeof infoJson.Version === "string" || typeof infoJson.Version === "number") {
       return String(infoJson.Version);
     }
@@ -228,7 +232,10 @@ export async function inspectFmAddon(
         remoteAssetUrl: options.latestAddonPath,
       }
     : await resolveRemoteFmAddon(addonName)
-        .then((addon) => ({ latestVersion: addon.version, remoteAssetUrl: addon.url }))
+        .then((addon) => ({
+          latestVersion: addon.version,
+          remoteAssetUrl: addon.url,
+        }))
         .catch((error) => ({
           latestVersion: undefined,
           remoteAssetUrl: getAddonManifestUrl(),
@@ -330,7 +337,8 @@ export function getFmAddonInstallInstructions(addonName: FmAddonName) {
   return {
     addonDisplayName,
     installCommand,
-    docsUrl: addonName === "auth" ? "https://proofkit.proof.sh/auth/fm-addon" : "https://proofkit.proof.sh/webviewer",
+    docsUrl:
+      addonName === "auth" ? "https://proofkit.proof.sh/auth/fm-addon" : "https://proofkit.proof.sh/docs/webviewer",
     steps: [
       `Run \`${installCommand}\` to download and open the latest add-on`,
       "When FileMaker opens the add-on file, confirm the install prompt",
@@ -386,7 +394,7 @@ export async function installFmAddonExplicitly({ addonName }: { addonName: FmAdd
     console.log(
       `${chalk.yellowBright(
         "The ProofKit Web Viewer add-on file was downloaded and opened.",
-      )} ${chalk.dim("(Learn more: https://proofkit.proof.sh/webviewer)")}`,
+      )} ${chalk.dim("(Learn more: https://proofkit.proof.sh/docs/webviewer)")}`,
     );
   }
   const steps = [

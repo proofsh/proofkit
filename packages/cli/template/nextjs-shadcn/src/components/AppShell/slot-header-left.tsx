@@ -11,13 +11,13 @@ import AppLogo from "../AppLogo";
  * If you don't want it to be used, you may return null or an empty fragment
  */
 export function SlotHeaderLeft() {
-  return (
-    <>
-      <Link href="/" style={{ display: "inline-flex", alignItems: "center" }}>
-        <AppLogo />
-      </Link>
-    </>
-  );
+	return (
+		<>
+			<Link href="/" style={{ display: "inline-flex", alignItems: "center" }}>
+				<AppLogo />
+			</Link>
+		</>
+	);
 }
 
 export default SlotHeaderLeft;

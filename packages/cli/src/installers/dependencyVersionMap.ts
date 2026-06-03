@@ -108,7 +108,7 @@ export const dependencyVersionMap = {
 
   // Linting and formatting
   oxlint: "^1.39.0",
-  ultracite: "^7.0.8",
+  ultracite: "^7.0.0",
 
   // Zod
   zod: "^4",
