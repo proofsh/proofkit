@@ -1,7 +1,0 @@
-{
-  "auth": { "type": "none" },
-  "envFile": ".env",
-  "appType": "browser",
-  "ui": "mantine",
-  "appliedUpgrades": ["cursorRules"]
-}
