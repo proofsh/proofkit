@@ -217,7 +217,40 @@ program
     }
   });
 
-program.parse();
+/**
+ * Run the typegen CLI. Used as the package bin entrypoint and re-exported so
+ * `@proofkit/cli`'s `typegen` command can delegate without duplicating logic.
+ *
+ * @param argv user-supplied args (without the node/script prefix). When omitted,
+ * the process argv is parsed (bin behavior).
+ */
+export async function runCli(argv?: readonly string[]) {
+  if (argv === undefined) {
+    await program.parseAsync();
+    return;
+  }
+  await program.parseAsync(argv as string[], { from: "user" });
+}
+
+function isCliEntrypoint() {
+  const invokedPath = process.argv[1];
+  if (!invokedPath) {
+    return false;
+  }
+  const modulePath = fileURLToPath(import.meta.url);
+  try {
+    return fs.realpathSync(invokedPath) === fs.realpathSync(modulePath);
+  } catch {
+    return path.resolve(invokedPath) === path.resolve(modulePath);
+  }
+}
+
+if (isCliEntrypoint()) {
+  runCli().catch((error: unknown) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
 
 function parseEnvs(envPath?: string | undefined) {
   let actualEnvPath = envPath;

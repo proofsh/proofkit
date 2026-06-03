@@ -1,20 +1,30 @@
-import { Command } from "commander";
+import { runCli } from "@proofkit/typegen/cli";
 
-import { runCodegenCommand } from "~/generators/fmdapi.js";
-import type { Settings } from "~/utils/parseSettings.js";
-import { ensureProofKitProject } from "../utils.js";
-
-export async function runTypegen(_opts: { settings: Settings }) {
-  await runCodegenCommand();
+export interface TypegenOptions {
+  config?: string;
+  envPath?: string;
+  proofkitToken?: string;
+  resetOverrides?: boolean;
 }
 
-export const makeTypegenCommand = () => {
-  const typegenCommand = new Command("typegen").description("Generate types for your project").action(runTypegen);
-
-  typegenCommand.hook("preAction", (_thisCommand, actionCommand) => {
-    const settings = ensureProofKitProject({ commandName: "typegen" });
-    actionCommand.setOptionValue("settings", settings);
-  });
-
-  return typegenCommand;
-};
+/**
+ * Thin alias to the `@proofkit/typegen` CLI. All config reading, validation, and
+ * generation lives in that package; we only map flags to its arg list so there is
+ * no duplicated logic to drift.
+ */
+export async function runTypegen(options: TypegenOptions = {}) {
+  const args: string[] = [];
+  if (options.config) {
+    args.push("--config", options.config);
+  }
+  if (options.envPath) {
+    args.push("--env-path", options.envPath);
+  }
+  if (options.proofkitToken) {
+    args.push("--proofkit-token", options.proofkitToken);
+  }
+  if (options.resetOverrides) {
+    args.push("--reset-overrides");
+  }
+  await runCli(args);
+}

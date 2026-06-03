@@ -15,7 +15,6 @@ export interface FmAddonInspection {
   addonName: FmAddonName;
   addonDir: string;
   addonDisplayName: string;
-  installCommand: string;
   targetDir: string | null;
   installedPath: string | null;
   remoteAssetUrl: string;
@@ -69,8 +68,8 @@ function getAddonTarget(addonName: FmAddonName): FmAddonTarget {
   return addonName === "auth" ? "auth" : "webviewer";
 }
 
-function getAddonInstallCommand(addonName: FmAddonName) {
-  return addonName === "auth" ? "proofkit add addon auth" : "proofkit add addon webviewer";
+function getAddonDocsUrl(addonName: FmAddonName) {
+  return addonName === "auth" ? "https://proofkit.proof.sh/auth/fm-addon" : "https://proofkit.proof.sh/docs/webviewer";
 }
 
 function getAddonManifestUrl() {
@@ -224,7 +223,6 @@ export async function inspectFmAddon(
 ): Promise<FmAddonInspection> {
   const addonDir = getAddonDir(addonName);
   const addonDisplayName = getAddonDisplayName(addonName);
-  const installCommand = getAddonInstallCommand(addonName);
   const targetDir = options && "targetDir" in options ? options.targetDir : resolveFmAddonDownloadDir();
   const remoteAddon = options?.latestAddonPath
     ? {
@@ -248,7 +246,6 @@ export async function inspectFmAddon(
       addonName,
       addonDir,
       addonDisplayName,
-      installCommand,
       targetDir: null,
       installedPath: null,
       remoteAssetUrl: remoteAddon.remoteAssetUrl,
@@ -275,7 +272,6 @@ export async function inspectFmAddon(
       addonName,
       addonDir,
       addonDisplayName,
-      installCommand,
       targetDir,
       installedPath: installedCandidates[0] ?? null,
       remoteAssetUrl: remoteAddon.remoteAssetUrl,
@@ -290,7 +286,6 @@ export async function inspectFmAddon(
       addonName,
       addonDir,
       addonDisplayName,
-      installCommand,
       targetDir,
       installedPath,
       remoteAssetUrl: remoteAddon.remoteAssetUrl,
@@ -307,7 +302,6 @@ export async function inspectFmAddon(
       addonName,
       addonDir,
       addonDisplayName,
-      installCommand,
       targetDir,
       installedPath,
       remoteAssetUrl: remoteAddon.remoteAssetUrl,
@@ -322,7 +316,6 @@ export async function inspectFmAddon(
     addonName,
     addonDir,
     addonDisplayName,
-    installCommand,
     targetDir,
     installedPath,
     remoteAssetUrl: remoteAddon.remoteAssetUrl,
@@ -333,14 +326,12 @@ export async function inspectFmAddon(
 
 export function getFmAddonInstallInstructions(addonName: FmAddonName) {
   const addonDisplayName = getAddonDisplayName(addonName);
-  const installCommand = getAddonInstallCommand(addonName);
+  const docsUrl = getAddonDocsUrl(addonName);
   return {
     addonDisplayName,
-    installCommand,
-    docsUrl:
-      addonName === "auth" ? "https://proofkit.proof.sh/auth/fm-addon" : "https://proofkit.proof.sh/docs/webviewer",
+    docsUrl,
     steps: [
-      `Run \`${installCommand}\` to download and open the latest add-on`,
+      `Download the latest ${addonDisplayName} add-on from ${docsUrl}`,
       "When FileMaker opens the add-on file, confirm the install prompt",
       `Open your FileMaker file, go to layout mode, and add the ${addonDisplayName} add-on to the file`,
     ],

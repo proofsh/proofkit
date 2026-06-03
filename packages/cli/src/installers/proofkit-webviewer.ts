@@ -70,6 +70,9 @@ export function getWebViewerAddonMessages({ hasRequiredLayouts, inspection }: We
     nextSteps: [] as string[],
   };
 
+  const instructions = getFmAddonInstallInstructions(inspection.addonName);
+  const { docsUrl } = instructions;
+
   if (hasRequiredLayouts) {
     messages.info.push("Successfully detected all required layouts for ProofKit Web Viewer in your FileMaker file.");
   }
@@ -79,10 +82,8 @@ export function getWebViewerAddonMessages({ hasRequiredLayouts, inspection }: We
       inspection.installedVersion && inspection.latestVersion
         ? ` Local version: ${inspection.installedVersion}. Latest version: ${inspection.latestVersion}.`
         : "";
-    messages.warn.push(
-      `New ProofKit Web Viewer add-on available. Run \`${inspection.installCommand}\` to download and open it.${versionSuffix}`,
-    );
-    messages.nextSteps.push(inspection.installCommand);
+    messages.warn.push(`New ProofKit Web Viewer add-on available. See ${docsUrl} to update it.${versionSuffix}`);
+    messages.nextSteps.push(`Update the ProofKit Web Viewer add-on: ${docsUrl}`);
   }
 
   if (inspection.status === "unknown" && inspection.reason === "unsupported-platform") {
@@ -90,25 +91,24 @@ export function getWebViewerAddonMessages({ hasRequiredLayouts, inspection }: We
   }
 
   if (hasRequiredLayouts === false) {
-    const instructions = getFmAddonInstallInstructions("wv");
     messages.warn.push(
       "ProofKit Web Viewer layouts were not detected in your FileMaker file. The add-on may not be installed in the file yet.",
     );
     if (inspection.status === "missing") {
       messages.warn.push(
-        `Local ProofKit Web Viewer add-on file was not found. Run \`${inspection.installCommand}\` to download and open it.`,
+        `Local ProofKit Web Viewer add-on file was not found. See ${docsUrl} to download and install it.`,
       );
-      messages.nextSteps.push(inspection.installCommand);
+      messages.nextSteps.push(`Install the ProofKit Web Viewer add-on: ${docsUrl}`);
     }
     if (inspection.status === "unknown" && inspection.reason !== "unsupported-platform") {
       messages.warn.push(
         "Could not determine the local ProofKit Web Viewer add-on version. Reinstall it explicitly if you need the latest local files.",
       );
-      messages.nextSteps.push(inspection.installCommand);
+      messages.nextSteps.push(`Install the ProofKit Web Viewer add-on: ${docsUrl}`);
     }
     messages.info.push(
       chalk.bgYellow(" ACTION REQUIRED: ") +
-        ` Install or update the ProofKit Web Viewer add-on in your FileMaker file. ${chalk.dim(`(Learn more: ${instructions.docsUrl})`)}`,
+        ` Install or update the ProofKit Web Viewer add-on in your FileMaker file. ${chalk.dim(`(Learn more: ${docsUrl})`)}`,
     );
     for (const step of instructions.steps) {
       messages.info.push(step);

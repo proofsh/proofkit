@@ -34,7 +34,6 @@ import { runDoctor } from "~/core/doctor.js";
 import { getCliErrorMessage, isCliError, NonInteractiveInputError, UserCancelledError } from "~/core/errors.js";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
-import { runPrompt } from "~/core/prompt.js";
 import { resolveInitRequest } from "~/core/resolveInitRequest.js";
 import type { CliFlags } from "~/core/types.js";
 import { CLI_VERSION } from "~/package-versions.js";
@@ -80,7 +79,7 @@ export const runInit = (name?: string, rawFlags?: Partial<CliFlags>) =>
     return { request, plan };
   });
 
-type ProjectMenuChoice = "add" | "remove" | "typegen" | "deploy" | "upgrade" | "doctor" | "prompt" | "docs";
+type ProjectMenuChoice = "typegen" | "doctor" | "docs";
 
 function isPromptCancellationError(error: unknown) {
   return error instanceof UserCancelledError || (error instanceof Error && error.name === "ExitPromptError");
@@ -106,39 +105,14 @@ const runProjectMenu = Effect.gen(function* () {
         message: "What would you like to do?",
         options: [
           {
-            label: "Add Components",
-            value: "add",
-            hint: "Add new pages, schemas, data sources, etc.",
-          },
-          {
-            label: "Remove Components",
-            value: "remove",
-            hint: "Remove pages, schemas, data sources, etc.",
-          },
-          {
             label: "Generate Types",
             value: "typegen",
             hint: "Update field definitions from your data sources",
           },
           {
-            label: "Deploy",
-            value: "deploy",
-            hint: "Deploy your app to Vercel",
-          },
-          {
-            label: "Upgrade Components",
-            value: "upgrade",
-            hint: "Update ProofKit components to latest version",
-          },
-          {
             label: "Doctor",
             value: "doctor",
             hint: "Inspect project health and next steps",
-          },
-          {
-            label: "Prompt",
-            value: "prompt",
-            hint: "Show agent workflow guidance",
           },
           {
             label: "View Documentation",
@@ -154,10 +128,13 @@ const runProjectMenu = Effect.gen(function* () {
   });
 
   switch (menuChoice) {
+    case "typegen":
+      return yield* Effect.promise(async () => {
+        const { runTypegen } = await import("~/cli/typegen/index.js");
+        await runTypegen();
+      });
     case "doctor":
       return yield* runDoctor;
-    case "prompt":
-      return yield* runPrompt;
     case "docs": {
       const { DOCS_URL } = yield* Effect.promise(() => import("~/consts.js"));
       consoleService.info(`Opening ${DOCS_URL} in your browser...`);
@@ -165,66 +142,6 @@ const runProjectMenu = Effect.gen(function* () {
       yield* Effect.promise(() => open(DOCS_URL));
       return;
     }
-    case "add":
-      return yield* Effect.tryPromise({
-        try: async () => {
-          const [{ runAdd }, { initProgramState, state }] = await Promise.all([
-            import("~/cli/add/index.js"),
-            import("~/state.js"),
-          ]);
-          initProgramState({});
-          state.baseCommand = "add";
-          state.projectDir = process.cwd();
-          await runAdd(undefined);
-        },
-        catch: (cause) => toProjectMenuCommandError("add", cause),
-      });
-    case "remove":
-      return yield* Effect.tryPromise({
-        try: async () => {
-          const [{ runRemove }, { initProgramState, state }] = await Promise.all([
-            import("~/cli/remove/index.js"),
-            import("~/state.js"),
-          ]);
-          initProgramState({});
-          state.baseCommand = "remove";
-          state.projectDir = process.cwd();
-          await runRemove(undefined);
-        },
-        catch: (cause) => toProjectMenuCommandError("remove", cause),
-      });
-    case "typegen":
-      return yield* Effect.promise(async () => {
-        const [{ runTypegen }, { getSettings }, { state }] = await Promise.all([
-          import("~/cli/typegen/index.js"),
-          import("~/utils/parseSettings.js"),
-          import("~/state.js"),
-        ]);
-        state.projectDir = process.cwd();
-        await runTypegen({ settings: getSettings() });
-      });
-    case "deploy":
-      return yield* Effect.promise(async () => {
-        const [{ runDeploy }, { initProgramState, state }] = await Promise.all([
-          import("~/cli/deploy/index.js"),
-          import("~/state.js"),
-        ]);
-        initProgramState({});
-        state.baseCommand = "deploy";
-        state.projectDir = process.cwd();
-        await runDeploy();
-      });
-    case "upgrade":
-      return yield* Effect.promise(async () => {
-        const [{ runUpgrade }, { initProgramState, state }] = await Promise.all([
-          import("~/cli/update/index.js"),
-          import("~/state.js"),
-        ]);
-        initProgramState({});
-        state.baseCommand = "upgrade";
-        state.projectDir = process.cwd();
-        await runUpgrade();
-      });
     default:
       throw new Error(`Unknown menu choice: ${menuChoice}`);
   }
@@ -247,8 +164,8 @@ export const runDefaultCommand = (rawFlags?: Partial<CliFlags>) =>
 
       consoleService.note(
         [
-          "ProofKit now focuses on project bootstrap, diagnostics, and agent entrypoints.",
-          "Use an explicit command such as `proofkit doctor`, `proofkit prompt`, or `proofkit init`.",
+          "ProofKit now focuses on project bootstrap and diagnostics.",
+          "Use an explicit command such as `proofkit doctor`, `proofkit typegen`, or `proofkit init`.",
         ].join("\n"),
         "Project commands",
       );
@@ -288,19 +205,6 @@ function getCurrentTTYState() {
     stdinIsTTY: process.stdin?.isTTY,
     stdoutIsTTY: process.stdout?.isTTY,
   };
-}
-
-function legacyEffect<T>(runLegacy: () => Promise<T>, options?: { nonInteractive?: boolean; debug?: boolean }) {
-  const nonInteractive = resolveNonInteractiveMode({
-    nonInteractive: options?.nonInteractive,
-    ...getCurrentTTYState(),
-  });
-
-  return makeLiveLayer({
-    cwd: process.cwd(),
-    debug: options?.debug === true,
-    nonInteractive,
-  })(Effect.promise(runLegacy));
 }
 
 function makeInitCommand() {
@@ -370,147 +274,28 @@ function makeInitCommand() {
   ).pipe(withCommandDescription("Create a new project with ProofKit"));
 }
 
-function makeAddCommand() {
-  return makeCommand(
-    "add",
-    {
-      name: optionalArg(textArg({ name: "name" })).pipe(withArgDescription("Supported add target, currently `addon`")),
-      target: optionalArg(textArg({ name: "target" })).pipe(withArgDescription("Add-on target")),
-      noInstall: booleanOption("no-install").pipe(withOptionDescription("Skip package installation")),
-      CI: booleanOption("ci").pipe(withOptionDescription("Deprecated alias for --non-interactive")),
-      nonInteractive: booleanOption("non-interactive").pipe(
-        withOptionDescription("Never prompt for input; fail when required values are missing"),
-      ),
-      debug: booleanOption("debug").pipe(withOptionDescription("Run in debug mode")),
-    },
-    ({ name, target, noInstall, CI, nonInteractive, debug }) =>
-      legacyEffect(
-        async () => {
-          const [{ runAdd }, { initProgramState, state }] = await Promise.all([
-            import("~/cli/add/index.js"),
-            import("~/state.js"),
-          ]);
-          initProgramState({
-            noInstall,
-            ci: CI,
-            nonInteractive,
-            debug,
-          });
-          state.baseCommand = "add";
-          state.projectDir = process.cwd();
-          await runAdd(getOrUndefined(name), {
-            noInstall,
-            target: getOrUndefined(target),
-          });
-        },
-        { nonInteractive: CI || nonInteractive, debug },
-      ),
-  ).pipe(withCommandDescription("Add a supported ProofKit add-on."));
-}
-
-function makeRemoveCommand() {
-  return makeCommand(
-    "remove",
-    {
-      name: optionalArg(textArg({ name: "name" })).pipe(withArgDescription("Component type to remove")),
-      CI: booleanOption("ci").pipe(withOptionDescription("Deprecated alias for --non-interactive")),
-      nonInteractive: booleanOption("non-interactive").pipe(
-        withOptionDescription("Never prompt for input; fail when required values are missing"),
-      ),
-      debug: booleanOption("debug").pipe(withOptionDescription("Run in debug mode")),
-    },
-    ({ name, CI, nonInteractive, debug }) =>
-      legacyEffect(
-        async () => {
-          const [{ runRemove }, { initProgramState, state }] = await Promise.all([
-            import("~/cli/remove/index.js"),
-            import("~/state.js"),
-          ]);
-          initProgramState({
-            ci: CI,
-            nonInteractive,
-            debug,
-          });
-          state.baseCommand = "remove";
-          state.projectDir = process.cwd();
-          await runRemove(getOrUndefined(name));
-        },
-        { nonInteractive: CI || nonInteractive, debug },
-      ),
-  ).pipe(withCommandDescription("Legacy command. Prefer direct code edits or package-native tools."));
-}
-
 function makeTypegenCommand() {
   return makeCommand(
     "typegen",
     {
-      debug: booleanOption("debug").pipe(withOptionDescription("Run in debug mode")),
+      config: optionalTextOption("config", "Optional typegen config file name"),
+      envPath: optionalTextOption("env-path", "Optional path to your .env file"),
+      proofkitToken: optionalTextOption("proofkit-token", "Transient ProofKit token for FM MCP authorization"),
+      resetOverrides: booleanOption("reset-overrides").pipe(
+        withOptionDescription("Recreate the overrides file(s) even if they already exist"),
+      ),
     },
-    ({ debug }) =>
-      legacyEffect(
-        async () => {
-          const [{ runTypegen }, { state }] = await Promise.all([
-            import("~/cli/typegen/index.js"),
-            import("~/state.js"),
-          ]);
-          state.projectDir = process.cwd();
-          await runTypegen({
-            settings: (await import("~/utils/parseSettings.js")).getSettings(),
-          });
-        },
-        { debug },
-      ),
-  ).pipe(withCommandDescription("Legacy alias. Prefer `npx @proofkit/typegen`."));
-}
-
-function makeDeployCommand() {
-  return makeCommand(
-    "deploy",
-    {
-      debug: booleanOption("debug").pipe(withOptionDescription("Run in debug mode")),
-    },
-    ({ debug }) =>
-      legacyEffect(
-        async () => {
-          const [{ runDeploy }, { initProgramState, state }] = await Promise.all([
-            import("~/cli/deploy/index.js"),
-            import("~/state.js"),
-          ]);
-          initProgramState({ debug });
-          state.baseCommand = "deploy";
-          state.projectDir = process.cwd();
-          await runDeploy();
-        },
-        { debug },
-      ),
-  ).pipe(withCommandDescription("Deploy your app"));
-}
-
-function makeUpgradeCommand() {
-  return makeCommand(
-    "upgrade",
-    {
-      CI: booleanOption("ci").pipe(withOptionDescription("Deprecated alias for --non-interactive")),
-      nonInteractive: booleanOption("non-interactive").pipe(
-        withOptionDescription("Never prompt for input; fail when required values are missing"),
-      ),
-      debug: booleanOption("debug").pipe(withOptionDescription("Run in debug mode")),
-    },
-    ({ CI, nonInteractive, debug }) =>
-      legacyEffect(
-        async () => {
-          const [{ runUpgrade }, { initProgramState, state }] = await Promise.all([
-            import("~/cli/update/index.js"),
-            import("~/state.js"),
-          ]);
-          initProgramState({ ci: CI, nonInteractive, debug });
-          state.baseCommand = "upgrade";
-          state.projectDir = process.cwd();
-          await runUpgrade();
-        },
-        { nonInteractive: CI || nonInteractive, debug },
-      ),
-  ).pipe(withCommandDescription("Legacy command."));
+    ({ config, envPath, proofkitToken, resetOverrides }) =>
+      Effect.promise(async () => {
+        const { runTypegen } = await import("~/cli/typegen/index.js");
+        await runTypegen({
+          config: getOrUndefined(config),
+          envPath: getOrUndefined(envPath),
+          proofkitToken: getOrUndefined(proofkitToken),
+          resetOverrides,
+        });
+      }),
+  ).pipe(withCommandDescription("Generate types via @proofkit/typegen"));
 }
 
 function makeDoctorCommand() {
@@ -526,21 +311,6 @@ function makeDoctorCommand() {
         nonInteractive: true,
       })(runDoctor),
   ).pipe(withCommandDescription("Inspect project health and suggest exact next steps"));
-}
-
-function makePromptCommand() {
-  return makeCommand(
-    "prompt",
-    {
-      debug: booleanOption("debug").pipe(withOptionDescription("Run in debug mode")),
-    },
-    ({ debug }) =>
-      makeLiveLayer({
-        cwd: process.cwd(),
-        debug: debug === true,
-        nonInteractive: true,
-      })(runPrompt),
-  ).pipe(withCommandDescription("Agent workflow entrypoint placeholder"));
 }
 
 const rootCommand = makeCommand(
@@ -571,16 +341,7 @@ const rootCommand = makeCommand(
     ),
 ).pipe(
   withCommandDescription("Interactive CLI to scaffold and manage ProofKit projects"),
-  withSubcommands([
-    makeInitCommand(),
-    makeDoctorCommand(),
-    makePromptCommand(),
-    makeAddCommand(),
-    makeRemoveCommand(),
-    makeTypegenCommand(),
-    makeDeployCommand(),
-    makeUpgradeCommand(),
-  ]),
+  withSubcommands([makeInitCommand(), makeDoctorCommand(), makeTypegenCommand()]),
 );
 
 export const cli = run(rootCommand, {

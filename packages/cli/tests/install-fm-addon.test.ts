@@ -91,7 +91,7 @@ describe("compareAddonVersions", () => {
 });
 
 describe("getWebViewerAddonMessages", () => {
-  it("adds an explicit update command when the local add-on is outdated", () => {
+  it("points to the docs when the local add-on is outdated", () => {
     const messages = getWebViewerAddonMessages({
       hasRequiredLayouts: true,
       inspection: {
@@ -99,7 +99,6 @@ describe("getWebViewerAddonMessages", () => {
         addonName: "wv",
         addonDir: "ProofKitWV",
         addonDisplayName: "ProofKit Web Viewer",
-        installCommand: "proofkit add addon webviewer",
         targetDir: "/tmp/ProofKit",
         installedPath: "/tmp/ProofKit/ProofKit.fmaddon",
         installedVersion: "2.2.3.0",
@@ -108,8 +107,11 @@ describe("getWebViewerAddonMessages", () => {
       },
     });
 
-    expect(messages.warn.join("\n")).toContain("proofkit add addon webviewer");
-    expect(messages.nextSteps).toEqual(["proofkit add addon webviewer"]);
+    expect(messages.warn.join("\n")).toContain("https://proofkit.proof.sh/docs/webviewer");
+    expect(messages.nextSteps).toEqual([
+      "Update the ProofKit Web Viewer add-on: https://proofkit.proof.sh/docs/webviewer",
+    ]);
+    expect(messages.warn.join("\n")).not.toContain("proofkit add addon");
   });
 });
 

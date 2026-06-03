@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
 
@@ -59,7 +59,7 @@ describe("proofkit CLI", () => {
     expect(output).toContain("Found");
     expect(output).toContain("Project commands");
     expect(output).toContain("proofkit doctor");
-    expect(output).toContain("proofkit prompt");
+    expect(output).toContain("proofkit typegen");
   });
 
   it("fails with guidance when no command is used in non-interactive mode", () => {
@@ -147,9 +147,7 @@ describe("proofkit CLI", () => {
     const output = `${result.stdout}\n${result.stderr}`;
 
     expect(result.status).not.toBe(0);
-    expect(output).toContain(
-      "Invalid subcommand for proofkit - use one of 'init', 'doctor', 'prompt', 'add', 'remove', 'typegen', 'deploy', 'upgrade'",
-    );
+    expect(output).toContain("Invalid subcommand for proofkit - use one of 'init', 'doctor', 'typegen'");
     expect(output).not.toContain('"CommandMismatch"');
     expect(output).not.toContain("[debug]");
   });
@@ -164,72 +162,8 @@ describe("proofkit CLI", () => {
     const output = `${result.stdout}\n${result.stderr}`;
 
     expect(result.status).not.toBe(0);
-    expect(output).toContain(
-      "Invalid subcommand for proofkit - use one of 'init', 'doctor', 'prompt', 'add', 'remove', 'typegen', 'deploy', 'upgrade'",
-    );
+    expect(output).toContain("Invalid subcommand for proofkit - use one of 'init', 'doctor', 'typegen'");
     expect(output).toContain("[debug]");
     expect(output).toContain('"CommandMismatch"');
-  });
-
-  it("supports `proofkit prompt`", () => {
-    const result = spawnSync("node", [distEntry, "prompt"], {
-      cwd: packageDir,
-      stdio: "pipe",
-      encoding: "utf8",
-    });
-
-    expect(result.status).toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain("Agent-ready prompts are coming soon.");
-  });
-
-  it("supports `proofkit add addon webviewer`", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-project-"));
-    const addonDownloadDir = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-downloads-"));
-    const fixtureDir = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-addon-fixtures-"));
-    const addonFixturePath = path.join(fixtureDir, "ProofKit.fmaddon");
-    await fs.writeFile(addonFixturePath, "fake-fmaddon");
-    const manifestPath = path.join(fixtureDir, "manifest.json");
-    await fs.writeJson(manifestPath, {
-      latestVersion: "2.2.4.0",
-      versions: [
-        {
-          version: "2.2.4.0",
-          assets: [
-            {
-              file: "ProofKit.fmaddon",
-              url: pathToFileURL(addonFixturePath).toString(),
-            },
-          ],
-        },
-      ],
-    });
-
-    const result = spawnSync("node", [distEntry, "add", "addon", "webviewer", "--non-interactive"], {
-      cwd,
-      stdio: "pipe",
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        PROOFKIT_FM_ADDON_MANIFEST_URL: pathToFileURL(manifestPath).toString(),
-        PROOFKIT_FM_ADDON_DOWNLOAD_DIR: addonDownloadDir,
-        PROOFKIT_SKIP_OPEN_FM_ADDON: "1",
-      },
-    });
-
-    expect(result.status).toBe(0);
-
-    expect(await fs.pathExists(path.join(addonDownloadDir, "ProofKit.fmaddon"))).toBe(true);
-    expect(await fs.pathExists(path.join(addonDownloadDir, "ProofKit.fmaddon.proofkit.json"))).toBe(true);
-  });
-
-  it("rejects unsupported add targets", () => {
-    const result = spawnSync("node", [distEntry, "add", "page"], {
-      cwd: packageDir,
-      stdio: "pipe",
-      encoding: "utf8",
-    });
-
-    expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain("Only `proofkit add addon <target>` is supported.");
   });
 });

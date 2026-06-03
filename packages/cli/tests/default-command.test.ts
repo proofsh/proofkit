@@ -80,7 +80,7 @@ describe("default command routing", () => {
     expect(promptTranscript.select).toEqual([
       {
         message: "What would you like to do?",
-        options: ["add", "remove", "typegen", "deploy", "upgrade", "doctor", "prompt", "docs"],
+        options: ["typegen", "doctor", "docs"],
       },
     ]);
     expect(consoleTranscript.note.some((entry) => entry.title === "Project commands")).toBe(false);

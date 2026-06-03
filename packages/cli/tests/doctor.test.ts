@@ -4,7 +4,6 @@ import { Effect } from "effect";
 import fs from "fs-extra";
 import { describe, expect, it } from "vitest";
 import { runDoctor } from "~/core/doctor.js";
-import { runPrompt } from "~/core/prompt.js";
 import { makeTestLayer } from "./test-layer.js";
 
 function createConsoleTranscript() {
@@ -17,7 +16,7 @@ function createConsoleTranscript() {
   };
 }
 
-describe("doctor and prompt commands", () => {
+describe("doctor command", () => {
   it("reports missing proofkit project", async () => {
     const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-doctor-missing-"));
     const consoleTranscript = createConsoleTranscript();
@@ -72,23 +71,5 @@ describe("doctor and prompt commands", () => {
     expect(consoleTranscript.note[0]?.message).toContain("Missing `proofkit-typegen.config.jsonc`");
     expect(consoleTranscript.note[0]?.message).toContain("npx @proofkit/typegen init");
     expect(consoleTranscript.note[0]?.message).toContain("npx @proofkit/typegen ui");
-  });
-
-  it("returns coming-soon messaging for prompt", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-prompt-"));
-    const consoleTranscript = createConsoleTranscript();
-
-    await Effect.runPromise(
-      runPrompt.pipe(
-        makeTestLayer({
-          cwd,
-          packageManager: "pnpm",
-          console: consoleTranscript,
-        }),
-      ),
-    );
-
-    expect(consoleTranscript.note[0]?.title).toBe("Coming soon");
-    expect(consoleTranscript.note[0]?.message).toContain("Agent-ready prompts are coming soon.");
   });
 });
