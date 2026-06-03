@@ -2,13 +2,9 @@
 
 This is a [NextJS](https://nextjs.org/) project bootstrapped with `@proofkit/cli`. Learn more at [proofkit.proof.sh](https://proofkit.proof.sh)
 
-## What's next? How do I make an app with this?
+## What's next?
 
-While this template is designed to be a minimal starting point, the proofkit CLI will guide you through adding additional features and pages.
-
-To add new things to your project, simply run the `proofkit` script from the project's root directory.
-
-e.g. `npm run proofkit` or `pnpm proofkit` etc.
+While this template is designed to be a minimal starting point, the ProofKit documentation will guide you through building your app.
 
 For more information, see the full [ProofKit documentation](https://proofkit.proof.sh).
 

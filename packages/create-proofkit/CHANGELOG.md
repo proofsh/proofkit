@@ -1,5 +1,17 @@
 # create-proofkit
 
+## 0.1.3
+
+### Patch Changes
+
+- 7d48139: Ship ProofKit CLI in installer and publish CLI packages.
+
+## 0.1.3-beta.0
+
+### Patch Changes
+
+- 7d48139: Ship ProofKit CLI in installer and publish CLI packages.
+
 ## 0.1.2
 
 ### Patch Changes

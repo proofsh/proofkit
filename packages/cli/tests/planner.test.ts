@@ -11,7 +11,6 @@ import {
 } from "~/utils/getProofKitVersion.js";
 import { makeInitRequest } from "./init-fixtures.js";
 
-const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
 const proofkitFmdapiVersion = getProofkitDependencyVersion(getFmdapiVersion());
 const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
 const proofkitWebviewerVersion = getProofkitDependencyVersion(getProofkitWebviewerVersion());
@@ -27,17 +26,25 @@ describe("planInit", () => {
     expect(plan.targetDir).toBe(path.resolve("/tmp/workspace", "demo-app"));
     expect(plan.templateDir).toBe("/templates/browser");
     expect(plan.packageJson.name).toBe("demo-app");
+    expect(plan.packageJson.proofkitMetadata).toEqual({
+      initVersion: getVersion(),
+      scaffoldPackage: "@proofkit/cli",
+    });
     expect(plan.packageJson.devEngines?.packageManager).toEqual({
       name: "pnpm",
-      version: "11.0.0",
+      version: "^11.0.0",
       onFail: "download",
     });
-    expect(plan.packageJson.devEngines).not.toHaveProperty("runtime");
+    expect(plan.packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: NODE_RUNTIME_VERSION,
+      onFail: "download",
+    });
     expect(plan.packageJson.engines).toEqual({
       node: NODE_RUNTIME_VERSION,
     });
     expect(plan.settings.appType).toBe("browser");
-    expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
+    expect(plan.packageJson.devDependencies["@proofkit/cli"]).toBeUndefined();
     expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(plan.tasks.runInstall).toBe(true);
     expect(plan.tasks.runUltraciteInit).toBe(true);
@@ -90,7 +97,7 @@ describe("planInit", () => {
     expect(plan.packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
     expect(plan.tasks.runInstall).toBe(false);
     expect(plan.tasks.runUltraciteInit).toBe(true);
-    expect(plan.tasks.runIntentInstall).toBe(true);
+    expect(plan.tasks.runIntentInstall).toBe(false);
     expect(plan.tasks.runFix).toBe(false);
     expect(plan.tasks.runLint).toBe(false);
     expect(plan.tasks.initializeGit).toBe(false);
@@ -175,7 +182,7 @@ describe("planInit", () => {
     });
   });
 
-  it("uses package manager execute command for agent setup next step", () => {
+  it("omits intent install from user-facing next steps", () => {
     const cases = [
       ["npm", "npx @tanstack/intent@latest install"],
       ["pnpm", "pnpx @tanstack/intent@latest install"],
@@ -188,7 +195,7 @@ describe("planInit", () => {
         templateDir: "/templates/browser",
       });
 
-      expect(plan.nextSteps).toContain(nextStep);
+      expect(plan.nextSteps).not.toContain(nextStep);
     }
   });
 

@@ -27,7 +27,7 @@ function execSmokeCommand(command: string, options: Parameters<typeof execSync>[
  * Smoke-test helper only: swap workspace refs to published tags so install/build
  * validates what end users can actually fetch from the registry.
  */
-function usePublishedProofkitVersionsForSmoke(projectDir: string): void {
+function applyPublishedProofkitVersionsForSmoke(projectDir: string): void {
   const pkgPath = join(projectDir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
@@ -60,7 +60,7 @@ export function verifySmokeProjectBuilds(projectDir: string): void {
 
   try {
     // Smoke tests intentionally validate published package installability.
-    usePublishedProofkitVersionsForSmoke(projectDir);
+    applyPublishedProofkitVersionsForSmoke(projectDir);
 
     console.log("Installing dependencies...");
     execSmokeCommand("pnpm install --prefer-offline --no-frozen-lockfile", {

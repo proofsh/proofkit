@@ -4,7 +4,7 @@ import {
   FMDAPI_VERSION,
   TYPEGEN_VERSION,
   WEBVIEWER_VERSION,
-} from "~/generated/package-versions.js";
+} from "~/package-versions.js";
 
 export const getVersion = () => {
   return CLI_VERSION;

@@ -9,13 +9,13 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 const currentDirectory = import.meta.dirname;
 
 export default defineConfig({
-  plugins: [fmBridge(), react(), tailwindcss(), viteSingleFile()],
-  resolve: {
-    alias: {
-      "@": path.resolve(currentDirectory, "./src"),
-    },
-  },
-  server: {
-    port: 5175,
-  },
+	plugins: [fmBridge(), react(), tailwindcss(), viteSingleFile()],
+	resolve: {
+		alias: {
+			"@": path.resolve(currentDirectory, "./src"),
+		},
+	},
+	server: {
+		port: 5175,
+	},
 });

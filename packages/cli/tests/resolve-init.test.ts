@@ -380,6 +380,88 @@ describe("resolveInitRequest", () => {
     expect(consoleTranscript.info).toContain("Using ProofKit plugin file: LocalFile.fmp12");
   });
 
+  it("skips local fm authorization when proofkit token is provided", async () => {
+    const tracker = {
+      commands: [],
+      gitInits: 0,
+      codegens: 0,
+      filemakerBootstraps: 0,
+      localFmMcpAuthorizations: [],
+    };
+
+    const request = await Effect.runPromise(
+      resolveInitRequest("demo", {
+        noGit: true,
+        noInstall: true,
+        force: false,
+        default: false,
+        importAlias: "~/",
+        CI: false,
+        appType: "webviewer",
+        dataSource: "filemaker",
+        proofkitToken: "provided-token",
+      }).pipe(
+        makeTestLayer({
+          cwd: "/tmp",
+          packageManager: "pnpm",
+          nonInteractive: false,
+          tracker,
+          fileMaker: {
+            localFmMcp: {
+              healthy: true,
+              connectedFiles: ["LocalFile.fmp12"],
+            },
+          },
+        }),
+      ),
+    );
+
+    expect(request.proofkitToken).toBe("provided-token");
+    expect(request.fileMaker).toMatchObject({
+      mode: "local-fm-mcp",
+      proofkitToken: "provided-token",
+    });
+    expect(tracker.localFmMcpAuthorizations).toEqual([]);
+  });
+
+  it("uses FM_MCP_SESSION_ID as proofkit token fallback", async () => {
+    const original = process.env.FM_MCP_SESSION_ID;
+    process.env.FM_MCP_SESSION_ID = "env-token";
+    try {
+      const request = await Effect.runPromise(
+        resolveInitRequest("demo", {
+          noGit: true,
+          noInstall: true,
+          force: false,
+          default: false,
+          importAlias: "~/",
+          CI: true,
+          appType: "webviewer",
+          dataSource: "filemaker",
+        }).pipe(
+          makeTestLayer({
+            cwd: "/tmp",
+            packageManager: "pnpm",
+            fileMaker: {
+              localFmMcp: {
+                healthy: true,
+                connectedFiles: ["LocalFile.fmp12"],
+              },
+            },
+          }),
+        ),
+      );
+
+      expect(request.proofkitToken).toBe("env-token");
+    } finally {
+      if (original === undefined) {
+        delete process.env.FM_MCP_SESSION_ID;
+      } else {
+        process.env.FM_MCP_SESSION_ID = original;
+      }
+    }
+  });
+
   it("asks which local FileMaker file to use when multiple are open", async () => {
     const promptTranscript: PromptTranscript = {
       text: [],

@@ -1,7 +1,7 @@
 import { sha256 } from "@oslojs/crypto/sha2";
 import {
-  encodeBase32LowerCaseNoPadding,
-  encodeHexLowerCase,
+	encodeBase32LowerCaseNoPadding,
+	encodeHexLowerCase,
 } from "@oslojs/encoding";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -15,10 +15,10 @@ import type { User } from "./user";
  * @returns The session token.
  */
 export function generateSessionToken(): string {
-  const bytes = new Uint8Array(20);
-  crypto.getRandomValues(bytes);
-  const token = encodeBase32LowerCaseNoPadding(bytes);
-  return token;
+	const bytes = new Uint8Array(20);
+	crypto.getRandomValues(bytes);
+	const token = encodeBase32LowerCaseNoPadding(bytes);
+	return token;
 }
 
 /**
@@ -28,26 +28,26 @@ export function generateSessionToken(): string {
  * @returns The session.
  */
 export async function createSession(
-  token: string,
-  userId: string
+	token: string,
+	userId: string,
 ): Promise<Session> {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-  const session: Session = {
-    id: sessionId,
-    id_user: userId,
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-  };
+	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const session: Session = {
+		id: sessionId,
+		id_user: userId,
+		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+	};
 
-  // create session in DB
-  await sessionsLayout.create({
-    fieldData: {
-      id: session.id,
-      id_user: session.id_user,
-      expiresAt: Math.floor(session.expiresAt.getTime() / 1000),
-    },
-  });
+	// create session in DB
+	await sessionsLayout.create({
+		fieldData: {
+			id: session.id,
+			id_user: session.id_user,
+			expiresAt: Math.floor(session.expiresAt.getTime() / 1000),
+		},
+	});
 
-  return session;
+	return session;
 }
 
 /**
@@ -55,13 +55,13 @@ export async function createSession(
  * @param sessionId - The ID of the session to invalidate.
  */
 export async function invalidateSession(sessionId: string): Promise<void> {
-  const fmResult = await sessionsLayout.maybeFindFirst({
-    query: { id: `==${sessionId}` },
-  });
-  if (fmResult === null) {
-    return;
-  }
-  await sessionsLayout.delete({ recordId: fmResult.data.recordId });
+	const fmResult = await sessionsLayout.maybeFindFirst({
+		query: { id: `==${sessionId}` },
+	});
+	if (fmResult === null) {
+		return;
+	}
+	await sessionsLayout.delete({ recordId: fmResult.data.recordId });
 }
 
 /**
@@ -70,53 +70,53 @@ export async function invalidateSession(sessionId: string): Promise<void> {
  * @returns The session, or null if it doesn't exist.
  */
 export async function validateSessionToken(
-  token: string
+	token: string,
 ): Promise<SessionValidationResult> {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 
-  const result = await sessionsLayout.maybeFindFirst({
-    query: { id: `==${sessionId}` },
-  });
-  if (result === null) {
-    return { session: null, user: null };
-  }
+	const result = await sessionsLayout.maybeFindFirst({
+		query: { id: `==${sessionId}` },
+	});
+	if (result === null) {
+		return { session: null, user: null };
+	}
 
-  const fmResult = result.data.fieldData;
-  const recordId = result.data.recordId;
-  const session: Session = {
-    id: fmResult.id,
-    id_user: fmResult.id_user,
-    expiresAt: fmResult.expiresAt
-      ? new Date(fmResult.expiresAt * 1000)
-      : new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-  };
+	const fmResult = result.data.fieldData;
+	const recordId = result.data.recordId;
+	const session: Session = {
+		id: fmResult.id,
+		id_user: fmResult.id_user,
+		expiresAt: fmResult.expiresAt
+			? new Date(fmResult.expiresAt * 1000)
+			: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+	};
 
-  const user: User = {
-    id: session.id_user,
-    email: fmResult["proofkit_auth_users::email"],
-    emailVerified: Boolean(fmResult["proofkit_auth_users::emailVerified"]),
-    username: fmResult["proofkit_auth_users::username"],
-  };
+	const user: User = {
+		id: session.id_user,
+		email: fmResult["proofkit_auth_users::email"],
+		emailVerified: Boolean(fmResult["proofkit_auth_users::emailVerified"]),
+		username: fmResult["proofkit_auth_users::username"],
+	};
 
-  // delete session if it has expired
-  if (Date.now() >= session.expiresAt.getTime()) {
-    await sessionsLayout.delete({ recordId });
-    return { session: null, user: null };
-  }
+	// delete session if it has expired
+	if (Date.now() >= session.expiresAt.getTime()) {
+		await sessionsLayout.delete({ recordId });
+		return { session: null, user: null };
+	}
 
-  // extend session if it's going to expire soon
-  // You may want to customize this logic to better suit your app's requirements
-  if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
-    session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await sessionsLayout.update({
-      recordId,
-      fieldData: {
-        expiresAt: Math.floor(session.expiresAt.getTime() / 1000),
-      },
-    });
-  }
+	// extend session if it's going to expire soon
+	// You may want to customize this logic to better suit your app's requirements
+	if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
+		session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+		await sessionsLayout.update({
+			recordId,
+			fieldData: {
+				expiresAt: Math.floor(session.expiresAt.getTime() / 1000),
+			},
+		});
+	}
 
-  return { session, user };
+	return { session, user };
 }
 
 /**
@@ -126,14 +126,14 @@ export async function validateSessionToken(
  * @returns The session, or null if it doesn't exist.
  */
 export const getCurrentSession = cache(
-  async (): Promise<SessionValidationResult> => {
-    const token = (await cookies()).get("session")?.value ?? null;
-    if (token === null) {
-      return { session: null, user: null };
-    }
-    const result = await validateSessionToken(token);
-    return result;
-  }
+	async (): Promise<SessionValidationResult> => {
+		const token = (await cookies()).get("session")?.value ?? null;
+		if (token === null) {
+			return { session: null, user: null };
+		}
+		const result = await validateSessionToken(token);
+		return result;
+	},
 );
 
 /**
@@ -141,12 +141,12 @@ export const getCurrentSession = cache(
  * @param userId - The ID of the user.
  */
 export async function invalidateUserSessions(userId: string): Promise<void> {
-  const sessions = await sessionsLayout.findAll({
-    query: { id_user: `==${userId}` },
-  });
-  for (const session of sessions) {
-    await sessionsLayout.delete({ recordId: session.recordId });
-  }
+	const sessions = await sessionsLayout.findAll({
+		query: { id_user: `==${userId}` },
+	});
+	for (const session of sessions) {
+		await sessionsLayout.delete({ recordId: session.recordId });
+	}
 }
 
 /**
@@ -155,37 +155,37 @@ export async function invalidateUserSessions(userId: string): Promise<void> {
  * @param expiresAt - The expiration date of the session.
  */
 export async function setSessionTokenCookie(
-  token: string,
-  expiresAt: Date
+	token: string,
+	expiresAt: Date,
 ): Promise<void> {
-  (await cookies()).set("session", token, {
-    httpOnly: true,
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    expires: expiresAt,
-  });
+	(await cookies()).set("session", token, {
+		httpOnly: true,
+		path: "/",
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		expires: expiresAt,
+	});
 }
 
 /**
  * Delete the session cookie.
  */
 export async function deleteSessionTokenCookie(): Promise<void> {
-  (await cookies()).set("session", "", {
-    httpOnly: true,
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-  });
+	(await cookies()).set("session", "", {
+		httpOnly: true,
+		path: "/",
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		maxAge: 0,
+	});
 }
 
 export interface Session {
-  id: string;
-  expiresAt: Date;
-  id_user: string;
+	id: string;
+	expiresAt: Date;
+	id_user: string;
 }
 
 type SessionValidationResult =
-  | { session: Session; user: User }
-  | { session: null; user: null };
+	| { session: Session; user: User }
+	| { session: null; user: null };

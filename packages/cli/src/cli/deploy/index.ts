@@ -207,7 +207,7 @@ async function pushEnvironmentVariables() {
       spinner.stop();
       console.log("\nDebug: Parsed environment variables:");
       for (const { key, value } of envVars) {
-        console.log(`  ${key}=${value.substring(0, 3)}...`);
+        console.log(`  ${key}=${value.slice(0, 3)}...`);
       }
       spinner.start("Pushing environment variables to Vercel...");
     }

@@ -6,6 +6,7 @@
 
 # Dist
 node_modules
+.pnpm-store
 dist/
 .vinxi
 .output

@@ -1,37 +1,37 @@
 import { z } from "zod/v4";
 
 import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
+	createTRPCRouter,
+	protectedProcedure,
+	publicProcedure,
 } from "~/server/api/trpc";
 
 let post = {
-  id: 1,
-  name: "Hello World",
+	id: 1,
+	name: "Hello World",
 };
 
 export const postRouter = createTRPCRouter({
-  hello: publicProcedure
-    .input(z.object({ text: z.string() }))
-    .query(({ input }) => {
-      return {
-        greeting: `Hello ${input.text}`,
-      };
-    }),
+	hello: publicProcedure
+		.input(z.object({ text: z.string() }))
+		.query(({ input }) => {
+			return {
+				greeting: `Hello ${input.text}`,
+			};
+		}),
 
-  create: protectedProcedure
-    .input(z.object({ name: z.string().min(1) }))
-    .mutation(async ({ input }) => {
-      post = { id: post.id + 1, name: input.name };
-      return post;
-    }),
+	create: protectedProcedure
+		.input(z.object({ name: z.string().min(1) }))
+		.mutation(async ({ input }) => {
+			post = { id: post.id + 1, name: input.name };
+			return post;
+		}),
 
-  getLatest: protectedProcedure.query(() => {
-    return post;
-  }),
+	getLatest: protectedProcedure.query(() => {
+		return post;
+	}),
 
-  getSecretMessage: protectedProcedure.query(() => {
-    return "you can now see this secret message!";
-  }),
+	getSecretMessage: protectedProcedure.query(() => {
+		return "you can now see this secret message!";
+	}),
 });

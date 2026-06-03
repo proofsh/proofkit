@@ -20,7 +20,11 @@ async function resolveAddonTarget(name?: string): Promise<AddonTarget> {
     await select({
       message: "Which add-on do you want to install locally?",
       options: [
-        { value: "webviewer", label: "Web Viewer", hint: "ProofKit Web Viewer add-on" },
+        {
+          value: "webviewer",
+          label: "Web Viewer",
+          hint: "ProofKit Web Viewer add-on",
+        },
         { value: "auth", label: "Auth", hint: "ProofKit Auth add-on" },
       ],
     }),
@@ -30,7 +34,9 @@ async function resolveAddonTarget(name?: string): Promise<AddonTarget> {
 export async function runAddAddonAction(targetName?: string) {
   const target = await resolveAddonTarget(targetName);
 
-  await installFmAddonExplicitly({ addonName: target === "webviewer" ? "wv" : "auth" });
+  await installFmAddonExplicitly({
+    addonName: target === "webviewer" ? "wv" : "auth",
+  });
 }
 
 export const makeAddAddonCommand = () => {

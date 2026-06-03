@@ -28,7 +28,7 @@ export function makeInitRequest(overrides: Partial<InitRequest> = {}): InitReque
 }
 
 export function getSharedTemplateDir(templateName: "nextjs-shadcn" | "vite-wv") {
-  return path.resolve(__dirname, `../../cli/template/${templateName}`);
+  return path.resolve(__dirname, `../template/${templateName}`);
 }
 
 export async function readScaffoldArtifacts(projectDir: string) {
@@ -43,6 +43,7 @@ export async function readScaffoldArtifacts(projectDir: string) {
   const launchPath = path.join(projectDir, ".claude", "launch.json");
   const pnpmWorkspacePath = path.join(projectDir, "pnpm-workspace.yaml");
   const npmrcPath = path.join(projectDir, ".npmrc");
+  const huskyPreCommitPath = path.join(projectDir, ".husky", "pre-commit");
 
   return {
     packageJson,
@@ -57,5 +58,8 @@ export async function readScaffoldArtifacts(projectDir: string) {
       ? await fs.readFile(pnpmWorkspacePath, "utf8")
       : undefined,
     npmrcFile: (await fs.pathExists(npmrcPath)) ? await fs.readFile(npmrcPath, "utf8") : undefined,
+    huskyPreCommitFile: (await fs.pathExists(huskyPreCommitPath))
+      ? await fs.readFile(huskyPreCommitPath, "utf8")
+      : undefined,
   };
 }

@@ -1,17 +1,90 @@
 # @proofgeist/kit
 
-## 2.0.7
+## 2.2.2
 
 ### Patch Changes
 
-- c19e10a: Fix no-install init post setup.
-- bbed9c8: Remove generated devEngines runtime block and loosen package manager version.
+- ff18231: Read ProofKit CLI version from package.json at build time.
 
-## 2.0.6
+## 2.2.2-beta.0
 
 ### Patch Changes
 
-- cfa4f59: Handle ProofKit Plugin authorization and clarify FM MCP authorization prompts.
+- ff18231: Read ProofKit CLI version from package.json at build time.
+
+## 2.2.1
+
+### Patch Changes
+
+- Fix CLI version reporting in installer binary. The bundled proofkit binary now regenerates package-versions.ts before compilation, ensuring the correct version is baked in.
+
+## 2.2.0
+
+### Minor Changes
+
+- 7d48139: Ship ProofKit CLI in installer and publish CLI packages.
+
+### Patch Changes
+
+- b1d4a68: Publish CLI beta releases to npm when Changesets is in beta pre mode.
+- cd0f06f: Set installed proofkit launcher template root from app payload and remove redundant agent setup next step.
+- 34b3c3c: Fix lint failures in freshly scaffolded projects:
+  - Stop writing a competing legacy `.oxlintrc.json` alongside Ultracite v7's scaffolded `oxlint.config.ts` for webviewer apps. The CLI now writes `oxlint.config.ts` for both browser and webviewer app types.
+  - Drop the `// @ts-nocheck` directive from the generated `oxlint.config.ts`. It is no longer needed (oxlint v1 ships proper types for `defineConfig`) and was itself failing Ultracite's `typescript/ban-ts-comment` rule.
+  - Remove unused `redirect` import from the `vite-wv` `router.tsx` template that was triggering an `eslint/no-unused-vars` error on first lint.
+
+- d58e177: Include initial props wiring in generated WebViewer apps.
+- dbab7b3: Fix ultracite init during scaffold; now uses latest major version 7
+- 50dacdf: Add transient ProofKit token passthrough for local FileMaker MCP setup.
+- a0604e8: Remove generated app dependency on `@proofkit/cli`, allow compatible package manager minor versions, and print recovery details when dependency install fails during init.
+- deb859d: Install Bun before npm publish binary build.
+- 2a11681: Raise generated app Node floor to avoid pnpm skipping native oxlint bindings.
+
+## 2.2.0-beta.6
+
+### Patch Changes
+
+- 34b3c3c: Fix lint failures in freshly scaffolded projects:
+  - Stop writing a competing legacy `.oxlintrc.json` alongside Ultracite v7's scaffolded `oxlint.config.ts` for webviewer apps. The CLI now writes `oxlint.config.ts` for both browser and webviewer app types.
+  - Drop the `// @ts-nocheck` directive from the generated `oxlint.config.ts`. It is no longer needed (oxlint v1 ships proper types for `defineConfig`) and was itself failing Ultracite's `typescript/ban-ts-comment` rule.
+  - Remove unused `redirect` import from the `vite-wv` `router.tsx` template that was triggering an `eslint/no-unused-vars` error on first lint.
+
+## 2.2.0-beta.5
+
+### Patch Changes
+
+- deb859d: Install Bun before npm publish binary build.
+- 2a11681: Raise generated app Node floor to avoid pnpm skipping native oxlint bindings.
+
+## 2.2.0-beta.4
+
+### Patch Changes
+
+- dbab7b3: Fix ultracite init during scaffold; now uses latest major version 7
+
+## 2.2.0-beta.3
+
+### Patch Changes
+
+- b1d4a68: Publish CLI beta releases to npm when Changesets is in beta pre mode.
+- d58e177: Include initial props wiring in generated WebViewer apps.
+- a0604e8: Remove generated app dependency on `@proofkit/cli`, allow compatible package manager minor versions, and print recovery details when dependency install fails during init.
+
+## 2.1.0-beta.1
+
+### Patch Changes
+
+- cd0f06f: Set installed proofkit launcher template root from app payload and remove redundant agent setup next step.
+
+## 2.1.0-beta.0
+
+### Minor Changes
+
+- 7d48139: Ship ProofKit CLI in installer and publish CLI packages.
+
+### Patch Changes
+
+- 50dacdf: Add transient ProofKit token passthrough for local FileMaker MCP setup.
 
 ## 2.0.5
 

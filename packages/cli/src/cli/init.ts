@@ -15,7 +15,12 @@ import { installDependencies } from "~/helpers/installDependencies.js";
 import { getIntentInstallCommand } from "~/helpers/intent.js";
 import { logNextSteps } from "~/helpers/logNextSteps.js";
 import { setImportAlias } from "~/helpers/setImportAlias.js";
-import { getBrowserOxlintConfig, getUltraciteInitCommand } from "~/helpers/ultracite.js";
+import {
+  getBrowserOxlintConfig,
+  getHuskyPreCommitHook,
+  getUltraciteInitCommand,
+  getWebViewerOxlintConfig,
+} from "~/helpers/ultracite.js";
 import { buildPkgInstallerMap } from "~/installers/index.js";
 import { initProgramState, isNonInteractiveMode, state } from "~/state.js";
 import { getVersion } from "~/utils/getProofKitVersion.js";
@@ -28,8 +33,6 @@ import { validateAppName } from "~/utils/validateAppName.js";
 import { promptForFileMakerDataSource } from "./add/data-source/filemaker.js";
 import { select, text } from "./prompts.js";
 import { abortIfCancel } from "./utils.js";
-
-const VERSION_RANGE_PREFIX_REGEX = /^\^/;
 
 interface CliFlags {
   noGit: boolean;
@@ -136,6 +139,11 @@ type ProofKitPackageJSON = PackageJson & {
   devEngines?: {
     packageManager: {
       name: string;
+      version: string;
+      onFail: "download";
+    };
+    runtime: {
+      name: "node";
       version: string;
       onFail: "download";
     };
@@ -309,7 +317,12 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     pkgJson.devEngines = {
       packageManager: {
         name: pkgManager,
-        version: pkgManagerVersion.replace(VERSION_RANGE_PREFIX_REGEX, ""),
+        version: pkgManagerVersion,
+        onFail: "download",
+      },
+      runtime: {
+        name: "node",
+        version: NODE_RUNTIME_VERSION,
         onFail: "download",
       },
     };
@@ -397,9 +410,10 @@ export const runInit = async (name?: string, opts?: CliFlags) => {
     cwd: projectDir,
     stdio: "pipe",
   });
-  if ((state.appType ?? "browser") === "browser") {
-    fs.writeFileSync(path.join(projectDir, "oxlint.config.ts"), getBrowserOxlintConfig(), "utf8");
-  }
+  const oxlintConfigContent =
+    (state.appType ?? "browser") === "browser" ? getBrowserOxlintConfig() : getWebViewerOxlintConfig();
+  fs.writeFileSync(path.join(projectDir, "oxlint.config.ts"), oxlintConfigContent, "utf8");
+  fs.writeFileSync(path.join(projectDir, ".husky/pre-commit"), getHuskyPreCommitHook(), "utf8");
   const intentCommand = getIntentInstallCommand(pkgManager);
   await execa(intentCommand.command, intentCommand.args, {
     cwd: projectDir,

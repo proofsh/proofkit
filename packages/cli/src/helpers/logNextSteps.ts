@@ -5,7 +5,6 @@ import type { InstallerOptions } from "~/installers/index.js";
 import { state } from "~/state.js";
 import { getUserPkgManager } from "~/utils/getUserPkgManager.js";
 import { logger } from "~/utils/logger.js";
-import { getTemplatePackageExecuteCommand } from "~/utils/projectFiles.js";
 
 const formatRunCommand = (pkgManager: ReturnType<typeof getUserPkgManager>, command: string) =>
   ["npm", "bun"].includes(pkgManager) ? `${pkgManager} run ${command}` : `${pkgManager} ${command}`;
@@ -32,12 +31,6 @@ export const logNextSteps = ({
     }
   }
 
-  logger.dim("\nAgent instruction (required before continuing any AI-assisted development in this project):");
-  logger.info(`  ${getTemplatePackageExecuteCommand(pkgManager)} @tanstack/intent@latest install`);
-  logger.dim(
-    "  Have your agent run this command in the newly created project so it can discover and learn important skills relevant to the project.",
-  );
-
   logger.dim("\nStart the dev server to view your app in a browser:");
   logger.info(`  ${formatRunCommand(pkgManager, "dev")}`);
 
@@ -48,8 +41,4 @@ export const logNextSteps = ({
     logger.dim("\nTo open the starter inside FileMaker once your file is ready:");
     logger.info(`  ${formatRunCommand(pkgManager, "launch-fm")}`);
   }
-
-  logger.dim("\nOr, run the ProofKit command again to add more to your project:");
-  logger.info(`  ${formatRunCommand(pkgManager, "proofkit")}`);
-  logger.dim("(Must be inside the project directory)");
 };

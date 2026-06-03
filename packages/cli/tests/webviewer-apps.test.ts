@@ -2,15 +2,14 @@ import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+import { TYPEGEN_VERSION } from "../src/package-versions.js";
 
 const nonInteractiveDirectoryError = /already exists and isn't empty/;
-const expectedTypegenVersion = `^${
-  JSON.parse(readFileSync(join(__dirname, "..", "..", "typegen", "package.json"), "utf-8")).version
-}`;
+const expectedTypegenVersion = `^${TYPEGEN_VERSION}`;
 
 describe("Web Viewer CLI Tests", () => {
-  const testDir = join(__dirname, "..", "..", "tmp", "cli-tests");
-  const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
+  const testDir = join(import.meta.dirname, "..", "..", "tmp", "cli-tests");
+  const cliPath = join(import.meta.dirname, "..", "bin", "proofkit.cjs");
   const projectName = "test-webviewer-project";
   const projectDir = join(testDir, projectName);
 

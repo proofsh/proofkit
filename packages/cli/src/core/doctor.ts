@@ -90,7 +90,10 @@ export const runDoctor = Effect.gen(function* () {
   if (settings) {
     findings.push({ level: "ok", message: "Found `proofkit.json`." });
   } else {
-    findings.push({ level: "error", message: "Could not read `proofkit.json`." });
+    findings.push({
+      level: "error",
+      message: "Could not read `proofkit.json`.",
+    });
   }
 
   const packageJsonPath = path.join(cwd, "package.json");
@@ -114,20 +117,29 @@ export const runDoctor = Effect.gen(function* () {
       if (allDeps["@proofkit/typegen"]) {
         findings.push({ level: "ok", message: "Found `@proofkit/typegen`." });
       } else {
-        findings.push({ level: "warn", message: "Missing `@proofkit/typegen` dependency." });
+        findings.push({
+          level: "warn",
+          message: "Missing `@proofkit/typegen` dependency.",
+        });
       }
 
       if (nextPackageJson.scripts?.typegen) {
         findings.push({ level: "ok", message: "Found `typegen` script." });
       } else {
-        findings.push({ level: "warn", message: "Missing `typegen` script in `package.json`." });
+        findings.push({
+          level: "warn",
+          message: "Missing `typegen` script in `package.json`.",
+        });
       }
 
       if (nextPackageJson.scripts?.["typegen:ui"]) {
         findings.push({ level: "ok", message: "Found `typegen:ui` script." });
       }
     } else {
-      findings.push({ level: "error", message: "Could not read `package.json`." });
+      findings.push({
+        level: "error",
+        message: "Could not read `package.json`.",
+      });
     }
   } else {
     findings.push({ level: "error", message: "Missing `package.json`." });
@@ -146,13 +158,19 @@ export const runDoctor = Effect.gen(function* () {
       const parsed = parseJsonc(raw);
       if (isTypegenConfigLike(parsed)) {
         parsedTypegenConfig = parsed;
-        findings.push({ level: "ok", message: "Typegen config is present and valid." });
+        findings.push({
+          level: "ok",
+          message: "Typegen config is present and valid.",
+        });
 
         const configEntries = Array.isArray(parsed.config) ? parsed.config : [parsed.config];
         for (const entry of configEntries) {
           const outputPath = path.join(cwd, entry.path ?? "schema");
           if (yield* fs.exists(outputPath)) {
-            findings.push({ level: "ok", message: `Generated path exists: \`${entry.path ?? "schema"}\`.` });
+            findings.push({
+              level: "ok",
+              message: `Generated path exists: \`${entry.path ?? "schema"}\`.`,
+            });
           } else {
             findings.push({
               level: "warn",
@@ -188,7 +206,10 @@ export const runDoctor = Effect.gen(function* () {
         });
       }
     } else {
-      findings.push({ level: "error", message: "Could not read `proofkit-typegen.config.jsonc`." });
+      findings.push({
+        level: "error",
+        message: "Could not read `proofkit-typegen.config.jsonc`.",
+      });
     }
   } else {
     findings.push({
@@ -254,7 +275,10 @@ export const runDoctor = Effect.gen(function* () {
           });
         }
       } else {
-        findings.push({ level: "error", message: `Could not read env file \`${path.basename(resolvedEnvPath)}\`.` });
+        findings.push({
+          level: "error",
+          message: `Could not read env file \`${path.basename(resolvedEnvPath)}\`.`,
+        });
       }
     } else {
       findings.push({

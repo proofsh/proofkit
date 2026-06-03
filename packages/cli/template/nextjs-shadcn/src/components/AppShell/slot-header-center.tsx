@@ -7,7 +7,7 @@
  * If you don't want it to be used, you may return null or an empty fragment
  */
 export function SlotHeaderCenter() {
-  return null;
+	return null;
 }
 
 export default SlotHeaderCenter;

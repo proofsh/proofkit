@@ -6,12 +6,11 @@ import { describe, expect, it } from "vitest";
 import { NODE_RUNTIME_VERSION } from "~/consts.js";
 import { executeInitPlan } from "~/core/executeInitPlan.js";
 import { planInit } from "~/core/planInit.js";
-import { getProofkitDependencyVersion, getTypegenVersion, getVersion } from "~/utils/getProofKitVersion.js";
+import { getProofkitDependencyVersion, getTypegenVersion } from "~/utils/getProofKitVersion.js";
 import { detectUserPackageManager } from "~/utils/packageManager.js";
 import { getSharedTemplateDir, makeInitRequest, readScaffoldArtifacts } from "./init-fixtures.js";
 import { makeTestLayer } from "./test-layer.js";
 
-const proofkitCliVersion = getProofkitDependencyVersion(getVersion());
 const proofkitTypegenVersion = getProofkitDependencyVersion(getTypegenVersion());
 
 describe("integration scaffold generation", () => {
@@ -70,18 +69,23 @@ describe("integration scaffold generation", () => {
     expect(packageJson.packageManager).toBeUndefined();
     expect(packageJson.devEngines?.packageManager).toEqual({
       name: "pnpm",
-      version: "11.1.0",
+      version: "^11.1.0",
       onFail: "download",
     });
-    expect(packageJson.devEngines?.runtime).toBeUndefined();
+    expect(packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: NODE_RUNTIME_VERSION,
+      onFail: "download",
+    });
     expect(packageJson.engines).toEqual({
       node: NODE_RUNTIME_VERSION,
     });
     expect(packageJson.proofkitMetadata).toMatchObject({
       scaffoldPackage: "@proofkit/cli",
     });
-    expect(packageJson.devDependencies["@proofkit/cli"]).toBe(proofkitCliVersion);
+    expect(packageJson.devDependencies["@proofkit/cli"]).toBeUndefined();
     expect(packageJson.devDependencies["@proofkit/typegen"]).toBe(proofkitTypegenVersion);
+    expect(packageJson.scripts.proofkit).toBeUndefined();
     expect(packageJson.scripts.typegen).toBe("typegen");
     expect(packageJson.scripts["typegen:ui"]).toBe("typegen ui");
     expect(typeof packageJson.proofkitMetadata?.initVersion).toBe("string");
@@ -205,17 +209,21 @@ describe("integration scaffold generation", () => {
 
     await Effect.runPromise(layer(executeInitPlan(plan)));
 
-    const { packageJson, agentsFile, claudeFile, cursorIgnoreFile, launchConfig } =
+    const { packageJson, agentsFile, claudeFile, cursorIgnoreFile, huskyPreCommitFile, launchConfig } =
       await readScaffoldArtifacts(projectDir);
     const routerFile = await fs.readFile(path.join(projectDir, "src/router.tsx"), "utf8");
     const mainFile = await fs.readFile(path.join(projectDir, "src/main.tsx"), "utf8");
     const queryDemoFile = await fs.readFile(path.join(projectDir, "src/routes/query-demo.tsx"), "utf8");
+    const oxlintConfig = await fs.readFile(path.join(projectDir, "oxlint.config.ts"), "utf8");
 
     expect(packageJson.scripts.lint).toBe("ultracite check .");
     expect(packageJson.scripts.format).toBe("ultracite fix .");
+    expect(packageJson.scripts.check).toBe("ultracite check");
+    expect(packageJson.scripts.fix).toBe("ultracite fix");
+    expect(packageJson.scripts.proofkit).toBeUndefined();
     expect(packageJson.dependencies["@tanstack/react-query"]).toBe("^5.90.21");
     expect(packageJson.dependencies["@tanstack/react-router"]).toBe("^1.167.4");
-    expect(packageJson.devDependencies.ultracite).toBe("7.0.8");
+    expect(packageJson.devDependencies.ultracite).toBe("^7.0.0");
     expect(agentsFile).toContain("Use the ProofKit docs as the primary reference");
     expect(claudeFile).toBe("@AGENTS.md\n");
     expect(cursorIgnoreFile).toBe("CLAUDE.md\n");
@@ -223,9 +231,16 @@ describe("integration scaffold generation", () => {
     expect(routerFile).toContain("createHashHistory");
     expect(mainFile).toContain("QueryClientProvider");
     expect(queryDemoFile).toContain("TanStack Query is preconfigured");
+    expect(oxlintConfig).toContain('import { defineConfig } from "oxlint"');
+    expect(oxlintConfig).toContain('import core from "ultracite/oxlint/core"');
+    expect(oxlintConfig).toContain('import react from "ultracite/oxlint/react"');
+    expect(oxlintConfig).toContain('"react/react-in-jsx-scope": "off"');
+    expect(huskyPreCommitFile).toBe('#!/bin/sh\necho "Running lint-staged..."\npnpm exec lint-staged\n');
     const nextStepsMessage = consoleTranscript.info.at(-1) ?? "";
-    expect(nextStepsMessage).toContain("Have your agent run this in the new project");
-    expect(nextStepsMessage).toContain("complete the interactive prompt");
+    expect(nextStepsMessage).not.toContain("Have your agent run this in the new project");
+    expect(nextStepsMessage).not.toContain("complete the interactive prompt");
+    expect(nextStepsMessage).not.toContain("pnpm proofkit");
+    expect(nextStepsMessage).not.toContain("More ProofKit commands");
     expect(nextStepsMessage).toContain("\u001B[");
   });
 

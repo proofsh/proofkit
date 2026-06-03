@@ -22,7 +22,7 @@ const BASE_DEV_DEPS = [] as AvailableDependencies[];
 export async function addShadcn() {
   const projectDir = state.projectDir;
 
-  const TEMPLATE_ROOT = path.join(PKG_ROOT, "template/nextjs");
+  const TEMPLATE_ROOT = path.join(PKG_ROOT, "template/nextjs-shadcn");
 
   // 1. Add dependencies
   addPackageDependency({
@@ -39,7 +39,9 @@ export async function addShadcn() {
   // 2. Copy config and utility files
   fs.copySync(path.join(TEMPLATE_ROOT, "components.json"), path.join(projectDir, "components.json"));
   fs.copySync(path.join(TEMPLATE_ROOT, "postcss.config.cjs"), path.join(projectDir, "postcss.config.cjs"));
+  await fs.ensureDir(path.join(projectDir, "src/utils"));
   fs.copySync(path.join(TEMPLATE_ROOT, "src/utils/styles.ts"), path.join(projectDir, "src/utils/styles.ts"));
+  await fs.ensureDir(path.join(projectDir, "src/config/theme"));
   fs.copySync(
     path.join(TEMPLATE_ROOT, "src/config/theme/globals.css"),
     path.join(projectDir, "src/config/theme/globals.css"),

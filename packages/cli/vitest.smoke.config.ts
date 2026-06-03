@@ -5,17 +5,17 @@ import { defineConfig } from "vitest/config";
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      "~": path.resolve(configDir, "src"),
-    },
-  },
-  test: {
-    globals: true,
-    environment: "node",
-    setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.smoke.test.ts"],
-    exclude: ["**/node_modules/**", "**/dist/**"],
-    testTimeout: 180_000,
-  },
+	resolve: {
+		alias: {
+			"~": path.resolve(configDir, "src"),
+		},
+	},
+	test: {
+		globals: true,
+		environment: "node",
+		setupFiles: ["./tests/setup.ts"],
+		include: ["tests/**/*.smoke.test.ts"],
+		exclude: ["**/node_modules/**", "**/dist/**"],
+		testTimeout: 180_000,
+	},
 });

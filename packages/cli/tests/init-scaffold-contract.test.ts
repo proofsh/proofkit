@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { parse as parseJsonc } from "jsonc-parser/lib/esm/main.js";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NODE_RUNTIME_VERSION } from "~/consts.js";
+import { FMDAPI_VERSION, TYPEGEN_VERSION, WEBVIEWER_VERSION } from "../src/package-versions.js";
 
 interface PackageJsonShape {
   version?: string;
@@ -25,6 +26,7 @@ interface PackageJsonShape {
     node?: string;
   };
   scripts?: Record<string, string>;
+  "lint-staged"?: Record<string, string[]>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   proofkitMetadata?: {
@@ -39,31 +41,21 @@ interface ProofkitSettings {
   dataSources?: unknown[];
 }
 
-const cliPath = join(__dirname, "..", "bin", "proofkit.cjs");
-const testDir = join(__dirname, "..", "..", "tmp", "cli-contract-tests");
+const cliPath = join(import.meta.dirname, "..", "bin", "proofkit.cjs");
+const testDir = join(import.meta.dirname, "..", "..", "tmp", "cli-contract-tests");
 const browserProjectName = "contract-browser-project";
 const webviewerProjectName = "contract-webviewer-project";
 const browserProjectDir = join(testDir, browserProjectName);
 const webviewerProjectDir = join(testDir, webviewerProjectName);
-const cliPackageJsonPath = join(__dirname, "..", "package.json");
+const cliPackageJsonPath = join(import.meta.dirname, "..", "package.json");
 const cliPackageJson = readJsonFile<PackageJsonShape>(cliPackageJsonPath);
 const cliVersion = cliPackageJson.version ?? "";
 const expectedProofkitVersions = new Map([
-  ["@proofkit/cli", `^${cliVersion}`],
-  [
-    "@proofkit/fmdapi",
-    `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "fmdapi", "package.json")).version}`,
-  ],
-  [
-    "@proofkit/typegen",
-    `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "typegen", "package.json")).version}`,
-  ],
-  [
-    "@proofkit/webviewer",
-    `^${readJsonFile<PackageJsonShape>(join(__dirname, "..", "..", "webviewer", "package.json")).version}`,
-  ],
+  ["@proofkit/fmdapi", `^${FMDAPI_VERSION}`],
+  ["@proofkit/typegen", `^${TYPEGEN_VERSION}`],
+  ["@proofkit/webviewer", `^${WEBVIEWER_VERSION}`],
 ]);
-const packageManagerVersionPattern = /^\^?\d+\.\d+\.\d+/;
+const packageManagerVersionPattern = /^\^\d+\.\d+\.\d+/;
 const ansiStylePrefixPattern = /^[0-9;]*m/;
 
 function runInit({ appType, projectName }: { appType: "browser" | "webviewer"; projectName: string }): string {
@@ -175,17 +167,25 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.name).toBe(browserProjectName);
     expect(packageJson.scripts?.dev).toBe("next dev --turbopack");
     expect(packageJson.scripts?.build).toBe("next build --turbopack");
-    expect(packageJson.scripts?.proofkit).toBe("proofkit");
+    expect(packageJson.scripts?.proofkit).toBeUndefined();
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
     expect(packageJson.packageManager).toBeUndefined();
     expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
     expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
-    expect(packageJson.devEngines?.runtime).toBeUndefined();
+    expect(packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: NODE_RUNTIME_VERSION,
+      onFail: "download",
+    });
     expect(packageJson.engines?.node).toBe(NODE_RUNTIME_VERSION);
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(browserProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(browserProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
+    expect(readFileSync(join(browserProjectDir, ".gitignore"), "utf-8")).toContain(".pnpm-store");
+    expect(readFileSync(join(browserProjectDir, ".husky", "pre-commit"), "utf-8")).toBe(
+      '#!/bin/sh\necho "Running lint-staged..."\npnpm exec lint-staged\n',
+    );
     const pnpmWorkspaceText = readFileSync(join(browserProjectDir, "pnpm-workspace.yaml"), "utf-8");
     expect(pnpmWorkspaceText).toContain('  "esbuild": true');
     expect(pnpmWorkspaceText).toContain('  "msw": true');
@@ -235,17 +235,30 @@ describe("Init scaffold contract tests", () => {
     expect(packageJson.scripts?.build).toBe("vite build");
     expect(packageJson.scripts?.typegen).toBe("pnpx @proofkit/typegen");
     expect(packageJson.scripts?.["typegen:ui"]).toBe("pnpx @proofkit/typegen ui");
-    expect(packageJson.scripts?.proofkit).toBe("proofkit");
+    expect(packageJson.scripts?.check).toBe("ultracite check");
+    expect(packageJson.scripts?.fix).toBe("ultracite fix");
+    expect(packageJson.scripts?.proofkit).toBeUndefined();
+    expect(packageJson["lint-staged"]).toEqual({
+      "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": ["pnpm exec ultracite fix"],
+    });
     expect(packageJson.proofkitMetadata?.initVersion).toBe(cliVersion);
     expect(packageJson.packageManager).toBeUndefined();
     expect(packageJson.devEngines?.packageManager?.name).toBe("pnpm");
     expect(packageJson.devEngines?.packageManager?.version).toMatch(packageManagerVersionPattern);
     expect(packageJson.devEngines?.packageManager?.onFail).toBe("download");
-    expect(packageJson.devEngines?.runtime).toBeUndefined();
+    expect(packageJson.devEngines?.runtime).toEqual({
+      name: "node",
+      version: NODE_RUNTIME_VERSION,
+      onFail: "download",
+    });
     expect(packageJson.engines?.node).toBe(NODE_RUNTIME_VERSION);
     expect(allProofkitDependenciesUseCurrentVersions(packageJson)).toBe(true);
     expect(readFileSync(join(webviewerProjectDir, "CLAUDE.md"), "utf-8")).toBe("@AGENTS.md\n");
     expect(readFileSync(join(webviewerProjectDir, ".cursorignore"), "utf-8")).toBe("CLAUDE.md\n");
+    expect(readFileSync(join(webviewerProjectDir, ".gitignore"), "utf-8")).toContain(".pnpm-store");
+    expect(readFileSync(join(webviewerProjectDir, ".husky", "pre-commit"), "utf-8")).toBe(
+      '#!/bin/sh\necho "Running lint-staged..."\npnpm exec lint-staged\n',
+    );
     const pkgManager = getPackageManagerName(packageJson);
     expect(outputSuggestsCommand(normalizedOutput, formatRunCommand(pkgManager, "typegen"))).toBe(true);
 

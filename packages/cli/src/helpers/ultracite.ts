@@ -5,7 +5,7 @@ import { getTemplatePackageExecuteCommand, parseCommandString } from "~/utils/pr
 const ULTRACITE_EDITORS = ["cursor"] as const;
 const ULTRACITE_AGENTS = ["claude", "codex"] as const;
 const ULTRACITE_HOOKS = ["cursor", "windsurf"] as const;
-const ULTRACITE_INTEGRATIONS = ["husky", "lint-staged"] as const;
+const ULTRACITE_INIT_PACKAGE = "ultracite@^7";
 
 function splitExecuteCommand(packageManager: PackageManager) {
   const [command, ...args] = parseCommandString(getTemplatePackageExecuteCommand(packageManager));
@@ -33,7 +33,7 @@ export function getUltraciteInitCommand({
     command: execute.command,
     args: [
       ...execute.args,
-      "ultracite",
+      ULTRACITE_INIT_PACKAGE,
       "init",
       "--quiet",
       "--linter",
@@ -48,16 +48,13 @@ export function getUltraciteInitCommand({
       ...ULTRACITE_AGENTS,
       "--hooks",
       ...ULTRACITE_HOOKS,
-      "--integrations",
-      ...ULTRACITE_INTEGRATIONS,
       ...(skipInstall ? ["--skip-install"] : []),
     ],
   };
 }
 
 export function getBrowserOxlintConfig() {
-  return `// @ts-nocheck
-import { defineConfig } from "oxlint";
+  return `import { defineConfig } from "oxlint";
 import core from "ultracite/oxlint/core";
 import next from "ultracite/oxlint/next";
 import react from "ultracite/oxlint/react";
@@ -72,5 +69,26 @@ export default defineConfig({
 \t\t"unicorn/filename-case": "off",
 \t},
 });
+`;
+}
+
+export function getWebViewerOxlintConfig() {
+  return `import { defineConfig } from "oxlint";
+import core from "ultracite/oxlint/core";
+import react from "ultracite/oxlint/react";
+
+export default defineConfig({
+\textends: [core, react],
+\trules: {
+\t\t"react/react-in-jsx-scope": "off",
+\t},
+});
+`;
+}
+
+export function getHuskyPreCommitHook() {
+  return `#!/bin/sh
+echo "Running lint-staged..."
+pnpm exec lint-staged
 `;
 }

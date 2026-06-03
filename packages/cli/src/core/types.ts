@@ -25,6 +25,7 @@ export interface CliFlags {
   CI: boolean;
   nonInteractive?: boolean;
   appType?: AppType;
+  proofkitToken?: string;
 }
 
 export interface FileMakerEnvNames {
@@ -55,6 +56,7 @@ export interface LocalFmMcpInputs {
   fileName: string;
   layoutName?: string;
   schemaName?: string;
+  proofkitToken?: string;
 }
 
 export type FileMakerInputs = HostedFileMakerInputs | LocalFmMcpInputs;
@@ -74,6 +76,7 @@ export interface InitRequest {
   importAlias: string;
   nonInteractive: boolean;
   debug: boolean;
+  proofkitToken?: string;
   skipFileMakerSetup: boolean;
   fileMaker?: FileMakerInputs;
   hasExplicitFileMakerInputs: boolean;
@@ -108,6 +111,11 @@ export interface InitPlan {
     devEngines?: {
       packageManager: {
         name: PackageManager;
+        version: string;
+        onFail: "download";
+      };
+      runtime: {
+        name: "node";
         version: string;
         onFail: "download";
       };

@@ -1,7 +1,6 @@
 import { primaryRoutes } from "@/app/navigation";
-
-import HeaderNavLink from "./internal/HeaderNavLink";
 import { ModeToggle } from "../mode-toggle";
+import HeaderNavLink from "./internal/HeaderNavLink";
 
 /**
  * DO NOT REMOVE / RENAME THIS FILE
@@ -12,14 +11,14 @@ import { ModeToggle } from "../mode-toggle";
  * If you don't want it to be used, you may return null or an empty fragment
  */
 export function SlotHeaderRight() {
-  return (
-    <div className="flex items-center space-x-1">
-      {primaryRoutes.map((route) => (
-        <HeaderNavLink key={route.label} {...route} />
-      ))}
-      <ModeToggle />
-    </div>
-  );
+	return (
+		<div className="flex items-center space-x-1">
+			{primaryRoutes.map((route) => (
+				<HeaderNavLink key={route.label} {...route} />
+			))}
+			<ModeToggle />
+		</div>
+	);
 }
 
 export default SlotHeaderRight;

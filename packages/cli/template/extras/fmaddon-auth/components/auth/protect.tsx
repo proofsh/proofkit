@@ -7,12 +7,12 @@ import AuthRedirect from "./redirect";
  * It will redirect to the login page if the user is not logged in, or the verify email page if the user is logged in but hasn't verified their email
  */
 export default async function Protect({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  const { session, user } = await getCurrentSession();
-  if (!session) return <AuthRedirect path="/auth/login" />;
-  if (!user.emailVerified) return <AuthRedirect path="/auth/verify-email" />;
-  return <>{children}</>;
+	const { session, user } = await getCurrentSession();
+	if (!session) return <AuthRedirect path="/auth/login" />;
+	if (!user.emailVerified) return <AuthRedirect path="/auth/verify-email" />;
+	return <>{children}</>;
 }

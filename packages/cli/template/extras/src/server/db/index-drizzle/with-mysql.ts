@@ -9,7 +9,7 @@ import * as schema from "./schema";
  * update.
  */
 const globalForDb = globalThis as unknown as {
-  conn: Pool | undefined;
+	conn: Pool | undefined;
 };
 
 const conn = globalForDb.conn ?? createPool({ uri: env.DATABASE_URL });

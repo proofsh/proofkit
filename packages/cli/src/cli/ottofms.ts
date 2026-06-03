@@ -31,7 +31,8 @@ export async function getOttoFMSToken({ url }: { url: URL }): Promise<{ token: s
 
   loginSpinner.start("Waiting for you to log in using the link above");
 
-  const data = await new Promise<WizardResponse>((resolve) => {
+  const data = await new Promise<WizardResponse>((resolve, reject) => {
+    let settled = false;
     const pollingInterval = setInterval(() => {
       axios
         .get<{ response: WizardResponse }>(`${url.origin}/otto/api/cli/checkHash/${hash}`, {
@@ -40,6 +41,10 @@ export async function getOttoFMSToken({ url }: { url: URL }): Promise<{ token: s
           },
         })
         .then((result) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
           resolve(result.data.response);
           clearTimeout(timeout);
           clearInterval(pollingInterval);
@@ -59,8 +64,14 @@ export async function getOttoFMSToken({ url }: { url: URL }): Promise<{ token: s
     }, 500);
 
     const timeout = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       clearInterval(pollingInterval);
+      clearTimeout(timeout);
       loginSpinner.stop("Login timed out. No worries - it happens to the best of us.");
+      reject(new Error("Login timed out"));
     }, 180_000); // 3 minutes
   });
   // clack.log.info(`Token: ${JSON.stringify(data)}`);

@@ -25,8 +25,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface PromptScript {
   text?: string[];
-  select?: string[];
-  confirm?: boolean[];
+  select?: Array<string | "__cancel_value__">;
+  confirm?: Array<boolean | "__cancel_value__">;
   password?: string[];
   searchSelect?: string[];
   multiSearchSelect?: string[][];
@@ -64,9 +64,13 @@ export function makeTestLayer(options: {
     commands: string[];
     gitInits: number;
     codegens: number;
+    codegenTokens?: Array<string | undefined>;
     filemakerBootstraps: number;
     addonInstalls?: number;
-    localFmMcpAuthorizations?: { clientName: string; clientDescription: string }[];
+    localFmMcpAuthorizations?: {
+      clientName: string;
+      clientDescription: string;
+    }[];
   };
   fileMaker?: {
     localFmMcp?:
@@ -149,6 +153,9 @@ export function makeTestLayer(options: {
         if (next === "__cancel__") {
           return Promise.reject(new UserCancelledError({ message: "User aborted the operation" }));
         }
+        if (next === "__cancel_value__") {
+          return Promise.resolve(Symbol.for("@proofkit/new/prompt-cancelled") as unknown as T);
+        }
         if (next) {
           const match = selectOptions.find((option) => option.value === next);
           if (match) {
@@ -195,7 +202,11 @@ export function makeTestLayer(options: {
       },
       confirm: ({ message, initialValue }: { message: string; initialValue?: boolean }) => {
         options.promptTranscript?.confirm.push(message);
-        return Promise.resolve(promptScript.confirm.shift() ?? initialValue ?? false);
+        const next = promptScript.confirm.shift();
+        if (next === "__cancel_value__") {
+          return Promise.resolve(Symbol.for("@proofkit/new/prompt-cancelled") as unknown as boolean);
+        }
+        return Promise.resolve(next ?? initialValue ?? false);
       },
     }),
     Layer.succeed(ConsoleService, {
@@ -234,6 +245,17 @@ export function makeTestLayer(options: {
             new FileSystemError({
               message: `File system readdir failed for ${targetPath}.`,
               operation: "readdir",
+              path: targetPath,
+              cause,
+            }),
+        }),
+      ensureDir: (targetPath: string) =>
+        Effect.tryPromise({
+          try: () => fs.ensureDir(targetPath),
+          catch: (cause) =>
+            new FileSystemError({
+              message: `File system ensureDir failed for ${targetPath}.`,
+              operation: "ensureDir",
               path: targetPath,
               cause,
             }),
@@ -333,7 +355,7 @@ export function makeTestLayer(options: {
         if (appType === "webviewer") {
           templateName = "vite-wv";
         }
-        return path.resolve(__dirname, `../../cli/template/${templateName}`);
+        return path.resolve(__dirname, `../template/${templateName}`);
       },
     }),
     Layer.succeed(PackageManagerService, {
@@ -376,7 +398,10 @@ export function makeTestLayer(options: {
     Layer.succeed(SettingsService, {
       writeSettings: (projectDir: string, settings: ProofKitSettings) =>
         Effect.tryPromise({
-          try: () => fs.writeJson(path.join(projectDir, "proofkit.json"), settings, { spaces: 2 }),
+          try: () =>
+            fs.writeJson(path.join(projectDir, "proofkit.json"), settings, {
+              spaces: 2,
+            }),
           catch: (cause) =>
             new FileSystemError({
               message: "Unable to write ProofKit settings.",
@@ -461,7 +486,10 @@ export function makeTestLayer(options: {
         if (options.failures?.deployDemoFile) {
           return Effect.fail(options.failures.deployDemoFile as FileMakerSetupError);
         }
-        return Effect.succeed({ apiKey: "dk_demo", filename: "ProofKitDemo.fmp12" });
+        return Effect.succeed({
+          apiKey: "dk_demo",
+          filename: "ProofKitDemo.fmp12",
+        });
       },
       listLayouts: () => Effect.succeed(["API_Contacts", "Contacts"]),
       createFileMakerBootstrapArtifacts: (settings: ProofKitSettings, inputs: FileMakerInputs, appType: AppType) => {
@@ -494,8 +522,16 @@ export function makeTestLayer(options: {
                     zodSchema: 'z.string().endsWith(".fmp12")',
                     defaultValue: inputs.fileName,
                   },
-                  { name: envNames.server, zodSchema: "z.string().url()", defaultValue: inputs.server },
-                  { name: envNames.apiKey, zodSchema: 'z.string().startsWith("dk_")', defaultValue: inputs.dataApiKey },
+                  {
+                    name: envNames.server,
+                    zodSchema: "z.string().url()",
+                    defaultValue: inputs.server,
+                  },
+                  {
+                    name: envNames.apiKey,
+                    zodSchema: 'z.string().startsWith("dk_")',
+                    defaultValue: inputs.dataApiKey,
+                  },
                 ]
               : [],
           typegenConfig: {
@@ -557,13 +593,18 @@ export function makeTestLayer(options: {
             );
             return nextSettings;
           },
-          catch: (cause) => new FileMakerSetupError({ message: "Unable to bootstrap FileMaker in test layer.", cause }),
+          catch: (cause) =>
+            new FileMakerSetupError({
+              message: "Unable to bootstrap FileMaker in test layer.",
+              cause,
+            }),
         }),
     }),
     Layer.succeed(CodegenService, {
-      runInitial: () => {
+      runInitial: (_projectDir, _packageManager, proofkitToken) => {
         if (tracker) {
           tracker.codegens += 1;
+          tracker.codegenTokens?.push(proofkitToken);
         }
         if (options.failures?.codegenRun) {
           return Effect.fail(options.failures.codegenRun as ExternalCommandError);

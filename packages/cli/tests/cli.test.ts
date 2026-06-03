@@ -8,8 +8,21 @@ import { describe, expect, it } from "vitest";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageDir = path.join(__dirname, "..");
 const distEntry = path.join(packageDir, "bin/proofkit.cjs");
+const semverOutputPattern = /^\d+\.\d+\.\d+(?:-[\w.]+)?\n$/;
 
 describe("proofkit CLI", () => {
+  it("prints raw version with -v", () => {
+    const output = execFileSync("node", [distEntry, "-v"], {
+      cwd: packageDir,
+      stdio: "pipe",
+      encoding: "utf8",
+    });
+
+    expect(output).toMatch(semverOutputPattern);
+    expect(output).not.toContain("_______");
+    expect(output).not.toContain("ProofKit");
+  });
+
   it("shows kebab-case init flags in help", () => {
     const output = execFileSync("node", [distEntry, "init", "--help"], {
       cwd: packageDir,
@@ -18,6 +31,7 @@ describe("proofkit CLI", () => {
     });
 
     expect(output).toContain("--app-type");
+    expect(output).toContain("--proofkit-token");
     expect(output).toContain("--non-interactive");
     expect(output).toContain("--no-install");
     expect(output).toContain("--no-git");
@@ -89,6 +103,40 @@ describe("proofkit CLI", () => {
     expect(result.stdout).not.toContain("--ui");
   });
 
+  it("parses init proofkit token flag", async () => {
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "proofkit-new-cli-token-"));
+
+    const result = spawnSync(
+      "node",
+      [
+        distEntry,
+        "init",
+        "token-app",
+        "--app-type",
+        "browser",
+        "--data-source",
+        "none",
+        "--non-interactive",
+        "--no-install",
+        "--no-git",
+        "--proofkit-token",
+        "parser-token",
+      ],
+      {
+        cwd,
+        stdio: "pipe",
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PROOFKIT_DISABLE_BUNDLED_BINARY: "1",
+        },
+      },
+    );
+
+    expect(result.status).toBe(0);
+    expect(await fs.pathExists(path.join(cwd, "token-app", "proofkit.json"))).toBe(true);
+  });
+
   it("shows a clean invalid subcommand error by default", () => {
     const result = spawnSync("node", [distEntry, "my-proofkit-app", "--force"], {
       cwd: packageDir,
@@ -146,7 +194,12 @@ describe("proofkit CLI", () => {
       versions: [
         {
           version: "2.2.4.0",
-          assets: [{ file: "ProofKit.fmaddon", url: pathToFileURL(addonFixturePath).toString() }],
+          assets: [
+            {
+              file: "ProofKit.fmaddon",
+              url: pathToFileURL(addonFixturePath).toString(),
+            },
+          ],
         },
       ],
     });
