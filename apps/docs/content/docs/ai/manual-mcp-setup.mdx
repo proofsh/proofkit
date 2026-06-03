@@ -44,7 +44,7 @@ Every supported agent uses the same logical server entry. The only differences a
 
 Open the config file for your agent, add the server entry under the correct wrapper key, save, and restart the agent.
 
-<Tabs items={["Claude Desktop", "Claude Code", "Cursor", "Codex", "VS Code", "Windsurf", "Gemini CLI"]}>
+<Tabs items={["Claude Desktop", "Claude Code", "Cursor", "Codex", "VS Code", "Windsurf", "Gemini CLI", "Pi"]}>
   <Tab value="Claude Desktop">
     **Config file**
 
@@ -186,11 +186,48 @@ Open the config file for your agent, add the server entry under the correct wrap
 
     Restart the Gemini CLI session after saving.
   </Tab>
+
+  <Tab value="Pi">
+    [Pi](https://pi.dev) does not ship built-in MCP support, so it cannot launch `proofkit-mcp` on its own. Install a community MCP-bridge extension first, then point it at ProofKit.
+
+    **Step 1 — Install an MCP adapter extension.**
+
+    ```sh
+    pi install npm:pi-mcp-adapter
+    ```
+
+    **Config file:** `~/.pi/agent/mcp.json`
+
+    **Wrapper key:** `mcpServers`
+
+    ```json
+    {
+      "mcpServers": {
+        "proofkit-mcp": {
+          "command": "/Users/you/.local/bin/proofkit-mcp",
+          "args": [],
+          "env": {},
+          "lifecycle": "eager",
+          "directTools": true
+        }
+      }
+    }
+    ```
+
+    The `lifecycle` and `directTools` fields are adapter options, not part of the shared
+    server entry: `lifecycle: "eager"` connects to your open FileMaker file at startup, and
+    `directTools: true` registers the ProofKit tools as first-class Pi tools instead of
+    hiding them behind a proxy. Both are optional.
+
+    Restart Pi (or run `/reload`) after saving.
+  </Tab>
 </Tabs>
 
 ## Other MCP-compatible agents
 
 Any agent that speaks MCP over stdio can run ProofKit. The agent only needs to launch the `proofkit-mcp` binary as a child process and talk to it with the MCP protocol. Follow your agent's documentation for how to add an MCP server and use the **shared server entry** above as the values.
+
+Some agents — such as [Pi](https://pi.dev) — do not include MCP support out of the box. For those, install a community MCP-bridge extension first (see the **Pi** tab above for an example), then give it the shared server entry.
 
 <Callout type="info" title="Tip">
   If your agent supports the standard `mcpServers` wrapper key (Claude Desktop, Cursor, Windsurf, Gemini CLI all use it), the Claude Desktop snippet is a safe starting point.
