@@ -30,7 +30,7 @@ For web-based applications where you're looking to interact with the Data API us
 
 The [ProofKit AI workflow](/docs/ai/build-a-webviewer-app) can scaffold a full Web Viewer project and install the FileMaker add-on that provides the necessary layouts, scripts, and custom functions. Use that path when you want ProofKit to create the project structure for you.
 
-If you already have a ProofKit Web Viewer project and need to install or update the FileMaker add-on manually, run `proofkit add addon webviewer` from the project root. That downloads the latest add-on from the ProofKit CDN and opens it in FileMaker; you still need to add the add-on into your FileMaker file.
+When you scaffold a Web Viewer project with `proofkit init`, ProofKit downloads the latest FileMaker add-on from the ProofKit CDN and opens it in FileMaker automatically; you still need to add the add-on into your FileMaker file. For manual installation, follow the steps below.
 
 <Accordions type="single">
   <Accordion title="Manual Installation">
@@ -38,9 +38,8 @@ If you already have a ProofKit Web Viewer project and need to install or update 
 {" "}
 <Callout type="warn">
   This demo file is a very simplified example. To see more features, use the
-  [ProofKit AI workflow](/docs/ai/build-a-webviewer-app) to build a new app or run
-  `proofkit add addon webviewer` in an existing ProofKit project, then install
-  the FileMaker add-on.
+  [ProofKit AI workflow](/docs/ai/build-a-webviewer-app) to build a new app or
+  scaffold one with `proofkit init`, then install the FileMaker add-on.
 </Callout>
 
 Use your preferred package manager to install the package.

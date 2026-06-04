@@ -42,6 +42,12 @@
         "default": "./dist/esm/server/app.js"
       }
     },
+    "./cli": {
+      "import": {
+        "types": "./dist/esm/cli.d.ts",
+        "default": "./dist/esm/cli.js"
+      }
+    },
     "./src/types.ts": "./src/types.ts",
     "./package.json": "./package.json"
   },

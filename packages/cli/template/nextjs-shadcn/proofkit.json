@@ -1,6 +1,0 @@
-{
-	"ui": "shadcn",
-	"envFile": ".env",
-	"appType": "browser",
-	"registryTemplates": ["utils/t3-env"]
-}
