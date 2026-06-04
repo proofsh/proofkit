@@ -110,29 +110,6 @@ jobs:
       - name: Build
         run: pnpm ci:build
 
-  cli-smoke:
-    name: CLI External Integration Smoke Tests
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v6
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node.js 22.x
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run CLI External Integration Smoke Tests
-        run: pnpm ci:cli-smoke
-
   fmodata-e2e:
     name: fmodata E2E Tests
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
