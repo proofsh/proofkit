@@ -1,6 +1,9 @@
 import { v4 } from "uuid";
 
 let webViewerName: string;
+const FM_FETCH_FILEMAKER_RETRY_DELAYS_MS = [250, 500, 1000] as const;
+const FILEMAKER_UNAVAILABLE_MESSAGE = "'window.FileMaker' was not available";
+
 /**
  * @private
  * set the name of the Web Viewer to use for all fetches
@@ -39,12 +42,18 @@ export function fmFetch(
 ): void;
 export function fmFetch(scriptName: string, data: string | object, callback?: () => void) {
   if (callback) {
-    return _execScript(scriptName, data, callback);
-  }
-  return new Promise((resolve) => {
-    _execScript(scriptName, data, (result) => {
-      resolve(result);
+    const pendingScript = _execScriptWithFileMakerRetry(scriptName, data, callback);
+    pendingScript.catch((error: unknown) => {
+      setTimeout(() => {
+        throw error;
+      }, 0);
     });
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    _execScriptWithFileMakerRetry(scriptName, data, (result) => {
+      resolve(result);
+    }).catch(reject);
   });
 }
 
@@ -83,7 +92,37 @@ function _execScript(scriptName: string, data: unknown, cb: (arg0?: unknown) => 
     data,
     callback: { fetchId, fn: "handleFmWVFetchCallback", webViewerName },
   };
-  callFMScript(scriptName, param);
+  try {
+    callFMScript(scriptName, param);
+  } catch (error) {
+    delete cbs[fetchId];
+    throw error;
+  }
+}
+
+function isFileMakerUnavailableError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes(FILEMAKER_UNAVAILABLE_MESSAGE);
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function _execScriptWithFileMakerRetry(scriptName: string, data: unknown, cb: (arg0?: unknown) => void) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      _execScript(scriptName, data, cb);
+      return;
+    } catch (error) {
+      const delay = FM_FETCH_FILEMAKER_RETRY_DELAYS_MS[attempt];
+      if (!(delay && isFileMakerUnavailableError(error))) {
+        throw error;
+      }
+      await wait(delay);
+    }
+  }
 }
 
 /**
