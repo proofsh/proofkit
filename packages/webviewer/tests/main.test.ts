@@ -49,4 +49,14 @@ describe("fmFetch", () => {
 
     await rejection;
   });
+
+  it("returns a catchable rejection in callback mode after retries", async () => {
+    const { fmFetch } = await import("../src/main.ts");
+
+    const result = fmFetch("LoadData", { id: "123" }, vi.fn());
+    const rejection = expect(result).rejects.toThrow("'window.FileMaker' was not available");
+    await vi.advanceTimersByTimeAsync(1750);
+
+    await rejection;
+  });
 });

@@ -39,16 +39,10 @@ export function fmFetch(
    * @param cb callback function to call when the script is done
    */
   callback: () => void,
-): void;
+): Promise<void>;
 export function fmFetch(scriptName: string, data: string | object, callback?: () => void) {
   if (callback) {
-    const pendingScript = _execScriptWithFileMakerRetry(scriptName, data, callback);
-    pendingScript.catch((error: unknown) => {
-      setTimeout(() => {
-        throw error;
-      }, 0);
-    });
-    return;
+    return _execScriptWithFileMakerRetry(scriptName, data, callback);
   }
   return new Promise((resolve, reject) => {
     _execScriptWithFileMakerRetry(scriptName, data, (result) => {
