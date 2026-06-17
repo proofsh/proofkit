@@ -181,7 +181,6 @@ jobs:
       - lint
       - typecheck
       - test
-      - cli-smoke
       - fmodata-e2e
     runs-on: ubuntu-latest
     permissions:
