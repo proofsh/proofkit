@@ -1,5 +1,11 @@
 # @proofkit/webviewer
 
+## 3.1.1
+
+### Patch Changes
+
+- 1d65dca: Retry fmFetch when FileMaker bridge is briefly unavailable and keep callback-mode dispatch failures catchable.
+
 ## 3.1.0
 
 ### Minor Changes
