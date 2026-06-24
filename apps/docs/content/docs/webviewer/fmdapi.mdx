@@ -101,14 +101,14 @@ export const client = DataApi({
     scriptName: "ExecuteDataApi",
     batch: {
       windowMs: 8,
-      maxSize: 20,
+      maxSize: 5,
     },
   }),
   layout: "API_Customers",
 });
 ```
 
-Batching is disabled unless `batch` is set. Use `batch: true` for defaults.
+Batching is disabled unless `batch` is set. Use `batch: true` for defaults: an 8 ms window and maximum batch size of 5.
 
 ## Adapter Pagination
 

@@ -5,7 +5,7 @@ description: Coalesce FileMaker Data API requests from a Web Viewer and update o
 
 `WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
 
-Batching is disabled unless `batch` is set. Use `batch: true` for defaults.
+Batching is disabled unless `batch` is set. Use `batch: true` for defaults: an 8 ms window and maximum batch size of 5.
 
 ```ts title="client.ts"
 import { DataApi } from "@proofkit/fmdapi";
@@ -16,7 +16,7 @@ export const client = DataApi({
     scriptName: "ExecuteDataApi",
     batch: {
       windowMs: 8,
-      maxSize: 20,
+      maxSize: 5,
     },
   }),
   layout: "API_Customers",
@@ -40,7 +40,7 @@ await client.find({
 });
 ```
 
-Per-request batching uses the adapter's configured batch settings when present. If the adapter was not configured with `batch`, `batch: true` uses the default batch window and size.
+Per-request batching uses the adapter's configured batch settings when present. If the adapter was not configured with `batch`, `batch: true` uses the default 8 ms window and maximum batch size of 5.
 
 ## All-record helpers
 

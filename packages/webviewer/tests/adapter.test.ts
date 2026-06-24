@@ -535,9 +535,11 @@ describe("WebViewerAdapter", () => {
       }),
     );
 
-    await Promise.resolve();
-
-    expect(fmFetch).toHaveBeenCalledTimes(1);
     await expect(Promise.all(requests)).resolves.toHaveLength(20);
+    expect(fmFetch).toHaveBeenCalledTimes(4);
+    for (const call of vi.mocked(fmFetch).mock.calls) {
+      const payload = call[1] as { requests: unknown[] };
+      expect(payload.requests).toHaveLength(5);
+    }
   });
 });
