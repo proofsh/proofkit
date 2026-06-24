@@ -3,9 +3,9 @@ title: Batching Data API Requests
 description: Coalesce FileMaker Data API requests from a Web Viewer and update older ProofKit add-on scripts.
 ---
 
-`WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
+`WebViewerAdapter` coalesces Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
 
-Batching is disabled unless `batch` is set. Use `batch: true` for defaults: an 8 ms window and maximum batch size of 5.
+Batching is enabled by default with an 8 ms window and maximum batch size of 5.
 
 ```ts title="client.ts"
 import { DataApi } from "@proofkit/fmdapi";
@@ -15,8 +15,8 @@ export const client = DataApi({
   adapter: new WebViewerAdapter({
     scriptName: "ExecuteDataApi",
     batch: {
-      windowMs: 8,
-      maxSize: 5,
+      windowMs: 16,
+      maxSize: 10,
     },
   }),
   layout: "API_Customers",
@@ -25,13 +25,13 @@ export const client = DataApi({
 
 ## Per-request control
 
-Use `batch: false` on a request to bypass adapter-level batching for that call:
+Use `batch: false` on a request to bypass batching for that call:
 
 ```ts
 await client.list({ batch: false, limit: 10 });
 ```
 
-Use `batch: true` on a request to batch that call even when the adapter was not configured with batching:
+Use `batch: true` on a request to batch that call even when adapter-level batching was disabled:
 
 ```ts
 await client.find({
@@ -40,7 +40,16 @@ await client.find({
 });
 ```
 
-Per-request batching uses the adapter's configured batch settings when present. If the adapter was not configured with `batch`, `batch: true` uses the default 8 ms window and maximum batch size of 5.
+Per-request batching uses the adapter's configured batch settings when present. If the adapter was configured with `batch: false`, `batch: true` uses the default 8 ms window and maximum batch size of 5.
+
+To disable batching for every request unless it opts in, set `batch: false` on the adapter:
+
+```ts
+new WebViewerAdapter({
+  scriptName: "ExecuteDataApi",
+  batch: false,
+});
+```
 
 ## All-record helpers
 

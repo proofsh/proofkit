@@ -66,10 +66,10 @@ function normalizeBatchMaxSize(maxSize: number | undefined): number {
 }
 
 function resolveBatchOptions(batch: WebViewerAdapterOptions["batch"]): ResolvedBatchOptions | undefined {
-  if (!batch) {
+  if (batch === false) {
     return;
   }
-  if (batch === true) {
+  if (batch === undefined || batch === true) {
     return {
       maxSize: DEFAULT_BATCH_MAX_SIZE,
       windowMs: DEFAULT_BATCH_WINDOW_MS,

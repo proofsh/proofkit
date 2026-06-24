@@ -17,26 +17,42 @@ describe("WebViewerAdapter", () => {
     vi.useRealTimers();
   });
 
-  it("uses a single FileMaker script call by default", async () => {
-    vi.mocked(fmFetch).mockResolvedValue({
-      messages: [{ code: "0" }],
-      response: { data: [] },
+  it("batches FileMaker script calls by default", async () => {
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const batch = data as {
+        requests: Array<{ id: string }>;
+      };
+      return Promise.resolve({
+        responses: batch.requests.map((request) => ({
+          id: request.id,
+          messages: [{ code: "0" }],
+          response: { data: [] },
+        })),
+      });
     });
 
     const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
-    await expect(
-      adapter.list({
-        data: { _limit: 10 } as unknown as ListOptions["data"],
-        layout: "Customers",
-      }),
-    ).resolves.toEqual({ data: [] });
+    const result = adapter.list({
+      data: { _limit: 10 } as unknown as ListOptions["data"],
+      layout: "Customers",
+    });
 
+    expect(fmFetch).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(8);
+
+    await expect(result).resolves.toEqual({ data: [] });
     expect(fmFetch).toHaveBeenCalledTimes(1);
     expect(fmFetch).toHaveBeenCalledWith("execute_data_api", {
-      action: "read",
-      layouts: "Customers",
-      limit: 10,
-      version: "vLatest",
+      batch: true,
+      requests: [
+        {
+          action: "read",
+          id: "batch-0",
+          layouts: "Customers",
+          limit: 10,
+          version: "vLatest",
+        },
+      ],
     });
   });
 
@@ -358,7 +374,7 @@ describe("WebViewerAdapter", () => {
     );
   });
 
-  it("allows requests to opt in to batching with default batch settings", async () => {
+  it("allows requests to opt in when adapter-level batching is disabled", async () => {
     vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
       const batch = data as {
         requests: Array<{ id: string; layouts: string }>;
@@ -373,6 +389,7 @@ describe("WebViewerAdapter", () => {
     });
 
     const adapter = new WebViewerAdapter({
+      batch: false,
       scriptName: "execute_data_api",
     });
     const first = adapter.list({ batch: true, data: {} as ListOptions["data"], layout: "A" });

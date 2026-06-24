@@ -90,7 +90,7 @@ For examples of all methods, see the [@proofkit/fmdapi](/docs/fmdapi) documentat
 
 ## Batched Web Viewer Requests
 
-`WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. See [Batching Data API Requests](/docs/webviewer/batching) for per-request controls, the full script contract, and older add-on fallback behavior.
+`WebViewerAdapter` coalesces Data API calls that happen within a short window into one FileMaker script call by default. See [Batching Data API Requests](/docs/webviewer/batching) for per-request controls, the full script contract, and older add-on fallback behavior.
 
 ```ts title="client.ts"
 import { DataApi } from "@proofkit/fmdapi";
@@ -100,15 +100,15 @@ export const client = DataApi({
   adapter: new WebViewerAdapter({
     scriptName: "ExecuteDataApi",
     batch: {
-      windowMs: 8,
-      maxSize: 5,
+      windowMs: 16,
+      maxSize: 10,
     },
   }),
   layout: "API_Customers",
 });
 ```
 
-Batching is disabled unless `batch` is set. Use `batch: true` for defaults: an 8 ms window and maximum batch size of 5.
+Default batching uses an 8 ms window and maximum batch size of 5. Use `batch: false` on the adapter or an individual request to opt out.
 
 ## Adapter Pagination
 
