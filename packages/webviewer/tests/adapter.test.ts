@@ -168,6 +168,105 @@ describe("WebViewerAdapter", () => {
     await secondExpectation;
   });
 
+  it("allows a request to opt out of adapter-level batching", async () => {
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const payload = data as { batch?: boolean; requests?: Array<{ id: string; layouts: string }>; layouts?: string };
+      if (payload.batch) {
+        return Promise.resolve({
+          responses: payload.requests?.map((request) => ({
+            id: request.id,
+            messages: [{ code: "0" }],
+            response: { layout: request.layouts },
+          })),
+        });
+      }
+      return Promise.resolve({
+        messages: [{ code: "0" }],
+        response: { layout: payload.layouts },
+      });
+    });
+
+    const adapter = new WebViewerAdapter({
+      batch: { windowMs: 8 },
+      scriptName: "execute_data_api",
+    });
+    const unbatched = adapter.list({
+      batch: false,
+      data: {} as ListOptions["data"],
+      layout: "Customers",
+    });
+    const batched = adapter.list({
+      data: {} as ListOptions["data"],
+      layout: "Invoices",
+    });
+
+    await expect(unbatched).resolves.toEqual({ layout: "Customers" });
+    expect(fmFetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(8);
+
+    await expect(batched).resolves.toEqual({ layout: "Invoices" });
+    expect(fmFetch).toHaveBeenCalledTimes(2);
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      1,
+      "execute_data_api",
+      expect.objectContaining({
+        layouts: "Customers",
+      }),
+    );
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      2,
+      "execute_data_api",
+      expect.objectContaining({
+        batch: true,
+      }),
+    );
+  });
+
+  it("allows requests to opt in to batching with default batch settings", async () => {
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const batch = data as {
+        requests: Array<{ id: string; layouts: string }>;
+      };
+      return Promise.resolve({
+        responses: batch.requests.map((request) => ({
+          id: request.id,
+          messages: [{ code: "0" }],
+          response: { layout: request.layouts },
+        })),
+      });
+    });
+
+    const adapter = new WebViewerAdapter({
+      scriptName: "execute_data_api",
+    });
+    const first = adapter.list({ batch: true, data: {} as ListOptions["data"], layout: "A" });
+    const second = adapter.list({ batch: true, data: {} as ListOptions["data"], layout: "B" });
+
+    expect(fmFetch).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(8);
+
+    await expect(Promise.all([first, second])).resolves.toEqual([{ layout: "A" }, { layout: "B" }]);
+    expect(fmFetch).toHaveBeenCalledTimes(1);
+    expect(fmFetch).toHaveBeenCalledWith("execute_data_api", {
+      batch: true,
+      requests: [
+        {
+          action: "read",
+          id: "batch-0",
+          layouts: "A",
+          version: "vLatest",
+        },
+        {
+          action: "read",
+          id: "batch-1",
+          layouts: "B",
+          version: "vLatest",
+        },
+      ],
+    });
+  });
+
   it("falls back to unbatched requests when the FileMaker script rejects batch payloads", async () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {

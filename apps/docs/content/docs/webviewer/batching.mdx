@@ -23,6 +23,25 @@ export const client = DataApi({
 });
 ```
 
+## Per-request control
+
+Use `batch: false` on a request to bypass adapter-level batching for that call:
+
+```ts
+await client.list({ batch: false, limit: 10 });
+```
+
+Use `batch: true` on a request to batch that call even when the adapter was not configured with batching:
+
+```ts
+await client.find({
+  batch: true,
+  query: { status: "Active" },
+});
+```
+
+Per-request batching uses the adapter's configured batch settings when present. If the adapter was not configured with `batch`, `batch: true` uses the default batch window and size.
+
 ## FileMaker script contract
 
 When batching is enabled, the FileMaker script receives this envelope:

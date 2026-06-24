@@ -42,6 +42,7 @@ interface DataApiScriptRequest extends Record<string, unknown> {
 }
 
 interface QueuedBatchRequest {
+  batchOptions: ResolvedBatchOptions;
   id: string;
   payload: DataApiScriptRequest;
   resolve: (value: unknown) => void;
@@ -80,6 +81,13 @@ function resolveBatchOptions(batch: WebViewerAdapterOptions["batch"]): ResolvedB
   return {
     maxSize: normalizeBatchMaxSize(batch.maxSize),
     windowMs: Math.max(0, batch.windowMs ?? DEFAULT_BATCH_WINDOW_MS),
+  };
+}
+
+function defaultBatchOptions(): ResolvedBatchOptions {
+  return {
+    maxSize: DEFAULT_BATCH_MAX_SIZE,
+    windowMs: DEFAULT_BATCH_WINDOW_MS,
   };
 }
 
@@ -122,15 +130,31 @@ export class WebViewerAdapter implements Adapter {
     this.batchOptions = resolveBatchOptions(options.batch);
   }
 
-  protected request = (params: { layout: string; body: object; action?: DataApiAction }): Promise<unknown> => {
+  protected request = (params: {
+    batch?: boolean;
+    body: object;
+    action?: DataApiAction;
+    layout: string;
+  }): Promise<unknown> => {
     const payload = this.createScriptRequest(params);
+    const batchOptions = this.getBatchOptionsForRequest(params.batch);
 
-    if (this.batchOptions && !this.batchDisabledByLegacyScript) {
-      return this.enqueueBatchRequest(payload);
+    if (batchOptions) {
+      return this.enqueueBatchRequest(payload, batchOptions);
     }
 
     return this.executeSingleRequest(payload);
   };
+
+  private getBatchOptionsForRequest(batch: boolean | undefined): ResolvedBatchOptions | undefined {
+    if (this.batchDisabledByLegacyScript || batch === false) {
+      return;
+    }
+    if (batch === true) {
+      return this.batchOptions ?? defaultBatchOptions();
+    }
+    return this.batchOptions;
+  }
 
   private createScriptRequest(params: { layout: string; body: object; action?: DataApiAction }): DataApiScriptRequest {
     const { action = "read", layout, body } = params;
@@ -158,9 +182,10 @@ export class WebViewerAdapter implements Adapter {
     return this.handleDataApiResponse(resp);
   }
 
-  private enqueueBatchRequest(payload: DataApiScriptRequest): Promise<unknown> {
+  private enqueueBatchRequest(payload: DataApiScriptRequest, batchOptions: ResolvedBatchOptions): Promise<unknown> {
     return new Promise((resolve, reject) => {
       this.batchQueue.push({
+        batchOptions,
         id: `batch-${this.batchRequestId}`,
         payload,
         resolve,
@@ -168,12 +193,12 @@ export class WebViewerAdapter implements Adapter {
       });
       this.batchRequestId++;
 
-      if (this.batchQueue.length >= normalizeBatchMaxSize(this.batchOptions?.maxSize)) {
+      if (this.batchQueue.length >= normalizeBatchMaxSize(batchOptions.maxSize)) {
         this.flushBatchQueue();
         return;
       }
 
-      this.scheduleBatchFlush(this.batchOptions?.windowMs ?? DEFAULT_BATCH_WINDOW_MS);
+      this.scheduleBatchFlush(batchOptions.windowMs);
     });
   }
 
@@ -210,12 +235,8 @@ export class WebViewerAdapter implements Adapter {
   }
 
   private async drainBatchQueue() {
-    const batchOptions = this.batchOptions;
-    if (!batchOptions) {
-      return;
-    }
-
     while (this.batchQueue.length > 0) {
+      const batchOptions = this.batchQueue[0]?.batchOptions ?? defaultBatchOptions();
       const requests = this.batchQueue.splice(0, normalizeBatchMaxSize(batchOptions.maxSize));
       if (this.batchDisabledByLegacyScript) {
         await this.executeUnbatchedRequests(requests);
@@ -288,8 +309,9 @@ export class WebViewerAdapter implements Adapter {
   }
 
   list = async (opts: ListOptions): Promise<clientTypes.GetResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
+      batch,
       body: data,
       layout,
     });
@@ -297,9 +319,10 @@ export class WebViewerAdapter implements Adapter {
   };
 
   listAll = async (opts: ListOptions): Promise<clientTypes.GetResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
       action: "readAll",
+      batch,
       body: data,
       layout,
     });
@@ -307,8 +330,9 @@ export class WebViewerAdapter implements Adapter {
   };
 
   get = async (opts: GetOptions): Promise<clientTypes.GetResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
+      batch,
       body: data,
       layout,
     });
@@ -316,8 +340,9 @@ export class WebViewerAdapter implements Adapter {
   };
 
   find = async (opts: FindOptions): Promise<clientTypes.GetResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
+      batch,
       body: data,
       layout,
     });
@@ -325,9 +350,10 @@ export class WebViewerAdapter implements Adapter {
   };
 
   findAll = async (opts: FindOptions): Promise<clientTypes.GetResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
       action: "findAll",
+      batch,
       body: data,
       layout,
     });
@@ -335,9 +361,10 @@ export class WebViewerAdapter implements Adapter {
   };
 
   create = async (opts: CreateOptions): Promise<clientTypes.CreateResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
       action: "create",
+      batch,
       body: data,
       layout,
     });
@@ -345,9 +372,10 @@ export class WebViewerAdapter implements Adapter {
   };
 
   update = async (opts: UpdateOptions): Promise<clientTypes.UpdateResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
       action: "update",
+      batch,
       layout,
       body: data,
     });
@@ -355,9 +383,10 @@ export class WebViewerAdapter implements Adapter {
   };
 
   delete = async (opts: DeleteOptions): Promise<clientTypes.DeleteResponse> => {
-    const { data, layout } = opts;
+    const { batch, data, layout } = opts;
     const resp = await this.request({
       action: "delete",
+      batch,
       body: data,
       layout,
     });
@@ -367,6 +396,7 @@ export class WebViewerAdapter implements Adapter {
   layoutMetadata = async (opts: LayoutMetadataOptions): Promise<clientTypes.LayoutMetadataResponse> => {
     return (await this.request({
       action: "metaData",
+      batch: opts.batch,
       layout: opts.layout,
       body: {},
     })) as clientTypes.LayoutMetadataResponse;

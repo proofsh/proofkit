@@ -41,6 +41,7 @@ export interface ClientObjectProps {
 }
 
 interface FetchOptions {
+  batch?: boolean;
   fetch?: RequestInit;
 }
 
@@ -132,11 +133,12 @@ function DataApi<
   type FindMethodArgs = FindArgs<InferredFieldData, InferredPortalData> & IgnoreEmptyResult & FetchOptions;
 
   function normalizeListRequest(args?: ListArgs): {
+    batch?: boolean;
     fetch?: RequestInit;
     params: ListOptions["data"];
     timeout?: number;
   } {
-    const { fetch, timeout, ...params } = args ?? {};
+    const { batch, fetch, timeout, ...params } = args ?? {};
 
     if ("limit" in params && params.limit !== undefined) {
       Object.assign(params, { _limit: params.limit }).limit = undefined;
@@ -155,6 +157,7 @@ function DataApi<
     }
 
     return {
+      batch,
       fetch,
       params: params as ListOptions["data"],
       timeout,
@@ -162,12 +165,13 @@ function DataApi<
   }
 
   function normalizeFindRequest(args: FindMethodArgs): {
+    batch?: boolean;
     fetch?: RequestInit;
     ignoreEmptyResult: boolean;
     params: FindOptions["data"];
     timeout?: number;
   } {
-    const { query: queryInput, ignoreEmptyResult = false, timeout, fetch, ...params } = args;
+    const { batch, query: queryInput, ignoreEmptyResult = false, timeout, fetch, ...params } = args;
     const query = Array.isArray(queryInput) ? queryInput : [queryInput];
 
     if ("offset" in params && params.offset !== undefined && params.offset <= 1) {
@@ -192,6 +196,7 @@ function DataApi<
     }
 
     return {
+      batch,
       fetch,
       ignoreEmptyResult,
       params: { ...params, query } as FindOptions["data"],
@@ -208,9 +213,10 @@ function DataApi<
   async function _list(
     args?: ListParams<InferredFieldData, InferredPortalData> & FetchOptions,
   ): Promise<GetResponse<InferredFieldData, InferredPortalData>> {
-    const { fetch, params, timeout } = normalizeListRequest(args);
+    const { batch, fetch, params, timeout } = normalizeListRequest(args);
 
     const result = await list({
+      batch,
       layout,
       data: params,
       fetch,
@@ -246,12 +252,13 @@ function DataApi<
     let offset = args?.offset ?? 1;
 
     if (adapterListAll) {
-      const { fetch, params, timeout } = normalizeListRequest({
+      const { batch, fetch, params, timeout } = normalizeListRequest({
         ...args,
         limit,
         offset,
       });
       const result = (await adapterListAll({
+        batch,
         data: params,
         fetch,
         layout,
@@ -281,8 +288,9 @@ function DataApi<
     T extends InferredFieldData = InferredFieldData,
     U extends InferredPortalData = InferredPortalData,
   >(args: CreateArgs<T, U> & FetchOptions): Promise<CreateResponse> {
-    const { fetch, timeout, ...params } = args ?? {};
+    const { batch, fetch, timeout, ...params } = args ?? {};
     return await create({
+      batch,
       layout,
       data: params,
       fetch,
@@ -297,9 +305,10 @@ function DataApi<
     args: GetArgs<InferredPortalData> & FetchOptions,
   ): Promise<GetResponse<InferredFieldData, InferredPortalData>> {
     args.recordId = asNumber(args.recordId);
-    const { recordId, fetch, timeout, ...params } = args;
+    const { batch, recordId, fetch, timeout, ...params } = args;
 
     const result = await get({
+      batch,
       layout,
       data: { ...params, recordId },
       fetch,
@@ -315,8 +324,9 @@ function DataApi<
     args: UpdateArgs<InferredFieldData, InferredPortalData> & FetchOptions,
   ): Promise<UpdateResponse> {
     args.recordId = asNumber(args.recordId);
-    const { recordId, fetch, timeout, ...params } = args;
+    const { batch, recordId, fetch, timeout, ...params } = args;
     return await update({
+      batch,
       layout,
       data: { ...params, recordId },
       fetch,
@@ -329,9 +339,10 @@ function DataApi<
    */
   function deleteRecord(args: DeleteArgs & FetchOptions): Promise<DeleteResponse> {
     args.recordId = asNumber(args.recordId);
-    const { recordId, fetch, timeout, ...params } = args;
+    const { batch, recordId, fetch, timeout, ...params } = args;
 
     return _adapterDelete({
+      batch,
       layout,
       data: { ...params, recordId },
       fetch,
@@ -345,8 +356,9 @@ function DataApi<
   async function _find(
     args: FindArgs<InferredFieldData, InferredPortalData> & IgnoreEmptyResult & FetchOptions,
   ): Promise<GetResponse<InferredFieldData, InferredPortalData>> {
-    const { fetch, ignoreEmptyResult, params, timeout } = normalizeFindRequest(args);
+    const { batch, fetch, ignoreEmptyResult, params, timeout } = normalizeFindRequest(args);
     const result = (await find({
+      batch,
       data: params,
       layout,
       fetch,
@@ -430,13 +442,14 @@ function DataApi<
     let offset = args.offset ?? 1;
 
     if (adapterFindAll) {
-      const { fetch, params, timeout } = normalizeFindRequest({
+      const { batch, fetch, params, timeout } = normalizeFindRequest({
         ...args,
         ignoreEmptyResult: true,
         limit,
         offset,
       });
       const result = (await adapterFindAll({
+        batch,
         data: params,
         fetch,
         layout,
@@ -471,6 +484,7 @@ function DataApi<
     const params: FetchOptions & { timeout?: number } = restArgs;
 
     return await layoutMetadata({
+      batch: params.batch,
       layout,
       fetch: params.fetch, // Now should correctly resolve to undefined if not present
       timeout: params.timeout, // Now should correctly resolve to undefined if not present
@@ -478,7 +492,7 @@ function DataApi<
   }
 
   async function _containerUpload(args: ContainerUploadArgs<InferredFieldData> & FetchOptions) {
-    const { ...params } = args;
+    const { fetch, timeout, ...params } = args;
     return await containerUpload({
       layout,
       data: {
@@ -486,8 +500,8 @@ function DataApi<
         containerFieldName: params.containerFieldName as string,
         repetition: params.containerFieldRepetition,
       },
-      fetch: params.fetch,
-      timeout: params.timeout,
+      fetch,
+      timeout,
     });
   }
 

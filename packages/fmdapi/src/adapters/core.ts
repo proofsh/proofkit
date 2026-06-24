@@ -15,6 +15,7 @@ import type {
 } from "../client-types.js";
 
 export interface BaseRequest {
+  batch?: boolean;
   layout: string;
   fetch?: RequestInit;
   timeout?: number;

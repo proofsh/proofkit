@@ -198,6 +198,37 @@ describe("other methods", () => {
     expect(result.data).toBeDefined();
   });
 
+  it("passes batch request option to adapters without adding it to Data API params", async () => {
+    const adapterList = vi.fn().mockResolvedValue({
+      data: [],
+      dataInfo: {
+        database: "test",
+        foundCount: 0,
+        layout: "layout",
+        returnedCount: 0,
+        table: "layout",
+        totalRecordCount: 0,
+      },
+    });
+    const client = DataApi({
+      adapter: createAdapter({ list: adapterList }),
+      layout: "layout",
+    });
+
+    await client.list({ batch: false, limit: 10 });
+
+    expect(adapterList).toHaveBeenCalledWith({
+      batch: false,
+      data: {
+        _limit: 10,
+        limit: undefined,
+      },
+      fetch: undefined,
+      layout: "layout",
+      timeout: undefined,
+    });
+  });
+
   it("should rename offset param", async () => {
     vi.stubGlobal("fetch", createMockFetch(mockResponses["list-basic"]));
     const client = createTestClient();
