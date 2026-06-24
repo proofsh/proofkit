@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { Adapter, ExecuteScriptOptions } from "./adapters/core.js";
+import type { Adapter, ExecuteScriptOptions, FindOptions, ListOptions } from "./adapters/core.js";
 import type {
   CreateParams,
   CreateResponse,
@@ -88,8 +88,10 @@ function DataApi<
     create,
     delete: _adapterDelete,
     find,
+    findAll: adapterFindAll,
     get,
     list,
+    listAll: adapterListAll,
     update,
     layoutMetadata,
     containerUpload,
@@ -126,18 +128,16 @@ function DataApi<
 
   type ExecuteScriptArgs = Omit<ExecuteScriptOptions, "layout">;
 
-  /**
-   * List all records from a given layout, no find criteria applied.
-   */
-  async function _list(
-    args?: ListParams<InferredFieldData, InferredPortalData> & FetchOptions,
-  ): Promise<GetResponse<InferredFieldData, InferredPortalData>>;
-  async function _list(
-    args?: ListParams<InferredFieldData, InferredPortalData> & FetchOptions,
-  ): Promise<GetResponse<InferredFieldData, InferredPortalData>> {
+  type ListArgs = ListParams<InferredFieldData, InferredPortalData> & FetchOptions;
+  type FindMethodArgs = FindArgs<InferredFieldData, InferredPortalData> & IgnoreEmptyResult & FetchOptions;
+
+  function normalizeListRequest(args?: ListArgs): {
+    fetch?: RequestInit;
+    params: ListOptions["data"];
+    timeout?: number;
+  } {
     const { fetch, timeout, ...params } = args ?? {};
 
-    // rename and refactor limit, offset, and sort keys for this request
     if ("limit" in params && params.limit !== undefined) {
       Object.assign(params, { _limit: params.limit }).limit = undefined;
     }
@@ -153,6 +153,62 @@ function DataApi<
         _sort: Array.isArray(params.sort) ? params.sort : [params.sort],
       }).sort = undefined;
     }
+
+    return {
+      fetch,
+      params: params as ListOptions["data"],
+      timeout,
+    };
+  }
+
+  function normalizeFindRequest(args: FindMethodArgs): {
+    fetch?: RequestInit;
+    ignoreEmptyResult: boolean;
+    params: FindOptions["data"];
+    timeout?: number;
+  } {
+    const { query: queryInput, ignoreEmptyResult = false, timeout, fetch, ...params } = args;
+    const query = Array.isArray(queryInput) ? queryInput : [queryInput];
+
+    if ("offset" in params && params.offset !== undefined && params.offset <= 1) {
+      params.offset = undefined;
+    }
+    if ("sort" in params && params.sort !== undefined && !Array.isArray(params.sort)) {
+      params.sort = [params.sort];
+    }
+    if ("dateformats" in params && params.dateformats !== undefined) {
+      let dateFormatValue: number;
+      if (params.dateformats === "US") {
+        dateFormatValue = 0;
+      } else if (params.dateformats === "file_locale") {
+        dateFormatValue = 1;
+      } else if (params.dateformats === "ISO8601") {
+        dateFormatValue = 2;
+      } else {
+        dateFormatValue = 0;
+      }
+      // @ts-expect-error FM wants a string, so this is fine
+      params.dateformats = dateFormatValue.toString();
+    }
+
+    return {
+      fetch,
+      ignoreEmptyResult,
+      params: { ...params, query } as FindOptions["data"],
+      timeout,
+    };
+  }
+
+  /**
+   * List all records from a given layout, no find criteria applied.
+   */
+  async function _list(
+    args?: ListParams<InferredFieldData, InferredPortalData> & FetchOptions,
+  ): Promise<GetResponse<InferredFieldData, InferredPortalData>>;
+  async function _list(
+    args?: ListParams<InferredFieldData, InferredPortalData> & FetchOptions,
+  ): Promise<GetResponse<InferredFieldData, InferredPortalData>> {
+    const { fetch, params, timeout } = normalizeListRequest(args);
 
     const result = await list({
       layout,
@@ -188,6 +244,21 @@ function DataApi<
     let runningData: GetResponse<InferredFieldData, InferredPortalData>["data"] = [];
     const limit = args?.limit ?? 100;
     let offset = args?.offset ?? 1;
+
+    if (adapterListAll) {
+      const { fetch, params, timeout } = normalizeListRequest({
+        ...args,
+        limit,
+        offset,
+      });
+      const result = (await adapterListAll({
+        data: params,
+        fetch,
+        layout,
+        timeout,
+      })) as GetResponse<InferredFieldData, InferredPortalData>;
+      return (await runSchemaValidationAndTransform(schema, result)).data;
+    }
 
     while (true) {
       const data = await _list({
@@ -274,30 +345,9 @@ function DataApi<
   async function _find(
     args: FindArgs<InferredFieldData, InferredPortalData> & IgnoreEmptyResult & FetchOptions,
   ): Promise<GetResponse<InferredFieldData, InferredPortalData>> {
-    const { query: queryInput, ignoreEmptyResult = false, timeout, fetch, ...params } = args;
-    const query = Array.isArray(queryInput) ? queryInput : [queryInput];
-
-    // rename and refactor limit, offset, and sort keys for this request
-    if ("offset" in params && params.offset !== undefined && params.offset <= 1) {
-      params.offset = undefined;
-    }
-    if ("dateformats" in params && params.dateformats !== undefined) {
-      // reassign dateformats to match FileMaker's expected values
-      let dateFormatValue: number;
-      if (params.dateformats === "US") {
-        dateFormatValue = 0;
-      } else if (params.dateformats === "file_locale") {
-        dateFormatValue = 1;
-      } else if (params.dateformats === "ISO8601") {
-        dateFormatValue = 2;
-      } else {
-        dateFormatValue = 0;
-      }
-      // @ts-expect-error FM wants a string, so this is fine
-      params.dateformats = dateFormatValue.toString();
-    }
+    const { fetch, ignoreEmptyResult, params, timeout } = normalizeFindRequest(args);
     const result = (await find({
-      data: { ...params, query },
+      data: params,
       layout,
       fetch,
       timeout,
@@ -378,6 +428,27 @@ function DataApi<
     let runningData: GetResponse<InferredFieldData, InferredPortalData>["data"] = [];
     const limit = args.limit ?? 100;
     let offset = args.offset ?? 1;
+
+    if (adapterFindAll) {
+      const { fetch, params, timeout } = normalizeFindRequest({
+        ...args,
+        ignoreEmptyResult: true,
+        limit,
+        offset,
+      });
+      const result = (await adapterFindAll({
+        data: params,
+        fetch,
+        layout,
+        timeout,
+      }).catch((e: unknown) => {
+        if (e instanceof FileMakerError && e.code === "401") {
+          return { data: [], dataInfo: { foundCount: 0, returnedCount: 0 } };
+        }
+        throw e;
+      })) as GetResponse<InferredFieldData, InferredPortalData>;
+      return (await runSchemaValidationAndTransform(schema, result)).data;
+    }
 
     while (true) {
       const data = await _find({
