@@ -87,6 +87,39 @@ describe("find methods", () => {
     expect(resp.data.length).toBe(2);
   });
 
+  test("normalizes single find sort objects to arrays", async () => {
+    const adapterFind = vi.fn().mockResolvedValue({
+      data: [],
+      dataInfo: {
+        database: "test",
+        foundCount: 0,
+        layout: "layout",
+        returnedCount: 0,
+        table: "layout",
+        totalRecordCount: 0,
+      },
+    });
+    const client = DataApi({
+      adapter: createAdapter({ find: adapterFind }),
+      layout: "layout",
+    });
+
+    await client.find({
+      query: { anything: "anything" },
+      sort: { fieldName: "name" },
+    });
+
+    expect(adapterFind).toHaveBeenCalledWith({
+      data: {
+        query: [{ anything: "anything" }],
+        sort: [{ fieldName: "name" }],
+      },
+      fetch: undefined,
+      layout: "layout",
+      timeout: undefined,
+    });
+  });
+
   test("successful findFirst with multiple return", async () => {
     vi.stubGlobal("fetch", createMockFetch(mockResponses["find-basic"]));
     const client = createTestClient();
@@ -299,6 +332,7 @@ describe("other methods", () => {
     const data = await client.findAll({
       limit: 50,
       query: { name: "==Ada" },
+      sort: { fieldName: "name" },
     });
 
     expect(data).toHaveLength(1);
@@ -307,6 +341,7 @@ describe("other methods", () => {
       data: {
         limit: 50,
         query: [{ name: "==Ada" }],
+        sort: [{ fieldName: "name" }],
       },
       fetch: undefined,
       layout: "layout",

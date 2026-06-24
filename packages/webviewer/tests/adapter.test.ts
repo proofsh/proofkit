@@ -1,4 +1,4 @@
-import type { FindOptions, ListOptions, UpdateOptions } from "@proofkit/fmdapi/dist/esm/adapters/core.js";
+import type { FindOptions, ListOptions, UpdateOptions } from "@proofkit/fmdapi/adapters/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WebViewerAdapter } from "../src/adapter.ts";
 import { fmFetch } from "../src/main.js";
@@ -201,5 +201,39 @@ describe("WebViewerAdapter", () => {
       { layout: "C" },
     ]);
     expect(fmFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+  ])("falls back to default maxSize for invalid input %s", async (maxSize) => {
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const batch = data as {
+        requests: Array<{ id: string; layouts: string }>;
+      };
+      return Promise.resolve({
+        responses: batch.requests.map((request) => ({
+          id: request.id,
+          messages: [{ code: "0" }],
+          response: { layout: request.layouts },
+        })),
+      });
+    });
+
+    const adapter = new WebViewerAdapter({
+      batch: { maxSize, windowMs: 100 },
+      scriptName: "execute_data_api",
+    });
+    const requests = Array.from({ length: 20 }, (_, index) =>
+      adapter.list({
+        data: {} as ListOptions["data"],
+        layout: `Layout${index}`,
+      }),
+    );
+
+    await Promise.resolve();
+
+    expect(fmFetch).toHaveBeenCalledTimes(1);
+    await expect(Promise.all(requests)).resolves.toHaveLength(20);
   });
 });

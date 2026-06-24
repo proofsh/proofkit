@@ -173,6 +173,9 @@ function DataApi<
     if ("offset" in params && params.offset !== undefined && params.offset <= 1) {
       params.offset = undefined;
     }
+    if ("sort" in params && params.sort !== undefined && !Array.isArray(params.sort)) {
+      params.sort = [params.sort];
+    }
     if ("dateformats" in params && params.dateformats !== undefined) {
       let dateFormatValue: number;
       if (params.dateformats === "US") {

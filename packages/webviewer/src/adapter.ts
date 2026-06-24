@@ -55,6 +55,13 @@ interface BatchScriptResponse {
 const DEFAULT_BATCH_WINDOW_MS = 8;
 const DEFAULT_BATCH_MAX_SIZE = 20;
 
+function normalizeBatchMaxSize(maxSize: number | undefined): number {
+  if (maxSize === undefined || !Number.isFinite(maxSize)) {
+    return DEFAULT_BATCH_MAX_SIZE;
+  }
+  return Math.max(1, Math.trunc(maxSize));
+}
+
 function resolveBatchOptions(batch: WebViewerAdapterOptions["batch"]): ResolvedBatchOptions | undefined {
   if (!batch) {
     return;
@@ -69,7 +76,7 @@ function resolveBatchOptions(batch: WebViewerAdapterOptions["batch"]): ResolvedB
     return;
   }
   return {
-    maxSize: Math.max(1, batch.maxSize ?? DEFAULT_BATCH_MAX_SIZE),
+    maxSize: normalizeBatchMaxSize(batch.maxSize),
     windowMs: Math.max(0, batch.windowMs ?? DEFAULT_BATCH_WINDOW_MS),
   };
 }
@@ -147,7 +154,7 @@ export class WebViewerAdapter implements Adapter {
       });
       this.batchRequestId++;
 
-      if (this.batchQueue.length >= (this.batchOptions?.maxSize ?? DEFAULT_BATCH_MAX_SIZE)) {
+      if (this.batchQueue.length >= normalizeBatchMaxSize(this.batchOptions?.maxSize)) {
         this.flushBatchQueue();
         return;
       }
@@ -195,7 +202,7 @@ export class WebViewerAdapter implements Adapter {
     }
 
     while (this.batchQueue.length > 0) {
-      const requests = this.batchQueue.splice(0, batchOptions.maxSize);
+      const requests = this.batchQueue.splice(0, normalizeBatchMaxSize(batchOptions.maxSize));
       await this.executeBatchRequests(requests);
     }
   }
