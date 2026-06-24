@@ -120,10 +120,16 @@ describe("WebViewerAdapter", () => {
     expect(result.dataInfo.returnedCount).toBe(1000);
     expect(fmFetch).toHaveBeenCalledTimes(3);
     expect(fmFetch).toHaveBeenNthCalledWith(1, "execute_data_api", {
-      action: "read",
-      layouts: "Customers",
-      limit: 100,
-      version: "vLatest",
+      batch: true,
+      requests: [
+        {
+          action: "read",
+          id: "batch-0",
+          layouts: "Customers",
+          limit: 100,
+          version: "vLatest",
+        },
+      ],
     });
     expect(fmFetch).toHaveBeenNthCalledWith(2, "execute_data_api", {
       batch: true,
@@ -153,22 +159,26 @@ describe("WebViewerAdapter", () => {
   it("paginates findAll with bounded find requests", async () => {
     const totalRecordCount = 250;
     vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
-      const payload = data as { limit?: number; offset?: number };
-      const limit = payload.limit ?? 100;
-      const offset = payload.offset ?? 1;
-      const pageEnd = Math.min(offset + limit - 1, totalRecordCount);
-      const pageData =
-        offset > totalRecordCount
-          ? []
-          : Array.from({ length: pageEnd - offset + 1 }, (_, index) => ({
-              fieldData: { id: offset + index },
-              modId: "0",
-              portalData: {},
-              recordId: String(offset + index),
-            }));
-      return Promise.resolve({
-        messages: [{ code: "0" }],
-        response: {
+      const payload = data as {
+        batch?: boolean;
+        limit?: number;
+        offset?: number;
+        requests?: Array<{ id: string; limit?: number; offset?: number }>;
+      };
+      const getPageResponse = (request: { limit?: number; offset?: number }) => {
+        const limit = request.limit ?? 100;
+        const offset = request.offset ?? 1;
+        const pageEnd = Math.min(offset + limit - 1, totalRecordCount);
+        const pageData =
+          offset > totalRecordCount
+            ? []
+            : Array.from({ length: pageEnd - offset + 1 }, (_, index) => ({
+                fieldData: { id: offset + index },
+                modId: "0",
+                portalData: {},
+                recordId: String(offset + index),
+              }));
+        return {
           data: pageData,
           dataInfo: {
             database: "Test",
@@ -178,7 +188,20 @@ describe("WebViewerAdapter", () => {
             table: "Customers",
             totalRecordCount,
           },
-        },
+        };
+      };
+      if (payload.batch) {
+        return Promise.resolve({
+          responses: payload.requests?.map((request) => ({
+            id: request.id,
+            messages: [{ code: "0" }],
+            response: getPageResponse(request),
+          })),
+        });
+      }
+      return Promise.resolve({
+        messages: [{ code: "0" }],
+        response: getPageResponse(payload),
       });
     });
 
@@ -195,30 +218,32 @@ describe("WebViewerAdapter", () => {
     expect(result.data).toHaveLength(250);
     expect(fmFetch).toHaveBeenCalledTimes(3);
     expect(fmFetch).toHaveBeenNthCalledWith(1, "execute_data_api", {
-      action: "read",
-      layouts: "Customers",
-      limit: 100,
-      query: [{ status: "Active" }],
-      version: "vLatest",
+      batch: true,
+      requests: [
+        {
+          action: "read",
+          id: "batch-0",
+          layouts: "Customers",
+          limit: 100,
+          query: [{ status: "Active" }],
+          version: "vLatest",
+        },
+      ],
     });
     expect(fmFetch).toHaveBeenNthCalledWith(
       2,
       "execute_data_api",
       expect.objectContaining({
-        action: "read",
-        limit: 100,
-        offset: 101,
-        query: [{ status: "Active" }],
+        batch: true,
+        requests: [expect.objectContaining({ action: "read", limit: 100, offset: 101 })],
       }),
     );
     expect(fmFetch).toHaveBeenNthCalledWith(
       3,
       "execute_data_api",
       expect.objectContaining({
-        action: "read",
-        limit: 100,
-        offset: 201,
-        query: [{ status: "Active" }],
+        batch: true,
+        requests: [expect.objectContaining({ action: "read", limit: 100, offset: 201 })],
       }),
     );
     for (const call of vi.mocked(fmFetch).mock.calls) {
@@ -319,7 +344,7 @@ describe("WebViewerAdapter", () => {
     await secondExpectation;
   });
 
-  it("allows a request to opt out of adapter-level batching", async () => {
+  it("allows a request to opt out of adapter-level coalescing", async () => {
     vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
       const payload = data as { batch?: boolean; requests?: Array<{ id: string; layouts: string }>; layouts?: string };
       if (payload.batch) {
@@ -362,7 +387,8 @@ describe("WebViewerAdapter", () => {
       1,
       "execute_data_api",
       expect.objectContaining({
-        layouts: "Customers",
+        batch: true,
+        requests: [expect.objectContaining({ layouts: "Customers" })],
       }),
     );
     expect(fmFetch).toHaveBeenNthCalledWith(
@@ -372,6 +398,94 @@ describe("WebViewerAdapter", () => {
         batch: true,
       }),
     );
+  });
+
+  it("keeps opt-out requests separate from queued coalesced requests", async () => {
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const batch = data as {
+        requests: Array<{ id: string; layouts: string }>;
+      };
+      return Promise.resolve({
+        responses: batch.requests.map((request) => ({
+          id: request.id,
+          messages: [{ code: "0" }],
+          response: { layout: request.layouts },
+        })),
+      });
+    });
+
+    const adapter = new WebViewerAdapter({
+      batch: { windowMs: 8 },
+      scriptName: "execute_data_api",
+    });
+    const coalesced = adapter.list({
+      data: {} as ListOptions["data"],
+      layout: "Queued",
+    });
+    const optOut = adapter.list({
+      batch: false,
+      data: {} as ListOptions["data"],
+      layout: "Solo",
+    });
+
+    await expect(optOut).resolves.toEqual({ layout: "Solo" });
+    expect(fmFetch).toHaveBeenCalledTimes(1);
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      1,
+      "execute_data_api",
+      expect.objectContaining({
+        requests: [expect.objectContaining({ layouts: "Solo" })],
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(8);
+
+    await expect(coalesced).resolves.toEqual({ layout: "Queued" });
+    expect(fmFetch).toHaveBeenCalledTimes(2);
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      2,
+      "execute_data_api",
+      expect.objectContaining({
+        requests: [expect.objectContaining({ layouts: "Queued" })],
+      }),
+    );
+  });
+
+  it("sends single-request batches when adapter-level batching is disabled", async () => {
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const batch = data as {
+        requests: Array<{ id: string; layouts: string }>;
+      };
+      return Promise.resolve({
+        responses: batch.requests.map((request) => ({
+          id: request.id,
+          messages: [{ code: "0" }],
+          response: { layout: request.layouts },
+        })),
+      });
+    });
+
+    const adapter = new WebViewerAdapter({
+      batch: false,
+      scriptName: "execute_data_api",
+    });
+
+    await expect(adapter.list({ data: {} as ListOptions["data"], layout: "Customers" })).resolves.toEqual({
+      layout: "Customers",
+    });
+
+    expect(fmFetch).toHaveBeenCalledTimes(1);
+    expect(fmFetch).toHaveBeenCalledWith("execute_data_api", {
+      batch: true,
+      requests: [
+        {
+          action: "read",
+          id: "batch-0",
+          layouts: "Customers",
+          version: "vLatest",
+        },
+      ],
+    });
   });
 
   it("allows requests to opt in when adapter-level batching is disabled", async () => {

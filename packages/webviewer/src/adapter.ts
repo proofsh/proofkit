@@ -91,6 +91,13 @@ function defaultBatchOptions(): ResolvedBatchOptions {
   };
 }
 
+function singleRequestBatchOptions(): ResolvedBatchOptions {
+  return {
+    maxSize: 1,
+    windowMs: 0,
+  };
+}
+
 function normalizeBody(body: object): Record<string, unknown> {
   const { _limit, _offset, _sort, ...normalizedBody } = body as Record<string, unknown>;
   if (_offset !== undefined) {
@@ -171,6 +178,9 @@ export class WebViewerAdapter implements Adapter {
     const batchOptions = this.getBatchOptionsForRequest(params.batch);
 
     if (batchOptions) {
+      if (normalizeBatchMaxSize(batchOptions.maxSize) === 1) {
+        return this.executeSingleBatchRequest(payload);
+      }
       return this.enqueueBatchRequest(payload, batchOptions);
     }
 
@@ -178,13 +188,16 @@ export class WebViewerAdapter implements Adapter {
   };
 
   private getBatchOptionsForRequest(batch: boolean | undefined): ResolvedBatchOptions | undefined {
-    if (this.batchDisabledByLegacyScript || batch === false) {
+    if (this.batchDisabledByLegacyScript) {
       return;
+    }
+    if (batch === false) {
+      return singleRequestBatchOptions();
     }
     if (batch === true) {
       return this.batchOptions ?? defaultBatchOptions();
     }
-    return this.batchOptions;
+    return this.batchOptions ?? singleRequestBatchOptions();
   }
 
   private createScriptRequest(params: { layout: string; body: object; action?: DataApiAction }): DataApiScriptRequest {
@@ -211,6 +224,23 @@ export class WebViewerAdapter implements Adapter {
   private async executeSingleRequest(payload: DataApiScriptRequest): Promise<unknown> {
     const resp = await fmFetch<clientTypes.RawFMResponse>(this.scriptName, payload);
     return this.handleDataApiResponse(resp);
+  }
+
+  private executeSingleBatchRequest(payload: DataApiScriptRequest): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+      const request: QueuedBatchRequest = {
+        batchOptions: singleRequestBatchOptions(),
+        id: `batch-${this.batchRequestId}`,
+        payload,
+        resolve,
+        reject,
+      };
+      this.batchRequestId++;
+
+      this.executeBatchRequests([request]).catch((error: unknown) => {
+        request.reject(error);
+      });
+    });
   }
 
   private enqueueBatchRequest(payload: DataApiScriptRequest, batchOptions: ResolvedBatchOptions): Promise<unknown> {
@@ -343,12 +373,11 @@ export class WebViewerAdapter implements Adapter {
     const { batch, data, layout } = opts;
     const limit = getRangeValue(data, ["_limit", "limit"], 100);
     const initialOffset = getRangeValue(data, ["_offset", "offset"], 1);
-    const first = (await this.executeSingleRequest(
-      this.createScriptRequest({
-        body: createPagedBody(data, limit, initialOffset),
-        layout,
-      }),
-    )) as clientTypes.GetResponse;
+    const first = (await this.request({
+      batch,
+      body: createPagedBody(data, limit, initialOffset),
+      layout,
+    })) as clientTypes.GetResponse;
     const records = [...(first.data ?? [])];
     const foundCount = getPositiveInteger(first.dataInfo?.foundCount, records.length);
     const targetCount = Math.max(0, foundCount - (initialOffset - 1));

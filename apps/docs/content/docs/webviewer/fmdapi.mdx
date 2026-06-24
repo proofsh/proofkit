@@ -108,7 +108,7 @@ export const client = DataApi({
 });
 ```
 
-Default batching uses an 8 ms window and maximum batch size of 20. Use `batch: false` on the adapter or an individual request to opt out. Benchmark your own script path before assuming batching improves speed; local `Execute FileMaker Data API` calls may see little benefit compared with server-side script execution.
+Default coalescing uses an 8 ms window and maximum batch size of 20. Use `batch: false` on the adapter or an individual request to send requests one at a time through the batch-compatible script path. Benchmark your own script path before assuming batching improves speed; local `Execute FileMaker Data API` calls may see little benefit compared with server-side script execution.
 
 ## Adapter Pagination
 

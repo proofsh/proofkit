@@ -1,13 +1,13 @@
 ---
 title: Batching Data API Requests
-description: Coalesce FileMaker Data API requests from a Web Viewer and update older ProofKit add-on scripts.
+description: Coalesce FileMaker Data API requests from a Web Viewer in fewer script calls
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 `WebViewerAdapter` batches Data API calls by default, coalescing requests that happen within a short window into one FileMaker script call. This can reduce Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
 
-Batching is enabled by default with an 8 ms window and maximum batch size of 20.
+Request coalescing is enabled by default with an 8 ms window and maximum batch size of 20.
 
 <Callout type="info" title="Benchmark batch and payload size">
   FileMaker performance depends heavily on the script path, found-set size, and response payload size. Benchmark both `maxSize` and page `limit` with your own layouts, including field widths, portal rows, containers, and serialized response size, before assuming the defaults are fastest for every workflow.
@@ -35,13 +35,13 @@ export const client = DataApi({
 
 ## Per-request control
 
-Use `batch: false` on a request to bypass batching for that call:
+Use `batch: false` on a request to keep that call out of coalesced batches:
 
 ```ts
 await client.list({ batch: false, limit: 10 });
 ```
 
-Use `batch: true` on a request to batch that call even when adapter-level batching was disabled:
+Use `batch: true` on a request to coalesce that call even when adapter-level coalescing was disabled:
 
 ```ts
 await client.find({
@@ -52,7 +52,7 @@ await client.find({
 
 Per-request batching uses the adapter's configured batch settings when present. If the adapter was configured with `batch: false`, `batch: true` uses the default 8 ms window and maximum batch size of 20.
 
-To disable batching for every request unless it opts in, set `batch: false` on the adapter:
+To disable coalescing for every request unless it opts in, set `batch: false` on the adapter:
 
 ```ts
 new WebViewerAdapter({
@@ -61,11 +61,13 @@ new WebViewerAdapter({
 });
 ```
 
+When coalescing is disabled, ProofKit still uses the batch-compatible FileMaker script path one request at a time. It only uses the older direct request path after a FileMaker file reports that its installed ProofKit add-on script does not support batched Data API requests.
+
 ## All-record helpers
 
 `listAll()` and `findAll()` never send `readAll` or `findAll` actions to FileMaker. The adapter sends one bounded `read` request first, uses `dataInfo.foundCount` to calculate the remaining pages, and then fetches those pages with bounded `read` requests.
 
-When batching is enabled, the follow-up page requests can be batched in chunks up to `maxSize`. This reduces Web Viewer bridge round trips without asking the FileMaker script to load an unknown number of records into script variables.
+When coalescing is enabled, the follow-up page requests can be batched in chunks up to `maxSize`. This reduces Web Viewer bridge round trips without asking the FileMaker script to load an unknown number of records into script variables.
 
 <Callout type="warn" title="Tune page size separately">
   `maxSize` controls how many page requests can share one script call. The request `limit` controls how many records each page returns.
@@ -76,6 +78,6 @@ Benchmarks showed page size can matter more than batch size for local `PK_execut
 
 ## ProofKit add-on version
 
-Batching requires the FileMaker scripts installed by the ProofKit add-on to understand batched Data API requests. If your FileMaker file has an older ProofKit add-on, ProofKit may run requests without batching until the add-on scripts are updated.
+Batching requires the FileMaker scripts installed by the ProofKit add-on to understand batched Data API requests. If your FileMaker file has an older ProofKit add-on, ProofKit may run requests through the older direct request path until the add-on scripts are updated.
 
 Install the latest ProofKit add-on in each FileMaker file where you want to take advantage of batched Data API requests. See [Updating ProofKit](/docs/ai/updating-proofkit) for the add-on update flow.
