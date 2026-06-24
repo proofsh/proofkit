@@ -54,7 +54,7 @@ interface BatchScriptResponse extends Partial<clientTypes.RawFMResponse> {
 }
 
 const DEFAULT_BATCH_WINDOW_MS = 8;
-const DEFAULT_BATCH_MAX_SIZE = 5;
+const DEFAULT_BATCH_MAX_SIZE = 20;
 const BATCHING_DOCS_URL = "https://proofkit.dev/docs/webviewer/batching";
 const LEGACY_BATCH_WARNING = `[ProofKit] ProofKit called the FileMaker script to execute Data API, but it did not support batching. Install the latest ProofKit add-on in your FileMaker file to get the updated script. Falling back to unbatched requests for this adapter. See ${BATCHING_DOCS_URL}`;
 
