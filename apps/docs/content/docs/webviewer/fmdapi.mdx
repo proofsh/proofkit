@@ -116,6 +116,10 @@ For `client.listAll()` and `client.findAll()`, `WebViewerAdapter` does not send 
 
 If batching is enabled, those follow-up page requests can be coalesced into batch envelopes. Each request inside the batch is still a bounded `read` operation:
 
+<Callout type="info" title="Page size is workload-specific">
+  For all-record helpers and manual paging, tune `limit` with your real layouts and found sets. Larger pages can reduce bridge round trips, but wide records, portals, or container-heavy layouts may need smaller pages.
+</Callout>
+
 ```json
 {
   "batch": true,
