@@ -5,13 +5,16 @@ description: Coalesce FileMaker Data API requests from a Web Viewer and update o
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-`WebViewerAdapter` coalesces Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
+`WebViewerAdapter` batches Data API calls by default, coalescing requests that happen within a short window into one FileMaker script call. This can reduce Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
 
 Batching is enabled by default with an 8 ms window and maximum batch size of 20.
 
-<Callout type="info" title="Benchmark with your own data">
-  FileMaker performance depends heavily on the layout, field widths, portal payloads, script path, and found-set size.
-  Benchmark the default `maxSize: 20` against your own file before assuming it is the fastest setting for every workflow.
+<Callout type="info" title="Benchmark batch and payload size">
+  FileMaker performance depends heavily on the script path, found-set size, and response payload size. Benchmark both `maxSize` and page `limit` with your own layouts, including field widths, portal rows, containers, and serialized response size, before assuming the defaults are fastest for every workflow.
+</Callout>
+
+<Callout type="warn" title="Speedups depend on script execution path">
+  Batching mostly helps when bridge round trips dominate the request. You may not see a speed improvement with the local `Execute FileMaker Data API` script path; benchmarks showed clearer gains when requests ran through the server-side Data API script path.
 </Callout>
 
 ```ts title="client.ts"
@@ -66,68 +69,13 @@ When batching is enabled, the follow-up page requests can be batched in chunks u
 
 <Callout type="warn" title="Tune page size separately">
   `maxSize` controls how many page requests can share one script call. The request `limit` controls how many records each page returns.
-  For `listAll()`, `findAll()`, or your own manual paging, test page sizes such as `100`, `250`, and `500` with realistic records before choosing a default.
+  For `listAll()`, `findAll()`, or your own manual paging, test page sizes such as `25`, `50`, `100`, `250`, and `500` with realistic records before choosing a default. Larger or payload-heavy tables may perform better with smaller pages.
 </Callout>
 
-In the Foxtail benchmark, increasing page size from `100` to `250` had a larger effect than batching for some local `PK_execute_data_api` cases. Server-side script execution benefited more from batching, with `maxSize: 20` performing better than smaller batches in the tested found sets. Treat those numbers as a starting point, not a universal rule.
+Benchmarks showed page size can matter more than batch size for local `PK_execute_data_api` calls, while server-side script execution may benefit more from batching. Treat the defaults as a starting point, not a universal rule.
 
-## FileMaker script contract
+## ProofKit add-on version
 
-When batching is enabled, the FileMaker script receives this envelope:
+Batching requires the FileMaker scripts installed by the ProofKit add-on to understand batched Data API requests. If your FileMaker file has an older ProofKit add-on, ProofKit may run requests without batching until the add-on scripts are updated.
 
-```json
-{
-  "batch": true,
-  "requests": [
-    {
-      "id": "batch-0",
-      "layouts": "API_Customers",
-      "action": "read",
-      "version": "vLatest",
-      "limit": 10
-    }
-  ]
-}
-```
-
-Return one FileMaker Data API response per request:
-
-```json
-{
-  "responses": [
-    {
-      "id": "batch-0",
-      "messages": [{ "code": "0" }],
-      "response": {
-        "data": [],
-        "dataInfo": {
-          "foundCount": 0,
-          "returnedCount": 0,
-          "totalRecordCount": 0
-        }
-      }
-    }
-  ]
-}
-```
-
-Each original JavaScript promise resolves or rejects from its matching response. If the batch-level script call fails or omits `responses`, all requests in that batch reject.
-
-## Older add-on scripts
-
-Older ProofKit add-on scripts do not understand the `batch` key. They can return:
-
-```json
-{
-  "response": {},
-  "messages": [{ "code": "1708", "message": "Unknown key (batch)" }]
-}
-```
-
-When `WebViewerAdapter` sees error `1708` with `Unknown key (batch)`, it logs a warning, replays the queued requests individually, and disables batching for that adapter instance.
-
-To enable batching, install the latest version of the ProofKit add-on in your FileMaker file. See [Updating ProofKit](/docs/ai/updating-proofkit) for the add-on update flow.
-
-## When batching retries
-
-The fallback is kept in memory on the `WebViewerAdapter` instance. ProofKit tries batching again when a new adapter instance is created, usually after reloading the Web Viewer app or recreating the client.
+Install the latest ProofKit add-on in each FileMaker file where you want to take advantage of batched Data API requests. See [Updating ProofKit](/docs/ai/updating-proofkit) for the add-on update flow.
