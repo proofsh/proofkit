@@ -4,17 +4,24 @@ description: Coalesce FileMaker Data API requests from a Web Viewer in fewer scr
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { Badge } from "@/components/ui/badge";
 
-`WebViewerAdapter` batches Data API calls by default, coalescing requests that happen within a short window into one FileMaker script call. This can reduce Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
+<div className="not-prose mb-6 flex flex-wrap gap-2">
+  <Badge appearance="light" variant="primary">
+    @proofkit/webviewer 3.2.0+
+  </Badge>
+  <Badge appearance="light" variant="primary">
+    @proofkit/fmdapi 5.2.0+
+  </Badge>
+  <Badge appearance="light" variant="primary">
+    ProofKit add-on 3.0+
+  </Badge>
+</div>
 
-Request coalescing is enabled by default with an 8 ms window and maximum batch size of 20.
+`WebViewerAdapter` batches Data API calls by default, coalescing requests that happen within a short window into one FileMaker script call. This can reduce Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script. This is mostly done for better developer experience to avoid so many scripts in your call stack, but can sometimes also improve data loading speed (especially when calling `Execute Data API` in a server-side script).
 
-<Callout type="info" title="Benchmark batch and payload size">
-  FileMaker performance depends heavily on the script path, found-set size, and response payload size. Benchmark both `maxSize` and page `limit` with your own layouts, including field widths, portal rows, containers, and serialized response size, before assuming the defaults are fastest for every workflow.
-</Callout>
-
-<Callout type="warn" title="Speedups depend on script execution path">
-  Batching mostly helps when bridge round trips dominate the request. You may not see a speed improvement with the local `Execute FileMaker Data API` script path; benchmarks showed clearer gains when requests ran through the server-side Data API script path.
+<Callout type="info" title="Benchmark with your own layouts">
+  FileMaker performance depends heavily on whether the script runs locally or on FileMaker Server, plus the layout, table, found set, and amount of data returned. Benchmark both `maxSize` and page `limit` with your own layouts, including field count, portal rows, and container fields, before assuming the defaults are fastest for every file.
 </Callout>
 
 ```ts title="client.ts"
@@ -61,23 +68,23 @@ new WebViewerAdapter({
 });
 ```
 
-When coalescing is disabled, ProofKit still uses the batch-compatible FileMaker script path one request at a time. It only uses the older direct request path after a FileMaker file reports that its installed ProofKit add-on script does not support batched Data API requests.
+When coalescing is disabled, ProofKit still uses the batch-compatible FileMaker script format one request at a time. It only uses the older direct request format after a FileMaker file reports that its installed ProofKit add-on script does not support batched Data API requests.
 
 ## All-record helpers
 
 `listAll()` and `findAll()` never send `readAll` or `findAll` actions to FileMaker. The adapter sends one bounded `read` request first, uses `dataInfo.foundCount` to calculate the remaining pages, and then fetches those pages with bounded `read` requests.
 
-When coalescing is enabled, the follow-up page requests can be batched in chunks up to `maxSize`. This reduces Web Viewer bridge round trips without asking the FileMaker script to load an unknown number of records into script variables.
+When batching is enabled, the follow-up page requests can be batched in chunks up to `maxSize`. This reduces Web Viewer bridge round trips without asking the FileMaker script to load an unknown number of records into script variables.
 
 <Callout type="warn" title="Tune page size separately">
   `maxSize` controls how many page requests can share one script call. The request `limit` controls how many records each page returns.
-  For `listAll()`, `findAll()`, or your own manual paging, test page sizes such as `25`, `50`, `100`, `250`, and `500` with realistic records before choosing a default. Larger or payload-heavy tables may perform better with smaller pages.
+  For `listAll()`, `findAll()`, or your own manual paging, test page sizes such as `25`, `50`, `100`, `250`, and `500` with records from your own tables. Larger tables, wide layouts, portal-heavy layouts, or layouts with container fields may perform better with smaller pages.
 </Callout>
 
 Benchmarks showed page size can matter more than batch size for local `PK_execute_data_api` calls, while server-side script execution may benefit more from batching. Treat the defaults as a starting point, not a universal rule.
 
 ## ProofKit add-on version
 
-Batching requires the FileMaker scripts installed by the ProofKit add-on to understand batched Data API requests. If your FileMaker file has an older ProofKit add-on, ProofKit may run requests through the older direct request path until the add-on scripts are updated.
+Batching requires ProofKit add-on version 3.0 or later so the FileMaker scripts installed by the add-on understand batched Data API requests. If your FileMaker file has an older ProofKit add-on, ProofKit may run requests through the older direct request path until the add-on scripts are updated.
 
 Install the latest ProofKit add-on in each FileMaker file where you want to take advantage of batched Data API requests. See [Updating ProofKit](/docs/ai/updating-proofkit) for the add-on update flow.
