@@ -110,31 +110,27 @@ export const client = DataApi({
 
 Batching is disabled unless `batch` is set. Use `batch: true` for defaults.
 
-## Script-Side Pagination
+## Adapter Pagination
 
-For `client.listAll()` and `client.findAll()`, `WebViewerAdapter` sends one FileMaker script call instead of paging from JavaScript. The FileMaker script should loop through Execute Data API pages, combine the records, and return one normal Data API response.
+For `client.listAll()` and `client.findAll()`, `WebViewerAdapter` does not send `readAll` or `findAll` actions to FileMaker. It sends a bounded first `read` request to get `dataInfo.foundCount`, then requests the remaining pages with the same limit.
 
-`listAll()` sends:
-
-```json
-{
-  "layouts": "API_Customers",
-  "action": "readAll",
-  "version": "vLatest",
-  "limit": 100
-}
-```
-
-`findAll()` sends:
+If batching is enabled, those follow-up page requests can be coalesced into batch envelopes. Each request inside the batch is still a bounded `read` operation:
 
 ```json
 {
-  "layouts": "API_Customers",
-  "action": "findAll",
-  "version": "vLatest",
-  "limit": 100,
-  "query": [{ "status": "Active" }]
+  "batch": true,
+  "requests": [
+    {
+      "id": "batch-0",
+      "layouts": "API_Customers",
+      "action": "read",
+      "version": "vLatest",
+      "limit": 100,
+      "offset": 101,
+      "query": [{ "status": "Active" }]
+    }
+  ]
 }
 ```
 
-This is still sequential FileMaker work. It removes repeated Web Viewer bridge round trips for dependent pagination.
+This keeps all-record helpers from loading an unbounded result set into FileMaker variables before anything is returned to the Web Viewer.

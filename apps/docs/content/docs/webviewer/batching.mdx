@@ -42,6 +42,12 @@ await client.find({
 
 Per-request batching uses the adapter's configured batch settings when present. If the adapter was not configured with `batch`, `batch: true` uses the default batch window and size.
 
+## All-record helpers
+
+`listAll()` and `findAll()` never send `readAll` or `findAll` actions to FileMaker. The adapter sends one bounded `read` request first, uses `dataInfo.foundCount` to calculate the remaining pages, and then fetches those pages with bounded `read` requests.
+
+When batching is enabled, the follow-up page requests can be batched in chunks up to `maxSize`. This reduces Web Viewer bridge round trips without asking the FileMaker script to load an unknown number of records into script variables.
+
 ## FileMaker script contract
 
 When batching is enabled, the FileMaker script receives this envelope:

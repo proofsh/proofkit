@@ -40,18 +40,135 @@ describe("WebViewerAdapter", () => {
     });
   });
 
-  it("sends listAll and findAll as single script-side pagination requests", async () => {
-    vi.mocked(fmFetch).mockResolvedValue({
-      messages: [{ code: "0" }],
-      response: { data: [] },
+  it("paginates listAll with bounded reads and batches remaining pages", async () => {
+    vi.useRealTimers();
+    const totalRecordCount = 1000;
+    const getPageResponse = (payload: { limit?: number; offset?: number }) => {
+      const limit = payload.limit ?? 100;
+      const offset = payload.offset ?? 1;
+      const pageEnd = Math.min(offset + limit - 1, totalRecordCount);
+      const data =
+        offset > totalRecordCount
+          ? []
+          : Array.from({ length: pageEnd - offset + 1 }, (_, index) => ({
+              fieldData: { id: offset + index },
+              modId: "0",
+              portalData: {},
+              recordId: String(offset + index),
+            }));
+      return {
+        data,
+        dataInfo: {
+          database: "Test",
+          foundCount: totalRecordCount,
+          layout: "Customers",
+          returnedCount: data.length,
+          table: "Customers",
+          totalRecordCount,
+        },
+      };
+    };
+
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const payload = data as {
+        batch?: boolean;
+        limit?: number;
+        offset?: number;
+        requests?: Array<{ id: string; limit?: number; offset?: number }>;
+      };
+      if (payload.batch) {
+        return Promise.resolve({
+          responses: payload.requests?.map((request) => ({
+            id: request.id,
+            messages: [{ code: "0" }],
+            response: getPageResponse(request),
+          })),
+        });
+      }
+      return Promise.resolve({
+        messages: [{ code: "0" }],
+        response: getPageResponse(payload),
+      });
     });
 
-    const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
-    await adapter.listAll({
+    const adapter = new WebViewerAdapter({
+      batch: { maxSize: 5, windowMs: 0 },
+      scriptName: "execute_data_api",
+    });
+    const result = await adapter.listAll({
       data: { _limit: 100 } as unknown as ListOptions["data"],
       layout: "Customers",
     });
-    await adapter.findAll({
+
+    expect(result.data).toHaveLength(1000);
+    expect(result.dataInfo.returnedCount).toBe(1000);
+    expect(fmFetch).toHaveBeenCalledTimes(3);
+    expect(fmFetch).toHaveBeenNthCalledWith(1, "execute_data_api", {
+      action: "read",
+      layouts: "Customers",
+      limit: 100,
+      version: "vLatest",
+    });
+    expect(fmFetch).toHaveBeenNthCalledWith(2, "execute_data_api", {
+      batch: true,
+      requests: [
+        expect.objectContaining({ action: "read", offset: 101 }),
+        expect.objectContaining({ action: "read", offset: 201 }),
+        expect.objectContaining({ action: "read", offset: 301 }),
+        expect.objectContaining({ action: "read", offset: 401 }),
+        expect.objectContaining({ action: "read", offset: 501 }),
+      ],
+    });
+    expect(fmFetch).toHaveBeenNthCalledWith(3, "execute_data_api", {
+      batch: true,
+      requests: [
+        expect.objectContaining({ action: "read", offset: 601 }),
+        expect.objectContaining({ action: "read", offset: 701 }),
+        expect.objectContaining({ action: "read", offset: 801 }),
+        expect.objectContaining({ action: "read", offset: 901 }),
+      ],
+    });
+    for (const call of vi.mocked(fmFetch).mock.calls) {
+      expect(JSON.stringify(call[1])).not.toContain("readAll");
+      expect(JSON.stringify(call[1])).not.toContain("findAll");
+    }
+  });
+
+  it("paginates findAll with bounded find requests", async () => {
+    const totalRecordCount = 250;
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const payload = data as { limit?: number; offset?: number };
+      const limit = payload.limit ?? 100;
+      const offset = payload.offset ?? 1;
+      const pageEnd = Math.min(offset + limit - 1, totalRecordCount);
+      const pageData =
+        offset > totalRecordCount
+          ? []
+          : Array.from({ length: pageEnd - offset + 1 }, (_, index) => ({
+              fieldData: { id: offset + index },
+              modId: "0",
+              portalData: {},
+              recordId: String(offset + index),
+            }));
+      return Promise.resolve({
+        messages: [{ code: "0" }],
+        response: {
+          data: pageData,
+          dataInfo: {
+            database: "Test",
+            foundCount: totalRecordCount,
+            layout: "Customers",
+            returnedCount: pageData.length,
+            table: "Customers",
+            totalRecordCount,
+          },
+        },
+      });
+    });
+
+    const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+    const result = await adapter.findAll({
+      batch: false,
       data: {
         limit: 100,
         query: [{ status: "Active" }],
@@ -59,20 +176,38 @@ describe("WebViewerAdapter", () => {
       layout: "Customers",
     });
 
-    expect(fmFetch).toHaveBeenCalledTimes(2);
+    expect(result.data).toHaveLength(250);
+    expect(fmFetch).toHaveBeenCalledTimes(3);
     expect(fmFetch).toHaveBeenNthCalledWith(1, "execute_data_api", {
-      action: "readAll",
-      layouts: "Customers",
-      limit: 100,
-      version: "vLatest",
-    });
-    expect(fmFetch).toHaveBeenNthCalledWith(2, "execute_data_api", {
-      action: "findAll",
+      action: "read",
       layouts: "Customers",
       limit: 100,
       query: [{ status: "Active" }],
       version: "vLatest",
     });
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      2,
+      "execute_data_api",
+      expect.objectContaining({
+        action: "read",
+        limit: 100,
+        offset: 101,
+        query: [{ status: "Active" }],
+      }),
+    );
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      3,
+      "execute_data_api",
+      expect.objectContaining({
+        action: "read",
+        limit: 100,
+        offset: 201,
+        query: [{ status: "Active" }],
+      }),
+    );
+    for (const call of vi.mocked(fmFetch).mock.calls) {
+      expect(JSON.stringify(call[1])).not.toContain("findAll");
+    }
   });
 
   it("coalesces adapter requests into one batch envelope when enabled", async () => {

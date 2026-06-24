@@ -17,7 +17,7 @@ export type ExecuteScriptOptions = BaseRequest & {
   data: { script: string; scriptParam?: string };
 };
 
-type DataApiAction = "read" | "readAll" | "metaData" | "create" | "update" | "delete" | "duplicate" | "findAll";
+type DataApiAction = "read" | "metaData" | "create" | "update" | "delete" | "duplicate";
 
 export interface WebViewerAdapterBatchOptions {
   enabled?: boolean;
@@ -103,6 +103,37 @@ function normalizeBody(body: object): Record<string, unknown> {
     normalizedBody.sort = _sort;
   }
   return normalizedBody;
+}
+
+function getPositiveInteger(value: unknown, fallback: number): number {
+  const numericValue = typeof value === "string" ? Number(value) : value;
+  if (typeof numericValue !== "number" || !Number.isFinite(numericValue) || numericValue < 1) {
+    return fallback;
+  }
+  return Math.trunc(numericValue);
+}
+
+function getRangeValue(body: object, keys: string[], fallback: number): number {
+  const bodyRecord = body as Record<string, unknown>;
+  for (const key of keys) {
+    if (bodyRecord[key] !== undefined) {
+      return getPositiveInteger(bodyRecord[key], fallback);
+    }
+  }
+  return fallback;
+}
+
+function createPagedBody(body: object, limit: number, offset: number): Record<string, unknown> {
+  const pagedBody = Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).filter(([key]) => key !== "limit" && key !== "offset"),
+  );
+  pagedBody._limit = limit;
+  if (offset > 1) {
+    pagedBody._offset = offset;
+  } else {
+    pagedBody._offset = undefined;
+  }
+  return pagedBody;
 }
 
 function isLegacyBatchUnsupportedResponse(resp: BatchScriptResponse): boolean {
@@ -308,6 +339,73 @@ export class WebViewerAdapter implements Adapter {
     }
   }
 
+  private async paginateAll(opts: ListOptions | FindOptions): Promise<clientTypes.GetResponse> {
+    const { batch, data, layout } = opts;
+    const limit = getRangeValue(data, ["_limit", "limit"], 100);
+    const initialOffset = getRangeValue(data, ["_offset", "offset"], 1);
+    const first = (await this.executeSingleRequest(
+      this.createScriptRequest({
+        body: createPagedBody(data, limit, initialOffset),
+        layout,
+      }),
+    )) as clientTypes.GetResponse;
+    const records = [...(first.data ?? [])];
+    const foundCount = getPositiveInteger(first.dataInfo?.foundCount, records.length);
+    const targetCount = Math.max(0, foundCount - (initialOffset - 1));
+    let nextOffset = initialOffset + limit;
+
+    if (records.length >= targetCount) {
+      return {
+        ...first,
+        data: records,
+        dataInfo: {
+          ...first.dataInfo,
+          returnedCount: records.length,
+        },
+      };
+    }
+
+    const pageBatchSize = this.getBatchOptionsForRequest(batch)?.maxSize ?? 1;
+
+    while (records.length < targetCount) {
+      const offsets: number[] = [];
+      while (offsets.length < pageBatchSize && records.length + offsets.length * limit < targetCount) {
+        offsets.push(nextOffset);
+        nextOffset += limit;
+      }
+
+      if (offsets.length === 0) {
+        break;
+      }
+
+      const pages = (await Promise.all(
+        offsets.map((offset) =>
+          this.request({
+            batch,
+            body: createPagedBody(data, limit, offset),
+            layout,
+          }),
+        ),
+      )) as clientTypes.GetResponse[];
+      const receivedCount = pages.reduce((sum, page) => sum + (page.data?.length ?? 0), 0);
+      for (const page of pages) {
+        records.push(...(page.data ?? []));
+      }
+      if (receivedCount === 0) {
+        break;
+      }
+    }
+
+    return {
+      ...first,
+      data: records,
+      dataInfo: {
+        ...first.dataInfo,
+        returnedCount: records.length,
+      },
+    };
+  }
+
   list = async (opts: ListOptions): Promise<clientTypes.GetResponse> => {
     const { batch, data, layout } = opts;
     const resp = await this.request({
@@ -318,15 +416,8 @@ export class WebViewerAdapter implements Adapter {
     return resp as clientTypes.GetResponse;
   };
 
-  listAll = async (opts: ListOptions): Promise<clientTypes.GetResponse> => {
-    const { batch, data, layout } = opts;
-    const resp = await this.request({
-      action: "readAll",
-      batch,
-      body: data,
-      layout,
-    });
-    return resp as clientTypes.GetResponse;
+  listAll = (opts: ListOptions): Promise<clientTypes.GetResponse> => {
+    return this.paginateAll(opts);
   };
 
   get = async (opts: GetOptions): Promise<clientTypes.GetResponse> => {
@@ -349,15 +440,8 @@ export class WebViewerAdapter implements Adapter {
     return resp as clientTypes.GetResponse;
   };
 
-  findAll = async (opts: FindOptions): Promise<clientTypes.GetResponse> => {
-    const { batch, data, layout } = opts;
-    const resp = await this.request({
-      action: "findAll",
-      batch,
-      body: data,
-      layout,
-    });
-    return resp as clientTypes.GetResponse;
+  findAll = (opts: FindOptions): Promise<clientTypes.GetResponse> => {
+    return this.paginateAll(opts);
   };
 
   create = async (opts: CreateOptions): Promise<clientTypes.CreateResponse> => {
