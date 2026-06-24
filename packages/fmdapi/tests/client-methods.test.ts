@@ -4,6 +4,7 @@
  */
 import { afterEach, describe, expect, it, test, vi } from "vitest";
 import { z } from "zod/v4";
+import type { Adapter } from "../src/adapters/core";
 import type { AllLayoutsMetadataResponse, Layout, ScriptOrFolder, ScriptsMetadataResponse } from "../src/client-types";
 import { DataApi, FileMakerError, OttoAdapter } from "../src/index";
 import { mockResponses } from "./fixtures/responses";
@@ -19,6 +20,21 @@ function createTestClient(layout = "layout") {
     }),
     layout,
   });
+}
+
+function createAdapter(overrides: Partial<Adapter>): Adapter {
+  return {
+    containerUpload: vi.fn(),
+    create: vi.fn(),
+    delete: vi.fn(),
+    executeScript: vi.fn(),
+    find: vi.fn(),
+    get: vi.fn(),
+    layoutMetadata: vi.fn(),
+    list: vi.fn(),
+    update: vi.fn(),
+    ...overrides,
+  } as Adapter;
 }
 
 describe("sort methods", () => {
@@ -218,6 +234,41 @@ describe("other methods", () => {
     expect(data.length).toBe(3);
   });
 
+  it("should use adapter listAll capability when available", async () => {
+    const adapterListAll = vi.fn().mockResolvedValue({
+      data: [{ fieldData: { name: "Ada" }, modId: "1", portalData: {}, recordId: "1" }],
+      dataInfo: {
+        database: "test",
+        foundCount: 1,
+        layout: "layout",
+        returnedCount: 1,
+        table: "layout",
+        totalRecordCount: 1,
+      },
+    });
+    const adapter = createAdapter({ listAll: adapterListAll });
+    const client = DataApi({ adapter, layout: "layout" });
+
+    const data = await client.listAll({
+      limit: 25,
+      offset: 2,
+      sort: { fieldName: "name" },
+    });
+
+    expect(data).toHaveLength(1);
+    expect(adapter.list).not.toHaveBeenCalled();
+    expect(adapterListAll).toHaveBeenCalledWith({
+      data: {
+        _limit: 25,
+        _offset: 2,
+        _sort: [{ fieldName: "name" }],
+      },
+      fetch: undefined,
+      layout: "layout",
+      timeout: undefined,
+    });
+  });
+
   it("should paginate using findAll method", async () => {
     vi.stubGlobal("fetch", createMockFetchSequence([mockResponses["find-basic"], mockResponses["find-no-results"]]));
     const client = createTestClient();
@@ -228,6 +279,39 @@ describe("other methods", () => {
     });
 
     expect(data.length).toBe(2);
+  });
+
+  it("should use adapter findAll capability when available", async () => {
+    const adapterFindAll = vi.fn().mockResolvedValue({
+      data: [{ fieldData: { name: "Ada" }, modId: "1", portalData: {}, recordId: "1" }],
+      dataInfo: {
+        database: "test",
+        foundCount: 1,
+        layout: "layout",
+        returnedCount: 1,
+        table: "layout",
+        totalRecordCount: 1,
+      },
+    });
+    const adapter = createAdapter({ findAll: adapterFindAll });
+    const client = DataApi({ adapter, layout: "layout" });
+
+    const data = await client.findAll({
+      limit: 50,
+      query: { name: "==Ada" },
+    });
+
+    expect(data).toHaveLength(1);
+    expect(adapter.find).not.toHaveBeenCalled();
+    expect(adapterFindAll).toHaveBeenCalledWith({
+      data: {
+        limit: 50,
+        query: [{ name: "==Ada" }],
+      },
+      fetch: undefined,
+      layout: "layout",
+      timeout: undefined,
+    });
   });
 
   it("should return from execute script", async () => {

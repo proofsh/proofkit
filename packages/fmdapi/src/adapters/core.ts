@@ -53,8 +53,10 @@ export type LayoutMetadataOptions = BaseRequest;
 
 export interface Adapter {
   list: (opts: ListOptions) => Promise<GetResponse>;
+  listAll?: (opts: ListOptions) => Promise<GetResponse>;
   get: (opts: GetOptions) => Promise<GetResponse>;
   find: (opts: FindOptions) => Promise<GetResponse>;
+  findAll?: (opts: FindOptions) => Promise<GetResponse>;
   create: (opts: CreateOptions) => Promise<CreateResponse>;
   update: (opts: UpdateOptions) => Promise<UpdateResponse>;
   delete: (opts: DeleteOptions) => Promise<DeleteResponse>;

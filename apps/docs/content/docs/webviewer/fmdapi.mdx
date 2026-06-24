@@ -87,3 +87,94 @@ const users = await UsersClient.findOne({ query: { id: "===1234" } });
 ```
 
 For examples of all methods, see the [@proofkit/fmdapi](/docs/fmdapi) documentation.
+
+## Batched Web Viewer Requests
+
+`WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
+
+```ts title="client.ts"
+import { DataApi } from "@proofkit/fmdapi";
+import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
+
+export const client = DataApi({
+  adapter: new WebViewerAdapter({
+    scriptName: "ExecuteDataApi",
+    batch: {
+      windowMs: 8,
+      maxSize: 20,
+    },
+  }),
+  layout: "API_Customers",
+});
+```
+
+Batching is disabled unless `batch` is set. Use `batch: true` for defaults.
+
+When batching is enabled, the FileMaker script receives this envelope:
+
+```json
+{
+  "proofkitBatch": 1,
+  "requests": [
+    {
+      "id": "batch-0",
+      "layouts": "API_Customers",
+      "action": "read",
+      "version": "vLatest",
+      "limit": 10
+    }
+  ]
+}
+```
+
+Return one FileMaker Data API response per request:
+
+```json
+{
+  "responses": [
+    {
+      "id": "batch-0",
+      "messages": [{ "code": "0" }],
+      "response": {
+        "data": [],
+        "dataInfo": {
+          "foundCount": 0,
+          "returnedCount": 0,
+          "totalRecordCount": 0
+        }
+      }
+    }
+  ]
+}
+```
+
+Each original JavaScript promise resolves or rejects from its matching response. If the batch-level script call fails or omits `responses`, all requests in that batch reject.
+
+## Script-Side Pagination
+
+For `client.listAll()` and `client.findAll()`, `WebViewerAdapter` sends one FileMaker script call instead of paging from JavaScript. The FileMaker script should loop through Execute Data API pages, combine the records, and return one normal Data API response.
+
+`listAll()` sends:
+
+```json
+{
+  "layouts": "API_Customers",
+  "action": "readAll",
+  "version": "vLatest",
+  "limit": 100
+}
+```
+
+`findAll()` sends:
+
+```json
+{
+  "layouts": "API_Customers",
+  "action": "findAll",
+  "version": "vLatest",
+  "limit": 100,
+  "query": [{ "status": "Active" }]
+}
+```
+
+This is still sequential FileMaker work. It removes repeated Web Viewer bridge round trips for dependent pagination.
