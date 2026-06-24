@@ -117,7 +117,7 @@ describe("WebViewerAdapter", () => {
     ]);
     expect(fmFetch).toHaveBeenCalledTimes(1);
     expect(fmFetch).toHaveBeenCalledWith("execute_data_api", {
-      proofkitBatch: 1,
+      batch: true,
       requests: [
         {
           action: "read",
@@ -166,6 +166,76 @@ describe("WebViewerAdapter", () => {
 
     await expect(first).resolves.toEqual({ data: [] });
     await secondExpectation;
+  });
+
+  it("falls back to unbatched requests when the FileMaker script rejects batch payloads", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.mocked(fmFetch).mockImplementation((_scriptName, data) => {
+      const payload = data as { batch?: boolean; layouts?: string };
+      if (payload.batch) {
+        return Promise.resolve({
+          messages: [{ code: "1708", message: "Unknown key (batch)" }],
+          response: {},
+        });
+      }
+      return Promise.resolve({
+        messages: [{ code: "0" }],
+        response: { layout: payload.layouts },
+      });
+    });
+
+    const adapter = new WebViewerAdapter({
+      batch: true,
+      scriptName: "execute_data_api",
+    });
+    const first = adapter.list({ data: {} as ListOptions["data"], layout: "Customers" });
+    const second = adapter.list({ data: {} as ListOptions["data"], layout: "Invoices" });
+
+    await vi.advanceTimersByTimeAsync(8);
+
+    await expect(Promise.all([first, second])).resolves.toEqual([{ layout: "Customers" }, { layout: "Invoices" }]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[ProofKit] ProofKit called the FileMaker script to execute Data API, but it did not support batching. Install the latest ProofKit add-on in your FileMaker file to get the updated script. Falling back to unbatched requests for this adapter. See https://proofkit.dev/docs/webviewer/batching",
+    );
+    expect(fmFetch).toHaveBeenCalledTimes(3);
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      1,
+      "execute_data_api",
+      expect.objectContaining({
+        batch: true,
+      }),
+    );
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      2,
+      "execute_data_api",
+      expect.objectContaining({
+        layouts: "Customers",
+      }),
+    );
+    expect(fmFetch).toHaveBeenNthCalledWith(
+      3,
+      "execute_data_api",
+      expect.objectContaining({
+        layouts: "Invoices",
+      }),
+    );
+
+    await expect(adapter.list({ data: {} as ListOptions["data"], layout: "Orders" })).resolves.toEqual({
+      layout: "Orders",
+    });
+    expect(fmFetch).toHaveBeenLastCalledWith(
+      "execute_data_api",
+      expect.objectContaining({
+        layouts: "Orders",
+      }),
+    );
+    expect(fmFetch).not.toHaveBeenLastCalledWith(
+      "execute_data_api",
+      expect.objectContaining({
+        batch: true,
+      }),
+    );
+    warnSpy.mockRestore();
   });
 
   it("flushes immediately at maxSize and keeps later requests ordered", async () => {

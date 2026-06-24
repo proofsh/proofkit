@@ -48,12 +48,14 @@ interface QueuedBatchRequest {
   reject: (reason?: unknown) => void;
 }
 
-interface BatchScriptResponse {
+interface BatchScriptResponse extends Partial<clientTypes.RawFMResponse> {
   responses?: Array<clientTypes.RawFMResponse & { id?: string }>;
 }
 
 const DEFAULT_BATCH_WINDOW_MS = 8;
 const DEFAULT_BATCH_MAX_SIZE = 20;
+const BATCHING_DOCS_URL = "https://proofkit.dev/docs/webviewer/batching";
+const LEGACY_BATCH_WARNING = `[ProofKit] ProofKit called the FileMaker script to execute Data API, but it did not support batching. Install the latest ProofKit add-on in your FileMaker file to get the updated script. Falling back to unbatched requests for this adapter. See ${BATCHING_DOCS_URL}`;
 
 function normalizeBatchMaxSize(maxSize: number | undefined): number {
   if (maxSize === undefined || !Number.isFinite(maxSize)) {
@@ -95,9 +97,21 @@ function normalizeBody(body: object): Record<string, unknown> {
   return normalizedBody;
 }
 
+function isLegacyBatchUnsupportedResponse(resp: BatchScriptResponse): boolean {
+  return (
+    resp.messages?.some((message) => {
+      const normalizedMessage = String((message as { message?: unknown }).message ?? "").toLowerCase();
+      return (
+        message.code === "1708" && normalizedMessage.includes("unknown key") && normalizedMessage.includes("batch")
+      );
+    }) ?? false
+  );
+}
+
 export class WebViewerAdapter implements Adapter {
   protected scriptName: string;
   private readonly batchOptions?: ResolvedBatchOptions;
+  private batchDisabledByLegacyScript = false;
   private batchFlushInProgress = false;
   private batchRequestId = 0;
   private batchTimer?: ReturnType<typeof setTimeout>;
@@ -111,7 +125,7 @@ export class WebViewerAdapter implements Adapter {
   protected request = (params: { layout: string; body: object; action?: DataApiAction }): Promise<unknown> => {
     const payload = this.createScriptRequest(params);
 
-    if (this.batchOptions) {
+    if (this.batchOptions && !this.batchDisabledByLegacyScript) {
       return this.enqueueBatchRequest(payload);
     }
 
@@ -203,6 +217,10 @@ export class WebViewerAdapter implements Adapter {
 
     while (this.batchQueue.length > 0) {
       const requests = this.batchQueue.splice(0, normalizeBatchMaxSize(batchOptions.maxSize));
+      if (this.batchDisabledByLegacyScript) {
+        await this.executeUnbatchedRequests(requests);
+        continue;
+      }
       await this.executeBatchRequests(requests);
     }
   }
@@ -210,12 +228,19 @@ export class WebViewerAdapter implements Adapter {
   private async executeBatchRequests(requests: QueuedBatchRequest[]) {
     try {
       const resp = await fmFetch<BatchScriptResponse>(this.scriptName, {
-        proofkitBatch: 1,
+        batch: true,
         requests: requests.map((request) => ({
           id: request.id,
           ...request.payload,
         })),
       });
+
+      if (isLegacyBatchUnsupportedResponse(resp)) {
+        console.warn(LEGACY_BATCH_WARNING);
+        this.batchDisabledByLegacyScript = true;
+        await this.executeUnbatchedRequests(requests);
+        return;
+      }
 
       const responses = resp.responses;
       if (!Array.isArray(responses)) {
@@ -241,6 +266,18 @@ export class WebViewerAdapter implements Adapter {
         request.reject(error);
       }
     }
+  }
+
+  private async executeUnbatchedRequests(requests: QueuedBatchRequest[]) {
+    await Promise.all(
+      requests.map(async (request) => {
+        try {
+          request.resolve(await this.executeSingleRequest(request.payload));
+        } catch (error) {
+          request.reject(error);
+        }
+      }),
+    );
   }
 
   private rejectQueuedBatchRequests(error: unknown) {

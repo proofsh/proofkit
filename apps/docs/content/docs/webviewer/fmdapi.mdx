@@ -90,7 +90,7 @@ For examples of all methods, see the [@proofkit/fmdapi](/docs/fmdapi) documentat
 
 ## Batched Web Viewer Requests
 
-`WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
+`WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. See [Batching Data API Requests](/docs/webviewer/batching) for the full script contract and older add-on fallback behavior.
 
 ```ts title="client.ts"
 import { DataApi } from "@proofkit/fmdapi";
@@ -109,46 +109,6 @@ export const client = DataApi({
 ```
 
 Batching is disabled unless `batch` is set. Use `batch: true` for defaults.
-
-When batching is enabled, the FileMaker script receives this envelope:
-
-```json
-{
-  "proofkitBatch": 1,
-  "requests": [
-    {
-      "id": "batch-0",
-      "layouts": "API_Customers",
-      "action": "read",
-      "version": "vLatest",
-      "limit": 10
-    }
-  ]
-}
-```
-
-Return one FileMaker Data API response per request:
-
-```json
-{
-  "responses": [
-    {
-      "id": "batch-0",
-      "messages": [{ "code": "0" }],
-      "response": {
-        "data": [],
-        "dataInfo": {
-          "foundCount": 0,
-          "returnedCount": 0,
-          "totalRecordCount": 0
-        }
-      }
-    }
-  ]
-}
-```
-
-Each original JavaScript promise resolves or rejects from its matching response. If the batch-level script call fails or omits `responses`, all requests in that batch reject.
 
 ## Script-Side Pagination
 

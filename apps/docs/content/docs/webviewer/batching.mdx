@@ -1,0 +1,85 @@
+---
+title: Batching Data API Requests
+description: Coalesce FileMaker Data API requests from a Web Viewer and update older ProofKit add-on scripts.
+---
+
+`WebViewerAdapter` can coalesce Data API calls that happen within a short window into one FileMaker script call. This reduces Web Viewer bridge round trips, but FileMaker still executes the enclosed Data API operations sequentially inside your script.
+
+Batching is disabled unless `batch` is set. Use `batch: true` for defaults.
+
+```ts title="client.ts"
+import { DataApi } from "@proofkit/fmdapi";
+import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
+
+export const client = DataApi({
+  adapter: new WebViewerAdapter({
+    scriptName: "ExecuteDataApi",
+    batch: {
+      windowMs: 8,
+      maxSize: 20,
+    },
+  }),
+  layout: "API_Customers",
+});
+```
+
+## FileMaker script contract
+
+When batching is enabled, the FileMaker script receives this envelope:
+
+```json
+{
+  "batch": true,
+  "requests": [
+    {
+      "id": "batch-0",
+      "layouts": "API_Customers",
+      "action": "read",
+      "version": "vLatest",
+      "limit": 10
+    }
+  ]
+}
+```
+
+Return one FileMaker Data API response per request:
+
+```json
+{
+  "responses": [
+    {
+      "id": "batch-0",
+      "messages": [{ "code": "0" }],
+      "response": {
+        "data": [],
+        "dataInfo": {
+          "foundCount": 0,
+          "returnedCount": 0,
+          "totalRecordCount": 0
+        }
+      }
+    }
+  ]
+}
+```
+
+Each original JavaScript promise resolves or rejects from its matching response. If the batch-level script call fails or omits `responses`, all requests in that batch reject.
+
+## Older add-on scripts
+
+Older ProofKit add-on scripts do not understand the `batch` key. They can return:
+
+```json
+{
+  "response": {},
+  "messages": [{ "code": "1708", "message": "Unknown key (batch)" }]
+}
+```
+
+When `WebViewerAdapter` sees error `1708` with `Unknown key (batch)`, it logs a warning, replays the queued requests individually, and disables batching for that adapter instance.
+
+To enable batching, install the latest version of the ProofKit add-on in your FileMaker file. See [Updating ProofKit](/docs/ai/updating-proofkit) for the add-on update flow.
+
+## When batching retries
+
+The fallback is kept in memory on the `WebViewerAdapter` instance. ProofKit tries batching again when a new adapter instance is created, usually after reloading the Web Viewer app or recreating the client.
