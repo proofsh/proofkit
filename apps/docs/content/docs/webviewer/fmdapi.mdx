@@ -87,3 +87,37 @@ const users = await UsersClient.findOne({ query: { id: "===1234" } });
 ```
 
 For examples of all methods, see the [@proofkit/fmdapi](/docs/fmdapi) documentation.
+
+## Batched Web Viewer Requests
+
+`WebViewerAdapter` coalesces Data API calls that happen within a short window into one FileMaker script call by default. See [Batching Data API Requests](/docs/webviewer/batching) for per-request controls, tuning guidance, and add-on update requirements.
+
+```ts title="client.ts"
+import { DataApi } from "@proofkit/fmdapi";
+import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
+
+export const client = DataApi({
+  adapter: new WebViewerAdapter({
+    scriptName: "ExecuteDataApi",
+    batch: {
+      windowMs: 16,
+      maxSize: 10,
+    },
+  }),
+  layout: "API_Customers",
+});
+```
+
+Default coalescing uses an 8 ms window and maximum batch size of 20. Use `batch: false` on the adapter or an individual request to send requests one at a time through the batch-compatible FileMaker script format. Benchmark with your own file before assuming batching improves speed; a local `Execute FileMaker Data API` script may see little benefit compared with a script that runs on FileMaker Server.
+
+## Adapter Pagination
+
+For `client.listAll()` and `client.findAll()`, `WebViewerAdapter` does not send `readAll` or `findAll` actions to FileMaker. It sends a bounded first `read` request to get `dataInfo.foundCount`, then requests the remaining pages with the same limit.
+
+If batching is enabled, those follow-up page requests can share FileMaker script calls. Each request is still a bounded `read` operation:
+
+<Callout type="info" title="Page size is layout-specific">
+  For all-record helpers and manual paging, tune `limit` with your real FileMaker layouts, tables, and found sets. Try lower values such as `25` or `50` for layouts with many fields, portal rows, or container fields, then compare against larger pages such as `100`, `250`, and `500`.
+</Callout>
+
+This keeps all-record helpers from loading an unbounded result set into FileMaker variables before anything is returned to the Web Viewer.
