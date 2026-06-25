@@ -1,0 +1,96 @@
+---
+title: Upgrade to 3.0
+description: Upgrade an existing ProofKit project to 3.0.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { AgentPrompt } from "@/components/AgentPrompt";
+
+ProofKit 3.0 adds FileMaker 26 support and renames the add-on's scripts. Grab the latest installer, then follow the steps below.
+
+<DownloadLink />
+
+## What changed
+
+- **All add-on scripts are now prefixed with `PK_`** so they are now less likely to conflict with previous add-ons we have released.
+- **Persistent data in FileMaker 26** allows you to keep the HTML of your web viewer app in the *schema* of your FileMaker file so that it survives cloning and is now the best path for data migration. The add-on ships two Web Viewer calculations, and you pick one based on which FileMaker version your users run. See [Persistent Data](/docs/ai/persistent-data).
+- **Request batching** coalesces Data API calls from the Web Viewer into fewer FileMaker script calls. This is on by default and needs no changes from you. See [Batching Data API Requests](/docs/webviewer/batching).
+
+## How to upgrade
+
+Install 3.0 the same way you update any ProofKit release: follow [Updating ProofKit](/docs/ai/updating-proofkit) to run the installer, reinstall the add-on in your FileMaker file, and redeploy your apps.
+
+Once 3.0 is installed, come back here for the two changes it requires:
+
+1. **Rename the scripts** your custom scripts and app code reference. This is the breaking change.
+2. **Choose a Web Viewer calculation** based on which FileMaker version your users run.
+
+The renaming on the web app side is something a coding agent can do for you. Reinstalling the add-on and fixing FileMaker scripts is manual.
+
+## Prompt for your coding agent
+
+Paste this into your agent to handle the web app side. It does not touch your FileMaker file.
+
+<AgentPrompt
+  fallbackUrl="https://proofkit.dev/docs/ai/upgrade-to-3"
+  template={`I have already updated my FileMaker file to ProofKit 3.0, which renamed its
+scripts. Use the ProofKit MCP server to verify the new script names before
+making changes, then update my web app to match. Reference:
+{url}
+
+1. Upgrade every @proofkit/* package to its latest version.
+2. In proofkit-typegen-config.jsonc, change webviewerScriptName to
+   "PK_execute_data_api" — or "PK_execute_data_api_on_server" if it runs on
+   FileMaker Server — then rerun typegen to regenerate the client.
+3. In scripts/filemaker.js, rename the deploy script from "deploy_html" to
+   "PK_deploy_html".
+4. Do not modify my FileMaker file.
+5. Rebuild the app and summarize what you changed.`}
+/>
+
+## Renamed scripts
+
+Every script the add-on installs gained a `PK_` prefix. Search your FileMaker file and your app code for the old names and update each one.
+
+| Old name                | New name                        | Where it is referenced                                            |
+| ----------------------- | ------------------------------- | ----------------------------------------------------------------- |
+| `ExecuteDataApi`        | `PK_execute_data_api`           | `webviewerScriptName` in `proofkit-typegen-config.jsonc`          |
+| `ExecuteDataApiOnServer`| `PK_execute_data_api_on_server` | Same, when the call runs on FileMaker Server                      |
+| `deploy_html`           | `PK_deploy_html`                | `scripts/filemaker.js` in your app, and custom FM deploy scripts  |
+| `SendCallback`          | `PK_send_callback`              | Custom FileMaker scripts only                                     |
+
+### Web Viewer script
+
+The Web Viewer script name comes from your typegen config, not the generated client. Change `webviewerScriptName` and rerun typegen — do not edit the generated `client.ts` by hand, since typegen overwrites it.
+
+```jsonc title="proofkit-typegen-config.jsonc"
+{
+  "$schema": "https://proofkit.proof.sh/typegen-config-schema.json",
+  "config": {
+    // ...your existing config
+    "webviewerScriptName": "PK_execute_data_api",
+  },
+}
+```
+
+### Deploy script
+
+The deploy script name is set in `scripts/filemaker.js`. Rename it from `deploy_html` to `PK_deploy_html`.
+
+<Callout type="warn" title="Reinstalling does not migrate references">
+  Installing the 3.0 add-on creates the new scripts but cannot find every place
+  you called the old ones. Updating those references is on you.
+</Callout>
+
+## Choose your Web Viewer calculation
+
+The 3.0 add-on ships two versions of the Web Viewer calculation. When you place the Web Viewer on your layout, pick the one that matches your users:
+
+- **FileMaker 26 or later** — use the persistent data calculation. Your embedded HTML survives a clone and data migration. See [Persistent Data](/docs/ai/persistent-data).
+- **Earlier than FileMaker 26** — use the table-and-record calculation, the same approach as before 3.0.
+
+## Related
+
+- [Persistent Data](/docs/ai/persistent-data) — keep embedded HTML through a clone on FileMaker 26.
+- [Batching Data API Requests](/docs/webviewer/batching) — how the Web Viewer coalesces Data API calls.
+- [Updating ProofKit](/docs/ai/updating-proofkit) — keeping the add-on and packages current.

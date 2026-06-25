@@ -26,6 +26,17 @@ const llmSidebarNodes: Node[] = [
   },
 ];
 
+// Sidebar pages (by URL) that should render a "New" badge.
+const newBadgePages = new Set<string>(["/docs/ai/persistent-data"]);
+
+function NewBadge() {
+  return (
+    <span className="ms-auto rounded-full bg-blue-500/15 px-1.5 py-0.5 font-medium text-[10px] text-blue-600 uppercase leading-none tracking-wide dark:text-blue-400">
+      New
+    </span>
+  );
+}
+
 const docsTree = appendLlmLinks(source.pageTree);
 
 function appendLlmLinks(tree: Root): Root {
@@ -36,6 +47,18 @@ function appendLlmLinks(tree: Root): Root {
 }
 
 function appendLlmLinksToNode(node: Node): Node {
+  if (node.type === "page" && newBadgePages.has(node.url)) {
+    return {
+      ...node,
+      name: (
+        <span className="inline-flex w-full items-center gap-2">
+          {node.name}
+          <NewBadge />
+        </span>
+      ),
+    };
+  }
+
   if (node.type !== "folder") {
     return node;
   }

@@ -1,0 +1,77 @@
+---
+title: Persistent Data
+description: Store your Web Viewer HTML so it survives a clone, using FileMaker 26's Configure Persistent Data feature.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+FileMaker 26 introduces **Configure Persistent Data**, a feature that lets specific data survive when a file is cloned. ProofKit 3.0 uses it to keep your embedded Web Viewer HTML inside the FileMaker file through a clone — and therefore through a data migration.
+
+<Callout type="info" title="Requires FileMaker 26+">
+  Persistent data is a FileMaker 26 feature. On earlier versions, the embedded Web Viewer code still does not survive a clone, and the workarounds in [Deployment Methods](/docs/webviewer/deployment-methods) still apply.
+</Callout>
+
+## The problem this solves
+
+The default [embedded deployment](/docs/webviewer/deployment-methods#embedded) stores the Web Viewer app as **data** in a FileMaker field. That is simple and works offline, but it has historically had one big drawback: a clone strips all record data, so the HTML is gone.
+
+This matters because most production deployments and data migrations work by taking a **clone** of your development file and migrating live data into it. The embedded HTML, being record data, did not make it across — which is why teams reached for sidecar files, migration-only utility files, or hosted deployments to work around it.
+
+## How deployment writes the HTML
+
+When you install the ProofKit 3.0 add-on, you get **two versions** of the Web Viewer calculation to choose from: the original table-and-record version, and a new version that retrieves the HTML from persistent data.
+
+Every time you deploy, ProofKit saves the bundled HTML into a record in a table, exactly as before. In addition, **if you are developing on FileMaker 26 or later**, it also saves the HTML to a persistent data bucket.
+
+Because both copies are written on deploy, it is up to you to decide which one your end users load:
+
+- **Persistent data method** — recommended when all of your users are on FileMaker 26.
+- **Table-and-record method** — required while any of your users are on a version earlier than FileMaker 26.
+
+## Use the persistent data method
+
+If every user is on FileMaker 26, use the persistent data Web Viewer. It survives clones and data migrations with no extra copy step.
+
+<Steps>
+  <Step>
+    **Create a new layout** for the Web Viewer app.
+  </Step>
+
+  <Step>
+    **Drag the ProofKit add-on** from the left sidebar onto the layout.
+
+    This places a Web Viewer with the new calculation that includes the persistent data retrieval methods.
+  </Step>
+
+  <Step>
+    **Resize the Web Viewer to fill the layout** so it stretches to the full layout size.
+  </Step>
+
+  <Step>
+    **Tell it which app to load** using one of two options:
+
+    - **Hard-code the app name** directly inside the Web Viewer calculation, or
+    - **Set the global field** for the app name before navigating the user to this layout.
+  </Step>
+</Steps>
+
+## Supporting users before FileMaker 26
+
+If some of your users are not yet on FileMaker 26, keep using the table-and-record method, which requires the HTML to live in a record in a table.
+
+If you use data migrations, remember that this record data does not survive a clone. When you update the HTML, you may need to copy it over manually or run a post-migration script to move the latest HTML into the migrated file.
+
+## Removing pre-FileMaker 26 support
+
+Once all of your users are on FileMaker 26 and you no longer need the table-and-record method:
+
+1. Delete the **name** and **HTML** fields from the ProofKit apps table.
+2. Update the `deploy_html` script so it no longer tries to save to those fields.
+
+After this, deployments write only to persistent data.
+
+## Related
+
+- [Deployment Methods](/docs/webviewer/deployment-methods) — how the embedded, hosted, and downloaded options compare.
+- [Upgrade to 3.0](/docs/ai/upgrade-to-3) — moving an existing project onto the new add-on.
