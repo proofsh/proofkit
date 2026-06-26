@@ -41,7 +41,7 @@ for (const packageDir of packageDirs) {
 
     for (const skillFile of skillFiles) {
       const content = readFileSync(skillFile, "utf8");
-      const match = content.match(/^library_version:\s*"([^"]*)"$/m);
+      const match = content.match(/^  library_version:\s*"([^"]*)"$/m);
       const skillVersion = match?.[1];
 
       if (!skillVersion || skillVersion === packageJson.version) continue;

@@ -5,9 +5,10 @@ description: >
   session state localStorage browser resize reload same deployment embedded bundle
   avoid separate deployment avoid separate web server @proofkit/webviewer
   fmFetch callFMScript WebViewerAdapter WebDirect page refresh
-type: core
-library: proofkit
-library_version: "3.2.0"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "3.2.0"
 sources:
   - "proofsh/proofkit:apps/docs/content/docs/webviewer/platform-notes.mdx"
   - "proofsh/proofkit:apps/docs/content/docs/webviewer/deployment-methods.mdx"

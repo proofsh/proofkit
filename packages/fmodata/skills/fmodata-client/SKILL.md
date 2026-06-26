@@ -9,9 +9,10 @@ description: >
   BatchTruncatedError entity IDs FMTID FMFID defaultSelect readValidator writeValidator orderBy asc
   desc top skip single maybeSingle count getSingleField FileMaker OData API schema management
   webhooks getTableColumns select("all")
-type: core
-library: proofkit
-library_version: "0.1.1"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "0.1.1"
 requires:
   - typegen-fmodata
 sources:

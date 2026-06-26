@@ -76,7 +76,7 @@ describe("FmMcpAdapter", () => {
 
       const body = JSON.parse(init?.body as string);
       expect(body.connectedFileName).toBe("MyFile");
-      expect(body.scriptName).toBe("execute_data_api");
+      expect(body.scriptName).toBe("PK_execute_data_api");
 
       const param = JSON.parse(body.data);
       expect(param.layouts).toBe("TestLayout");

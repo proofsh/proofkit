@@ -58,7 +58,7 @@ export interface FmMcpAdapterOptions {
   baseUrl: string;
   /** Name of the connected FileMaker file */
   connectedFileName: string;
-  /** Name of the FM script that executes Data API calls. Defaults to "execute_data_api" */
+  /** Name of the FM script that executes Data API calls. Defaults to "PK_execute_data_api" */
   scriptName?: string;
   /** Session ID sent to the bridge. Defaults to FM_MCP_SESSION_ID or a random ID. */
   sessionId?: string;
@@ -89,7 +89,7 @@ export class FmMcpAdapter implements Adapter {
   constructor(options: FmMcpAdapterOptions) {
     this.baseUrl = options.baseUrl.replace(TRAILING_SLASHES_REGEX, "");
     this.connectedFileName = options.connectedFileName;
-    this.scriptName = options.scriptName ?? "execute_data_api";
+    this.scriptName = options.scriptName ?? "PK_execute_data_api";
     this.sessionId = options.sessionId ?? envValue("FM_MCP_SESSION_ID") ?? randomSessionId();
     this.clientName = options.clientName ?? envValue("FM_MCP_CLIENT_NAME") ?? "ProofKit Typegen";
     this.clientDescription =

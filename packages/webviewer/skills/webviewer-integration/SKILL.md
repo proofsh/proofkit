@@ -4,9 +4,10 @@ description: >
   webviewer fmFetch callFMScript WebViewerAdapter globalSettings setWebViewerName
   SendCallback window.FileMaker browser-only FileMaker Web Viewer script execution
   fire-and-forget FMScriptOption PerformScript callback fetchId handleFmWVFetchCallback
-type: core
-library: proofkit
-library_version: "3.2.0"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "3.2.0"
 sources:
   - "proofsh/proofkit:packages/webviewer/src/main.ts"
   - "proofsh/proofkit:packages/webviewer/src/adapter.ts"
@@ -99,7 +100,7 @@ import { DataApi } from "@proofkit/fmdapi";
 import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
 
 const client = DataApi({
-  adapter: new WebViewerAdapter({ scriptName: "ExecuteDataApi" }),
+  adapter: new WebViewerAdapter({ scriptName: "PK_execute_data_api" }),
   layout: "API_Customers",
 });
 
@@ -220,7 +221,7 @@ import { DataApi } from "@proofkit/fmdapi";
 import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
 
 const client = DataApi({
-  adapter: new WebViewerAdapter({ scriptName: "ExecuteDataApi" }),
+  adapter: new WebViewerAdapter({ scriptName: "PK_execute_data_api" }),
   layout: "API_Customers",
 });
 
@@ -235,7 +236,7 @@ import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
 import { fmFetch, callFMScript } from "@proofkit/webviewer";
 
 const client = DataApi({
-  adapter: new WebViewerAdapter({ scriptName: "ExecuteDataApi" }),
+  adapter: new WebViewerAdapter({ scriptName: "PK_execute_data_api" }),
   layout: "API_Customers",
 });
 
@@ -280,11 +281,11 @@ import { DataApi } from "@proofkit/fmdapi";
 import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
 
 const customersClient = DataApi({
-  adapter: new WebViewerAdapter({ scriptName: "ExecuteDataApi" }),
+  adapter: new WebViewerAdapter({ scriptName: "PK_execute_data_api" }),
   layout: "API_Customers",
 });
 const ordersClient = DataApi({
-  adapter: new WebViewerAdapter({ scriptName: "ExecuteDataApi" }),
+  adapter: new WebViewerAdapter({ scriptName: "PK_execute_data_api" }),
   layout: "API_Orders",
 });
 

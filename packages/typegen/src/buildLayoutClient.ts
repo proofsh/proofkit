@@ -2,7 +2,7 @@ import { type CodeBlockWriter, type SourceFile, VariableDeclarationKind } from "
 import { defaultEnvNames } from "./constants";
 import type { BuildSchemaArgs } from "./types";
 
-const defaultWebviewerScriptName = "execute_data_api";
+const defaultWebviewerScriptName = "PK_execute_data_api";
 
 function normalizeScriptName(scriptName?: string) {
   const normalized = scriptName?.trim();

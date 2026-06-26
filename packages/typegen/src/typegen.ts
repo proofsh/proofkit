@@ -217,7 +217,7 @@ const generateTypedClientsSingle = async (
   if (isFmMcpMode && !config.webviewerScriptName) {
     console.log(
       chalk.blue(
-        `INFO: Generated clients will use WebViewerAdapter with script "${fmMcpObj?.scriptName ?? "execute_data_api"}".`,
+        `INFO: Generated clients will use WebViewerAdapter with script "${fmMcpObj?.scriptName ?? "PK_execute_data_api"}".`,
       ),
     );
   }

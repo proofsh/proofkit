@@ -6,9 +6,10 @@ description: >
   config, migration via npx @proofkit/better-auth migrate, OData prerequisites,
   fmodata privilege, Full Access credentials for schema modification, plugin
   migration workflow, troubleshooting "filemaker is not supported" errors.
-type: core
-library: proofkit
-library_version: "0.4.1"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "0.4.1"
 requires:
   - fmodata-client
 sources:

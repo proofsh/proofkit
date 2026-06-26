@@ -127,7 +127,7 @@
               ]
             },
             "fmMcp": {
-              "description": "Enable the FM MCP proxy for metadata fetching during typegen. Generated clients will use the @proofkit/webviewer adapter with webviewerScriptName or 'execute_data_api' as the default.",
+              "description": "Enable the FM MCP proxy for metadata fetching during typegen. Generated clients will use the @proofkit/webviewer adapter with webviewerScriptName or 'PK_execute_data_api' as the default.",
               "allOf": [
                 {
                   "$ref": "#/definitions/__schema15"
@@ -326,7 +326,7 @@
           ]
         },
         "scriptName": {
-          "description": "The FM script the FM MCP bridge calls to execute Data API operations. Overrides webviewerScriptName for the bridge call. Defaults to \"execute_data_api\".",
+          "description": "The FM script the FM MCP bridge calls to execute Data API operations. Overrides webviewerScriptName for the bridge call. Defaults to \"PK_execute_data_api\".",
           "allOf": [
             {
               "$ref": "#/definitions/__schema17"
