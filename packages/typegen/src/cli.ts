@@ -10,7 +10,11 @@ import { parse } from "jsonc-parser";
 import { getFriendlyTypegenError } from "./cli-errors";
 import { typegenConfig } from "./types";
 
-const defaultConfigPaths = ["proofkit-typegen.config.jsonc", "proofkit-typegen.config.json"];
+const defaultConfigNames = ["proofkit-typegen.config", "proofkit.config", "adt.config"];
+const defaultConfigExtensions = ["jsonc", "json"];
+const defaultConfigPaths = defaultConfigNames.flatMap((configName) =>
+  defaultConfigExtensions.map((extension) => `${configName}.${extension}`),
+);
 const oldConfigPaths = ["fmschema.config.mjs", "fmschema.config.js"];
 interface ConfigArgs {
   configLocation: string;
@@ -276,7 +280,7 @@ function parseEnvs(envPath?: string | undefined) {
   // }
 }
 
-function getConfigPath(configPath?: string): string | null {
+export function getConfigPath(configPath?: string): string | null {
   if (configPath) {
     // If a config path is specified, check if it exists
     try {
