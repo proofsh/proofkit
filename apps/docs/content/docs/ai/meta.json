@@ -10,6 +10,7 @@
     "install-and-connect",
     "explore-your-file",
     "build-a-webviewer-app",
+    "persistent-data",
     "deploy-to-filemaker",
     "edit-your-app",
     "github-workflow",
@@ -19,8 +20,10 @@
     "technical-requirements",
     "faq",
     "---Reference---",
+    "upgrade-to-3",
     "updating-proofkit",
     "manual-mcp-setup",
+    "enhanced-security",
     "telemetry",
     "troubleshooting"
   ]
