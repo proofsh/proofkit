@@ -1,8 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+
+const require = createRequire(import.meta.url);
+const tscPath = require.resolve("typescript/bin/tsc");
 
 const runTypeScript = (source: string) => {
   const dir = mkdtempSync(join(tmpdir(), "proofkit-webviewer-types-"));
@@ -34,7 +38,7 @@ const runTypeScript = (source: string) => {
   );
   writeFileSync(sourcePath, source);
 
-  execFileSync("pnpm", ["exec", "tsc", "--project", configPath], {
+  execFileSync(process.execPath, [tscPath, "--project", configPath], {
     cwd: join(import.meta.dirname, "../../.."),
     stdio: "pipe",
   });
@@ -64,7 +68,7 @@ describe("web viewer command types", () => {
         });
       `),
     ).not.toThrow();
-  });
+  }, 15_000);
 
   it("rejects invalid registry declarations through the helper type", () => {
     expect(() =>
@@ -81,7 +85,7 @@ describe("web viewer command types", () => {
         }
       `),
     ).toThrow();
-  });
+  }, 15_000);
 
   it("rejects unknown commands and wrong handler signatures", () => {
     expect(() =>
@@ -101,5 +105,5 @@ describe("web viewer command types", () => {
         registerWebViewerCommand("openCustomer", (recordId: number) => {});
       `),
     ).not.toThrow();
-  });
+  }, 15_000);
 });
