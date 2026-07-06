@@ -1,5 +1,13 @@
 # @proofkit/typegen
 
+## 1.1.4
+
+### Patch Changes
+
+- 04a3edf: Find `proofkit.config.json` and `adt.config.json` when resolving typegen CLI config.
+- Updated dependencies [8283691]
+  - @proofkit/fmdapi@5.2.0
+
 ## 1.1.3
 
 ### Patch Changes
