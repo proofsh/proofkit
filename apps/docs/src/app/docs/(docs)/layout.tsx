@@ -27,7 +27,7 @@ const llmSidebarNodes: Node[] = [
 ];
 
 // Sidebar pages (by URL) that should render a "New" badge.
-const newBadgePages = new Set<string>(["/docs/ai/persistent-data"]);
+const newBadgePages = new Set<string>(["/docs/ai/persistent-data", "/docs/ai/enhanced-security"]);
 
 function NewBadge() {
   return (

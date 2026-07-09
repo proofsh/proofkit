@@ -6,9 +6,10 @@ description: >
   maybeFindFirst, findAll, create, update, delete, get, executeScript,
   containerUpload, Standard Schema validation, portal data access, FileMaker
   Data API, layout-bound clients, schema inference
-type: core
-library: proofkit
-library_version: "5.2.0"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "5.2.0"
 requires:
   - typegen-fmdapi
 sources:

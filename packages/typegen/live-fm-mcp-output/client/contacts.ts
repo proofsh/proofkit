@@ -8,7 +8,7 @@ import { WebViewerAdapter } from "@proofkit/webviewer/adapter";
 import { Zcontacts } from "../contacts";
 
 export const client = DataApi({
-  adapter: new WebViewerAdapter({ scriptName: "execute_data_api" }),
+  adapter: new WebViewerAdapter({ scriptName: "PK_execute_data_api" }),
   layout: "Contacts",
   schema: { fieldData: Zcontacts },
 });

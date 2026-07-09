@@ -202,7 +202,7 @@ const fmMcpFieldObject = z.object({
   }),
   scriptName: z.string().optional().meta({
     description:
-      'The FM script the FM MCP bridge calls to execute Data API operations. Overrides webviewerScriptName for the bridge call. Defaults to "execute_data_api".',
+      'The FM script the FM MCP bridge calls to execute Data API operations. Overrides webviewerScriptName for the bridge call. Defaults to "PK_execute_data_api".',
   }),
   baseUrl: z.string().optional().meta({
     description:
@@ -245,7 +245,7 @@ const fmMcpField = z
   .optional()
   .meta({
     description:
-      "Enable the FM MCP proxy for metadata fetching during typegen. Generated clients will use the @proofkit/webviewer adapter with webviewerScriptName or 'execute_data_api' as the default.",
+      "Enable the FM MCP proxy for metadata fetching during typegen. Generated clients will use the @proofkit/webviewer adapter with webviewerScriptName or 'PK_execute_data_api' as the default.",
   });
 
 const reduceMetadataField = z.boolean().optional().meta({

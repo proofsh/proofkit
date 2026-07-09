@@ -8,9 +8,10 @@ description: >
   development, generated vs override file structure, schema/generated/client
   directory layout, Standard Schema validation, InferZodPortals, fmMcp mode
   prerequisites, and choosing between OttoAdapter and FetchAdapter auth.
-type: core
-library: proofkit
-library_version: "5.2.0"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "5.2.0"
 sources:
   - "proofsh/proofkit:packages/typegen/src/cli.ts"
   - "proofsh/proofkit:packages/typegen/src/typegen.ts"
@@ -213,11 +214,11 @@ FM MCP mode lets typegen fetch layout metadata from a locally running FileMaker 
 `fmMcp` accepts an object with optional overrides:
 
 - `enabled` — `true` to enable (default when object is present)
-- `scriptName` — FM script the proxy calls for Data API operations. Resolution: `fmMcp.scriptName` > `webviewerScriptName` > `"execute_data_api"`
+- `scriptName` — FM script the proxy calls for Data API operations. Resolution: `fmMcp.scriptName` > `webviewerScriptName` > `"PK_execute_data_api"`
 - `baseUrl` — FM MCP server URL (default: `http://127.0.0.1:1365`). Can also be set via `FM_HTTP_BASE_URL` env var
 - `connectedFileName` — FileMaker file name. If omitted, auto-discovered from `GET /connectedFiles` and written back to config
 
-The generated client uses `WebViewerAdapter` with `webviewerScriptName` if set, otherwise `"execute_data_api"`.
+The generated client uses `WebViewerAdapter` with `webviewerScriptName` if set, otherwise `"PK_execute_data_api"`.
 
 **Prerequisites:**
 1. FM MCP daemon running locally (`GET http://127.0.0.1:1365/health` should return OK)

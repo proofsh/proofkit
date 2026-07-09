@@ -7,9 +7,10 @@ description: >
   FMTID for rename resilience, null field query performance, getQueryString() debugging,
   relationship query performance testing, FileMaker OData optimization, avoiding OData
   service overload during testing.
-type: core
-library: proofkit
-library_version: "0.1.1"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "0.1.1"
 requires:
   - fmodata-client
 sources:

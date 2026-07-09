@@ -8,9 +8,10 @@ description: >
   structure, field exclusion, type overrides, InferTableSchema, env var
   configuration, OData prerequisites, fmodata privilege, and why typegen is
   required for entity ID correctness.
-type: core
-library: proofkit
-library_version: "0.1.1"
+metadata:
+  type: core
+  library: proofkit
+  library_version: "0.1.1"
 sources:
   - "proofsh/proofkit:packages/typegen/src/cli.ts"
   - "proofsh/proofkit:packages/typegen/src/fmodata/typegen.ts"

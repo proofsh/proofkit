@@ -396,7 +396,7 @@ export function ConfigEditor({ index, onRemove }: ConfigEditorProps) {
                         <FormItem>
                           <FormLabel>Script Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="execute_data_api" {...field} />
+                            <Input placeholder="PK_execute_data_api" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
