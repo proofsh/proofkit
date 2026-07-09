@@ -1,36 +1,19 @@
 ---
 title: Enhanced Security
-description: Require one-time approval before an AI agent can run scripts in your FileMaker file, and manage which connections are allowed.
+description: Ask before a new AI agent connection can use your FileMaker file.
 ---
 
-import { Callout } from "fumadocs-ui/components/callout";
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
-Enhanced Security makes ProofKit ask for your approval before a new agent connection can run scripts or read data in a FileMaker file. When it is on, the first time a client like Claude Desktop tries to run a script, a dialog appears in FileMaker Pro asking you to allow or deny that connection.
+Enhanced Security makes ProofKit ask before a new AI agent connection can use your FileMaker file.
 
-When it is **off** (the default), any local process that can reach the ProofKit plug-in can run scripts in your connected files without a prompt.
+When it is on, the first request from a new agent shows an approval dialog in FileMaker Pro. You can allow the connection, deny it, or revoke it later from the ProofKit connector Web Viewer.
 
-<Callout type="warn" title="Beta feature">
-  Enhanced Security is in beta. The wording of dialogs and the layout of the
-  connection list may change in future releases.
-</Callout>
-
-## What it changes
-
-The ProofKit plug-in runs a local HTTP server that your agent talks to. Script-running tools (the ones an agent uses to read records or run FileMaker scripts) go through one endpoint. Enhanced Security gates that endpoint.
-
-| | Enhanced Security off | Enhanced Security on |
-| --- | --- | --- |
-| New agent connection | Auto-approved, no prompt | You approve or deny it in FileMaker Pro |
-| Scope of approval | All connected files | One specific session **and** one file |
-| Read-only status checks (connected files, health) | Allowed | Allowed |
-| If approval expires | n/a | Agent prompts you again |
-
-Approval is scoped to a single session and a single file. Approving an agent for `Inventory.fmp12` does not approve it for `Customers.fmp12` — each file is approved on its own.
+When it is off, ProofKit allows agent connections without an approval prompt.
 
 ## Turn it on or off
 
-The setting lives in the ProofKit plug-in preferences, not in your agent or in any config file.
+Enhanced Security is controlled from the ProofKit plug-in preferences.
 
 <Steps>
   <Step>
@@ -42,10 +25,7 @@ The setting lives in the ProofKit plug-in preferences, not in your agent or in a
   <Step>
     **Toggle the checkbox.**
 
-    Check or uncheck **Enable Enhanced Security (BETA)**.
-
-    - **Checked** — new connections require your approval.
-    - **Unchecked** — new connections are auto-approved.
+    Check or uncheck **Enable Enhanced Security**.
   </Step>
 
   <Step>
@@ -57,68 +37,12 @@ The setting lives in the ProofKit plug-in preferences, not in your agent or in a
 
 ## Approve a connection
 
-With Enhanced Security on, the first script-running request from a new connection pauses and a dialog appears in FileMaker Pro. It shows:
+When a new agent asks to use your FileMaker file, FileMaker Pro shows a dialog with the agent name and the file it wants to use.
 
-- The agent client name and description (for example, `Claude Desktop`).
-- The FileMaker file the connection wants to use.
-- A short prefix of the session ID, so you can tell two connections apart.
+Click **Allow** if you recognize it. Click **Deny** if you do not.
 
-Click **Allow** to approve the connection or **Deny** to reject it. Check that you recognize the client name before approving — anything running locally can request access.
+## Revoke access
 
-The dialog waits about two minutes for a response. If you do not answer in time, the request fails and the agent can try again.
-
-Approved connections stay valid for **one hour of idle time**, refreshed each time the connection is used. After an hour without use, the approval expires and the next request prompts you again. Approvals are held in memory only, so they are also cleared when you restart FileMaker Pro or reload the plug-in.
-
-## Review and revoke connections
-
-Open the ProofKit connector Web Viewer (the window the **Connect to MCP** script opens) to see the current state. It lists:
-
-- **Authorized connections** — each approved session, the client name, a session ID prefix, and how long until it expires. Each has a **Revoke** button. A **Revoke all** action clears them at once.
-- **Persistent tokens** — any long-lived tokens registered for automation (see below), each with its own revoke action.
-
-It also shows whether Enhanced Security is currently on or off. Revoking a connection takes effect immediately; the next request from that connection prompts for approval again.
-
-## Automation without prompts
-
-Interactive approval does not fit unattended workflows such as CI or a scheduled runner. For those, register a persistent token that is approved without a dialog.
-
-<Steps>
-  <Step>
-    **Register a token from FileMaker.**
-
-    In a startup script (or any script) in the file you want to expose, evaluate the custom function:
-
-    ```text title="FileMaker calculation"
-    ProofKit_RegisterPersistentToken( "my-automation-token" )
-    ```
-
-    A token is scoped to the file whose script registers it. Tokens live in memory only, so re-run this whenever the file opens.
-  </Step>
-
-  <Step>
-    **Point the MCP server at the token.**
-
-    Set these environment variables on the `proofkit-mcp` process:
-
-    ```bash
-    FM_MCP_SESSION_ID=my-automation-token
-    FM_MCP_CLIENT_NAME="My Automation"
-    FM_MCP_CLIENT_DESCRIPTION="Scheduled report runner"
-    FM_MCP_DISABLE_INTERACTIVE_AUTHORIZATION=true
-    ```
-
-    `FM_MCP_SESSION_ID` carries the token. `FM_MCP_DISABLE_INTERACTIVE_AUTHORIZATION=true` makes the server fail with an error instead of opening a dialog if the token is missing or invalid, so an unattended run never hangs on a prompt. The client name and description appear in the connection list for auditing.
-  </Step>
-</Steps>
-
-<Callout type="info" title="Tokens are not persisted">
-  Persistent tokens are lost when the plug-in reloads or FileMaker Pro
-  restarts. Register them from a startup script so they are recreated each time
-  the file opens.
-</Callout>
-
-## Related guides
+Open the ProofKit connector Web Viewer to review approved connections. Use **Revoke** to remove one connection, or **Revoke all** to clear them all.
 
 - [Install and Connect](/docs/ai/install-and-connect)
-- [Manual MCP Setup](/docs/ai/manual-mcp-setup)
-- [Troubleshooting](/docs/ai/troubleshooting)
