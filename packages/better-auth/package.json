@@ -59,7 +59,7 @@
     "@commander-js/extra-typings": "^14.0.0",
     "@proofkit/fmodata": "workspace:*",
     "@tanstack/vite-config": "^0.2.1",
-    "better-auth": "^1.5.4",
+    "better-auth": "^1.6.23",
     "c12": "^3.3.3",
     "chalk": "5.4.1",
     "commander": "^14.0.2",
