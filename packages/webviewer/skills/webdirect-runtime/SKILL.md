@@ -4,7 +4,8 @@ description: >
   FileMaker WebDirect ProofKit Web Viewer runtime behavior refresh resilience
   session state localStorage browser resize reload same deployment embedded bundle
   avoid separate deployment avoid separate web server @proofkit/webviewer
-  fmFetch callFMScript WebViewerAdapter WebDirect page refresh
+  fmFetch callFMScript WebViewerAdapter WebDirect page refresh blank app empty body
+  character encoding browser network response console errors deployed HTML
 metadata:
   type: core
   library: proofkit
@@ -35,6 +36,21 @@ const result = await fmFetch("GetDashboardState", { recordId: "123" });
 ```
 
 Deploy the app the same way as any FileMaker Web Viewer app. Embedded bundles stored in the FileMaker file are valid for WebDirect. Do not tell users to host WebDirect apps separately unless they independently chose the hosted deployment method for other reasons.
+
+Don't apply conventional public-site page-weight budgets directly to embedded Web Viewer apps. A 10 MB bundle may be large by conventional website standards, but size alone isn't evidence that WebDirect can't load the app. Treat bundle size as a cause only after reproducing a size-dependent failure or measuring a transfer or startup problem. Check the deployed HTML, runtime errors, FileMaker bridge readiness, and WebDirect refresh behavior first.
+
+## Blank App Troubleshooting
+
+When a web app doesn't load in WebDirect, inspect what the browser received before changing the app or its deployment model.
+
+1. Use connected browser tooling when available. Open the actual WebDirect page in the user's session.
+2. Inspect the complete page response served by WebDirect in the browser's network tools. Don't limit the inspection to the Web Viewer HTML stored in FileMaker or a local copy of the app bundle. Confirm whether the full WebDirect page payload contains the deployed Web Viewer HTML and JavaScript. Don't assume which request or internal loading path carries it; identify that from the live browser traffic.
+3. Check the browser console for parse errors, runtime exceptions, blocked resources, or security errors.
+4. Distinguish an empty WebDirect page response from an empty rendered root element inside the Web Viewer. React can start with an empty root and populate it at runtime, so the DOM alone doesn't prove that WebDirect omitted the bundle.
+
+If the complete page served by WebDirect has an empty body and the Web Viewer bundle is absent from that response, suspect character encoding first. An incorrectly encoded or unsupported character in the deployed single-file HTML can cause WebDirect to return an empty body instead of sending the bundle. Inspect the built HTML for invalid UTF-8 or problematic characters, rebuild, redeploy, and check the full WebDirect response again.
+
+If the full WebDirect response contains the Web Viewer HTML and JavaScript bundle, don't keep treating encoding or bundle size as the default cause. Follow the browser's console and network evidence to the parse, runtime, bridge, or security failure.
 
 ## State Pattern
 
@@ -106,6 +122,22 @@ Use the same ProofKit Web Viewer deployment. The bundle can live in the FileMake
 ```
 
 WebDirect changes runtime refresh behavior, not the deployment model.
+
+### [HIGH] Blaming bundle size before inspecting the response
+
+Wrong:
+
+```text
+This app is 10 MB, so WebDirect cannot load it. Split the app or host it separately.
+```
+
+Correct:
+
+```text
+Open the WebDirect page in a browser and inspect the complete page response served by WebDirect, not only the stored Web Viewer HTML or a local app bundle. If the full response body is empty and the Web Viewer bundle is absent, investigate character encoding first. If the full page and bundle arrived, follow the browser errors.
+```
+
+Embedded Web Viewers load the app as a single payload. Standard public-site bundle budgets are useful optimization signals, but they don't establish a WebDirect loading limit.
 
 ### [HIGH] Keeping critical workflow state only in memory
 

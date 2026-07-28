@@ -19,6 +19,8 @@ After deployment, Web Viewer apps can run in FileMaker Go. Test mobile-specific 
 
 Deployed Web Viewer apps can run in WebDirect, but browser refresh and session behavior need special care. Avoid designs that assume a user can freely refresh a WebDirect window without affecting their FileMaker session.
 
+Don't diagnose a WebDirect loading failure from bundle size alone. A 10 MB embedded bundle may be large by conventional website standards, but it isn't inherently too large for FileMaker or WebDirect. FileMaker transfers the bundle as the app payload, so public-site page-weight guidance doesn't directly apply. Treat size as the cause only when testing reproduces a size-dependent failure or measures a transfer or startup problem. Check deployment output, runtime errors, bridge readiness, and WebDirect refresh behavior first.
+
 ## End users
 
 End users do not need ProofKit installed. They need the FileMaker runtime where the Web Viewer app is deployed.

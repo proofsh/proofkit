@@ -14,6 +14,7 @@
     "filemaker-scripts-as-backend",
     "commands",
     "initial-props",
+    "routing",
     "batching",
     "platform-notes",
     "deployment-methods",
