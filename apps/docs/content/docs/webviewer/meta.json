@@ -12,6 +12,7 @@
     "runtime-under-the-hood",
     "data-access",
     "filemaker-scripts-as-backend",
+    "containers",
     "commands",
     "initial-props",
     "routing",

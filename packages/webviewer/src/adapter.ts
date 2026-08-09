@@ -3,6 +3,7 @@ import { FileMakerError } from "@proofkit/fmdapi";
 import type {
   Adapter,
   BaseRequest,
+  ContainerUploadOptions,
   CreateOptions,
   DeleteOptions,
   FindOptions,
@@ -25,9 +26,31 @@ export interface WebViewerAdapterBatchOptions {
   maxSize?: number;
 }
 
+export interface WebViewerAdapterContainerOptions {
+  /**
+   * Name of the FileMaker script that writes container data.
+   * @default "PK_container_upload"
+   */
+  scriptName?: string;
+  /**
+   * How long to wait for the container script before failing. An add-on that
+   * predates the container script never calls back, so this is what turns a
+   * hung promise into an actionable error. Set to 0 to wait indefinitely.
+   * @default 60000
+   */
+  timeoutMs?: number;
+  /**
+   * Reject uploads larger than this before spending time encoding them.
+   * Set to 0 to disable the check.
+   * @default 20971520
+   */
+  maxFileBytes?: number;
+}
+
 export interface WebViewerAdapterOptions {
   scriptName: string;
   batch?: boolean | WebViewerAdapterBatchOptions;
+  container?: WebViewerAdapterContainerOptions;
 }
 
 interface ResolvedBatchOptions {
@@ -57,6 +80,86 @@ const DEFAULT_BATCH_WINDOW_MS = 8;
 const DEFAULT_BATCH_MAX_SIZE = 20;
 const BATCHING_DOCS_URL = "https://proofkit.dev/docs/webviewer/batching";
 const LEGACY_BATCH_WARNING = `[ProofKit] ProofKit called the FileMaker script to execute Data API, but it did not support batching. Install the latest ProofKit add-on in your FileMaker file to get the updated script. Falling back to unbatched requests for this adapter. See ${BATCHING_DOCS_URL}`;
+
+const DEFAULT_CONTAINER_SCRIPT_NAME = "PK_container_upload";
+const DEFAULT_CONTAINER_TIMEOUT_MS = 60_000;
+const DEFAULT_CONTAINER_MAX_FILE_BYTES = 20 * 1024 * 1024;
+const BASE64_CHUNK_SIZE = 0x80_00;
+const CONTAINERS_DOCS_URL = "https://proofkit.dev/docs/webviewer/containers";
+
+function containerTimeoutMessage(scriptName: string, timeoutMs: number): string {
+  return `[ProofKit] The FileMaker script "${scriptName}" did not respond within ${timeoutMs}ms. Install the latest ProofKit add-on in your FileMaker file to get the container upload script, or set the adapter's container.scriptName option if your script uses a different name. See ${CONTAINERS_DOCS_URL}`;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  if (timeoutMs <= 0) {
+    return await promise;
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += BASE64_CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + BASE64_CHUNK_SIZE));
+  }
+  return btoa(binary);
+}
+
+/**
+ * FileMaker's `Base64Decode` needs a file name with an extension, otherwise it
+ * stores an untitled `.dat` that will not preview or export correctly.
+ */
+function getUploadFileName(file: Blob): string {
+  const fileName = (file as File).name;
+  if (typeof fileName === "string" && fileName.trim() !== "") {
+    return fileName;
+  }
+  throw new Error(
+    'Container upload requires a file name with an extension. Pass a `File` rather than a bare `Blob`, or wrap it: `new File([blob], "photo.png", { type: blob.type })`.',
+  );
+}
+
+function resolveContainerRepetition(repetition: string | number | undefined): number {
+  if (repetition === undefined) {
+    return 1;
+  }
+
+  const value = typeof repetition === "string" ? Number(repetition) : repetition;
+  if (!Number.isFinite(value) || value < 1) {
+    throw new Error(`Container field repetition must be a positive number, received ${String(repetition)}`);
+  }
+  if (value > 1) {
+    throw new Error(
+      `Container field repetitions are not yet supported by the Web Viewer adapter (received repetition ${value}). Upload to repetition 1, or use a FileMaker script directly. See ${CONTAINERS_DOCS_URL}`,
+    );
+  }
+  return 1;
+}
+
+function resolveContainerOptions(
+  container: WebViewerAdapterContainerOptions | undefined,
+): Required<WebViewerAdapterContainerOptions> {
+  const scriptName = container?.scriptName?.trim();
+  return {
+    maxFileBytes: Math.max(0, container?.maxFileBytes ?? DEFAULT_CONTAINER_MAX_FILE_BYTES),
+    scriptName: scriptName ? scriptName : DEFAULT_CONTAINER_SCRIPT_NAME,
+    timeoutMs: Math.max(0, container?.timeoutMs ?? DEFAULT_CONTAINER_TIMEOUT_MS),
+  };
+}
 
 function normalizeBatchMaxSize(maxSize: number | undefined): number {
   if (maxSize === undefined || !Number.isFinite(maxSize)) {
@@ -156,6 +259,7 @@ function isLegacyBatchUnsupportedResponse(resp: BatchScriptResponse): boolean {
 
 export class WebViewerAdapter implements Adapter {
   protected scriptName: string;
+  private readonly containerOptions: Required<WebViewerAdapterContainerOptions>;
   private readonly batchOptions?: ResolvedBatchOptions;
   private batchDisabledByLegacyScript = false;
   private batchFlushInProgress = false;
@@ -166,6 +270,7 @@ export class WebViewerAdapter implements Adapter {
   constructor(options: WebViewerAdapterOptions & { refreshToken?: boolean }) {
     this.scriptName = options.scriptName;
     this.batchOptions = resolveBatchOptions(options.batch);
+    this.containerOptions = resolveContainerOptions(options.container);
   }
 
   protected request = (params: {
@@ -521,7 +626,48 @@ export class WebViewerAdapter implements Adapter {
     );
   };
 
-  containerUpload = (): Promise<never> => {
-    throw new Error("Container upload is not supported in webviewer");
+  /**
+   * Uploads a file into a container field through the ProofKit add-on's
+   * container script.
+   *
+   * The Data API uploads containers through a separate multipart endpoint that
+   * the `Execute FileMaker Data API` script step does not expose, so this never
+   * goes through the Data API script and never participates in batching. The
+   * file is Base64-encoded and decoded back into the container by FileMaker.
+   *
+   * Requires FileMaker Pro 22.0 or later on the FileMaker side.
+   */
+  containerUpload = async (opts: ContainerUploadOptions): Promise<void> => {
+    const { containerFieldName, file, modId, recordId, repetition } = opts.data;
+    const { maxFileBytes, scriptName, timeoutMs } = this.containerOptions;
+
+    const fileName = getUploadFileName(file);
+    const resolvedRepetition = resolveContainerRepetition(repetition);
+
+    if (maxFileBytes > 0 && file.size > maxFileBytes) {
+      throw new Error(
+        `Container upload is ${file.size} bytes, which exceeds the Web Viewer limit of ${maxFileBytes} bytes. Raise the adapter's container.maxFileBytes option, or move the file with a FileMaker script step instead. See ${CONTAINERS_DOCS_URL}`,
+      );
+    }
+
+    const payload: Record<string, unknown> = {
+      base64: await blobToBase64(file),
+      containerFieldName: containerFieldName as string,
+      fileName,
+      layout: opts.layout,
+      recordId,
+      repetition: resolvedRepetition,
+    };
+    if (modId !== undefined) {
+      payload.modId = modId;
+    }
+
+    const resp = await withTimeout(
+      fmFetch<clientTypes.RawFMResponse>(scriptName, payload),
+      timeoutMs,
+      containerTimeoutMessage(scriptName, timeoutMs),
+    );
+
+    this.handleDataApiResponse(resp);
   };
 }
