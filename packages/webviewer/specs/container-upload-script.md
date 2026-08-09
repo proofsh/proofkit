@@ -97,7 +97,9 @@ Failure:
 
 ## Behavior
 
-```
+Every path must end by assigning `$result` and calling `SendCallBack`. The adapter treats a missing callback as a timeout, and rejects anything whose `messages[0].code` is not `"0"`.
+
+```text
 Set Error Capture [ On ]
 
 # 1. Parse the envelope
@@ -105,27 +107,65 @@ Set Variable [ $json ; Value: Get ( ScriptParameter ) ]
 Set Variable [ $callback ; Value: JSONGetElement ( $json ; "callback" ) ]
 Set Variable [ $data ; Value: JSONGetElement ( $json ; "data" ) ]
 Set Variable [ $webViewerName ; Value: JSONGetElement ( $callback ; "webViewerName" ) ]
+If [ IsEmpty ( $webViewerName ) ]
+  Set Variable [ $webViewerName ; Value: "web" ]   # the add-on's default object name
+End If
 Set Variable [ $layout ; Value: JSONGetElement ( $data ; "layout" ) ]
 Set Variable [ $recordId ; Value: JSONGetElement ( $data ; "recordId" ) ]
 Set Variable [ $fieldName ; Value: JSONGetElement ( $data ; "containerFieldName" ) ]
 Set Variable [ $fileName ; Value: JSONGetElement ( $data ; "fileName" ) ]
 Set Variable [ $base64 ; Value: JSONGetElement ( $data ; "base64" ) ]
+Set Variable [ $repetition ; Value: Max ( 1 ; GetAsNumber ( JSONGetElement ( $data ; "repetition" ) ) ) ]
+Set Variable [ $modId ; Value: JSONGetElement ( $data ; "modId" ) ]   # empty when absent
 
 # 2. Navigate by record ID, in a new window
+Set Variable [ $callerWindow ; Value: Get ( WindowName ) ]
 Go to List of Records [ List of record IDs: $recordId ; Using layout: $layout ; Show in new window: On ; Animation: None ]
+Set Variable [ $error ; Value: Get ( LastError ) ]
+Set Variable [ $openedWindow ; Value: Get ( WindowName ) ≠ $callerWindow ]
 
-# 3. Verify, then write
-Set Variable [ $fullFieldName ; Value: Get ( LayoutTableName ) & "::" & $fieldName ]
-Set Field By Name [ $fullFieldName ; Base64Decode ( $base64 ; $fileName ) ]
-Commit Records/Requests [ With dialog: Off ]
+If [ $error ≠ 0 or Get ( FoundCount ) = 0 ]
+  Set Variable [ $result ; Value: PK_error ( 101 ; "Record is missing" ) ]
 
-# 4. Close the window, then call back
-Close Window [ Current Window ]
+Else If [ IsEmpty ( JSONGetElement ( $data ; "modId" ) ) = False and Get ( RecordModificationCount ) ≠ GetAsNumber ( $modId ) ]
+  Set Variable [ $result ; Value: PK_error ( 306 ; "Record modification ID does not match" ) ]
+
+Else
+  # 3. Write, capturing the error after each step
+  Set Variable [ $fullFieldName ; Value: Get ( LayoutTableName ) & "::" & $fieldName ]
+  Set Field By Name [ $fullFieldName ; Base64Decode ( $base64 ; $fileName ) ]
+  Set Variable [ $error ; Value: Get ( LastError ) ]
+  Commit Records/Requests [ With dialog: Off ]
+  Set Variable [ $error ; Value: If ( $error = 0 ; Get ( LastError ) ; $error ) ]
+
+  If [ $error = 0 ]
+    Set Variable [ $result ; Value: PK_ok ]
+  Else
+    Set Variable [ $result ; Value: PK_error ( $error ; "" ) ]
+  End If
+End If
+
+# 4. Close the window on every path, then call back
+If [ $openedWindow ]
+  Close Window [ Current Window ]
+End If
 Set Variable [ $callback ; Value: JSONSetElement ( $callback ;
   [ "result" ; $result ; JSONObject ] ;
   [ "webViewerName" ; $webViewerName ; JSONString ] ) ]
 Perform Script [ Specified: From list ; "SendCallBack" ; Parameter: $callback ]
 ```
+
+`PK_ok` and `PK_error ( code ; message )` above stand in for whatever you use to build the envelope. They must produce exactly:
+
+```json
+{ "messages": [{ "code": "0", "message": "OK" }], "response": {} }
+```
+
+```json
+{ "messages": [{ "code": "102", "message": "Field is missing" }], "response": {} }
+```
+
+Note `code` is a **string** in both. A numeric `0` will not match the adapter's check and a successful write would be reported as a failure.
 
 ### Critical: never send the callback from another layout
 
@@ -156,7 +196,18 @@ Every exit path must close the window it opened, including error paths. If the w
 
 Unlike the batching change, this is a brand-new script rather than a new key on an existing one, so the established `1708 / unknown key` detection in `adapter.ts` does not apply. An old add-on has no script to respond at all.
 
-Planned client-side handling, pending the answer to open question 4: the adapter applies a timeout to `containerUpload` and, on expiry, throws an error instructing the user to update the ProofKit add-on. If you would rather have positive detection, the script could accept `{ "action": "capabilities" }` and return a version number, which the adapter would call once per instance and cache.
+Current client-side handling, pending the answer to open question 4: the adapter applies a timeout to `containerUpload` and, on expiry, rejects with `ContainerUploadTimeoutError`. If you would rather have positive detection, the script could accept `{ "action": "capabilities" }` and return a version number, which the adapter would call once per instance and cache.
+
+### The timeout is an unknown outcome, not a failure
+
+`Promise.race` ends the JavaScript wait. It cannot stop a FileMaker script that is already running, so a slow upload can commit *after* `containerUpload()` has rejected. The adapter therefore reports the timeout as an unknown outcome (`ContainerUploadTimeoutError` carries `outcome: "unknown"`) rather than claiming the script never ran.
+
+What makes this tolerable today is that the write is **idempotent**: the script sets one container field on one record from a payload that fully determines the result. Uploading the same file to the same record and field twice leaves the same end state, so a retry after a timeout cannot corrupt anything. Two things must stay true for that to hold, and both are requirements on the script:
+
+- The script must not append, version, or create related records as a side effect of the upload.
+- The script must not treat "container already populated" as an error.
+
+If a future version needs side effects, this contract needs a request identity: the adapter would send a client-generated `requestId`, the script would record it, and a repeated `requestId` would return the original result instead of re-running the write. Worth designing then, not now — but do not add side effects to the script without it.
 
 ## Test cases
 
@@ -167,5 +218,7 @@ Planned client-side handling, pending the answer to open question 4: the adapter
 - Non-existent layout → `105`.
 - Stale `modId` → `306`, and the container is unchanged.
 - Malformed Base64 → non-zero code, container unchanged.
+- Uploading the same file to the same record twice → same end state, no duplicate side effects.
+- Every failure path closes the window it opened and still calls `SendCallBack`.
 - The user's original window keeps its layout, found set, and current record in every case above.
 - A `Get Container` round trip after upload returns the same bytes and the same file name.

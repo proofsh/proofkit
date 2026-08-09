@@ -11,7 +11,7 @@ const FILEMAKER_ERROR_101 = /101/;
 const MISSING_FILE_NAME_ERROR = /file name with an extension/;
 const UNSUPPORTED_REPETITION_ERROR = /repetitions are not yet supported/;
 const FILE_TOO_LARGE_ERROR = /exceeds the Web Viewer limit/;
-const STALE_ADDON_ERROR = /Install the latest ProofKit add-on/;
+const UNKNOWN_OUTCOME_ERROR = /outcome of this upload is unknown/;
 
 describe("WebViewerAdapter", () => {
   beforeEach(() => {
@@ -778,6 +778,24 @@ describe("WebViewerAdapter", () => {
       expect(fmFetch).not.toHaveBeenCalled();
     });
 
+    it.each(["photo", "photo.", ".", ""])("rejects the file name %o for lacking an extension", async (name) => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await expect(
+        adapter.containerUpload({
+          data: {
+            containerFieldName: "Photo",
+            file: new File(["hi"], name, { type: "image/png" }),
+            recordId: 1,
+          },
+          layout: "API_Assets",
+        }),
+      ).rejects.toThrow(MISSING_FILE_NAME_ERROR);
+      expect(fmFetch).not.toHaveBeenCalled();
+    });
+
     it("rejects repetitions above 1 until the script supports them", async () => {
       vi.useRealTimers();
       vi.mocked(fmFetch).mockImplementation(okResponse);
@@ -814,7 +832,7 @@ describe("WebViewerAdapter", () => {
       expect(fmFetch).not.toHaveBeenCalled();
     });
 
-    it("times out with an add-on upgrade hint when the script never calls back", async () => {
+    it("reports an unknown outcome when the script never calls back", async () => {
       vi.mocked(fmFetch).mockImplementation(() => new Promise(() => undefined));
 
       const adapter = new WebViewerAdapter({
@@ -825,7 +843,29 @@ describe("WebViewerAdapter", () => {
         data: { containerFieldName: "Photo", file: makeFile("hi"), recordId: 1 },
         layout: "API_Assets",
       });
-      const assertion = expect(result).rejects.toThrow(STALE_ADDON_ERROR);
+      const assertion = expect(result).rejects.toThrow(UNKNOWN_OUTCOME_ERROR);
+
+      await vi.advanceTimersByTimeAsync(500);
+      await assertion;
+    });
+
+    it("marks a timeout as an unknown outcome rather than a failed write", async () => {
+      vi.mocked(fmFetch).mockImplementation(() => new Promise(() => undefined));
+
+      const adapter = new WebViewerAdapter({
+        container: { timeoutMs: 500 },
+        scriptName: "execute_data_api",
+      });
+      const result = adapter.containerUpload({
+        data: { containerFieldName: "Photo", file: makeFile("hi"), recordId: 1 },
+        layout: "API_Assets",
+      });
+      const assertion = expect(result).rejects.toMatchObject({
+        name: "ContainerUploadTimeoutError",
+        outcome: "unknown",
+        scriptName: "PK_container_upload",
+        timeoutMs: 500,
+      });
 
       await vi.advanceTimersByTimeAsync(500);
       await assertion;

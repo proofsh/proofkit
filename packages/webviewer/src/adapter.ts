@@ -33,9 +33,15 @@ export interface WebViewerAdapterContainerOptions {
    */
   scriptName?: string;
   /**
-   * How long to wait for the container script before failing. An add-on that
-   * predates the container script never calls back, so this is what turns a
-   * hung promise into an actionable error. Set to 0 to wait indefinitely.
+   * How long to wait for the container script to call back. An add-on that
+   * predates the container script never calls back at all, so this is what
+   * stops the promise hanging forever.
+   *
+   * Expiry rejects with a {@link ContainerUploadTimeoutError}. It ends the
+   * JavaScript wait only; FileMaker keeps running and may still commit the
+   * write, so treat the outcome as unknown rather than failed.
+   *
+   * Set to 0 to wait indefinitely.
    * @default 60000
    */
   timeoutMs?: number;
@@ -87,11 +93,30 @@ const DEFAULT_CONTAINER_MAX_FILE_BYTES = 20 * 1024 * 1024;
 const BASE64_CHUNK_SIZE = 0x80_00;
 const CONTAINERS_DOCS_URL = "https://proofkit.dev/docs/webviewer/containers";
 
-function containerTimeoutMessage(scriptName: string, timeoutMs: number): string {
-  return `[ProofKit] The FileMaker script "${scriptName}" did not respond within ${timeoutMs}ms. Install the latest ProofKit add-on in your FileMaker file to get the container upload script, or set the adapter's container.scriptName option if your script uses a different name. See ${CONTAINERS_DOCS_URL}`;
+/**
+ * Thrown when the container script does not call back in time.
+ *
+ * The timeout only ends the JavaScript wait; it cannot stop a FileMaker script
+ * that is already running. The upload may still commit afterwards, so this is
+ * an unknown outcome rather than a confirmed failure.
+ */
+export class ContainerUploadTimeoutError extends Error {
+  readonly scriptName: string;
+  readonly timeoutMs: number;
+  /** The write may still have completed in FileMaker. Verify before retrying. */
+  readonly outcome = "unknown" as const;
+
+  constructor(scriptName: string, timeoutMs: number) {
+    super(
+      `[ProofKit] The FileMaker script "${scriptName}" did not call back within ${timeoutMs}ms, so the outcome of this upload is unknown. The script may still be running and may still commit the container. Check the record before retrying. If every upload times out, the file's ProofKit add-on probably predates the container script, or the script has a different name than the adapter's container.scriptName option. See ${CONTAINERS_DOCS_URL}`,
+    );
+    this.name = "ContainerUploadTimeoutError";
+    this.scriptName = scriptName;
+    this.timeoutMs = timeoutMs;
+  }
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, error: () => Error): Promise<T> {
   if (timeoutMs <= 0) {
     return await promise;
   }
@@ -99,7 +124,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: s
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
-      reject(new Error(message));
+      reject(error());
     }, timeoutMs);
   });
 
@@ -125,11 +150,15 @@ async function blobToBase64(blob: Blob): Promise<string> {
  */
 function getUploadFileName(file: Blob): string {
   const fileName = (file as File).name;
-  if (typeof fileName === "string" && fileName.trim() !== "") {
-    return fileName;
+  const trimmedFileName = typeof fileName === "string" ? fileName.trim() : "";
+  const extension = trimmedFileName.slice(trimmedFileName.lastIndexOf(".") + 1);
+
+  if (trimmedFileName !== "" && trimmedFileName.includes(".") && extension !== "") {
+    return trimmedFileName;
   }
+
   throw new Error(
-    'Container upload requires a file name with an extension. Pass a `File` rather than a bare `Blob`, or wrap it: `new File([blob], "photo.png", { type: blob.type })`.',
+    `Container upload requires a file name with an extension, received ${JSON.stringify(trimmedFileName)}. Pass a \`File\` rather than a bare \`Blob\`, or wrap it: \`new File([blob], "photo.png", { type: blob.type })\`.`,
   );
 }
 
@@ -636,6 +665,11 @@ export class WebViewerAdapter implements Adapter {
    * file is Base64-encoded and decoded back into the container by FileMaker.
    *
    * Requires FileMaker Pro 22.0 or later on the FileMaker side.
+   *
+   * The write itself is idempotent: uploading the same file to the same record
+   * and field again produces the same result. A retry after a
+   * {@link ContainerUploadTimeoutError} is therefore safe, but check the record
+   * first, because the original script may still be running.
    */
   containerUpload = async (opts: ContainerUploadOptions): Promise<void> => {
     const { containerFieldName, file, modId, recordId, repetition } = opts.data;
@@ -665,7 +699,7 @@ export class WebViewerAdapter implements Adapter {
     const resp = await withTimeout(
       fmFetch<clientTypes.RawFMResponse>(scriptName, payload),
       timeoutMs,
-      containerTimeoutMessage(scriptName, timeoutMs),
+      () => new ContainerUploadTimeoutError(scriptName, timeoutMs),
     );
 
     this.handleDataApiResponse(resp);

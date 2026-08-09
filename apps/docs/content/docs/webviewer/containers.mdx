@@ -58,8 +58,26 @@ export const client = DataApi({
 | Option         | Default                | Notes                                                                           |
 | -------------- | ---------------------- | ------------------------------------------------------------------------------- |
 | `scriptName`   | `"PK_container_upload"` | The add-on's container script. Override if your solution renamed it.             |
-| `timeoutMs`    | `60000`                | Turns a missing script into an actionable error. `0` waits indefinitely.         |
+| `timeoutMs`    | `60000`                | Stops the promise hanging when no script answers. `0` waits indefinitely.       |
 | `maxFileBytes` | `20971520` (20 MB)     | Checked before encoding, so oversized files fail fast. `0` disables the check.   |
+
+### A timeout is an unknown outcome
+
+The timeout ends the JavaScript wait. It cannot stop a FileMaker script that is already running, so a slow upload can commit *after* the promise rejects. `ContainerUploadTimeoutError` carries `outcome: "unknown"` for that reason — do not treat it as a confirmed failure.
+
+```ts
+import { ContainerUploadTimeoutError } from "@proofkit/webviewer/adapter";
+
+try {
+  await client.containerUpload({ containerFieldName: "Photo", file, recordId: 3 });
+} catch (error) {
+  if (error instanceof ContainerUploadTimeoutError) {
+    // The write may have landed. Refetch the record before telling the user it failed.
+  }
+}
+```
+
+Retrying is safe: the upload sets one field from a payload that fully determines the result, so sending the same file to the same record twice leaves the same end state. Refetch first anyway, so you do not upload again while the original script is still running.
 
 ### Current limits
 
@@ -262,9 +280,17 @@ Perform Find []
 If [ Get ( FoundCount ) = 0 ]
   Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; False ; JSONBoolean ] ; [ "error" ; "Record not found" ; JSONString ] ) ]
 Else
+  # Capture the error after each step; a later step resets Get ( LastError )
   Set Field [ Customers::Photo ; Base64Decode ( $base64 ; $fileName ) ]
+  Set Variable [ $error ; Value: Get ( LastError ) ]
   Commit Records/Requests [ With dialog: Off ]
-  Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; Get ( LastError ) = 0 ; JSONBoolean ] ; [ "error" ; Get ( LastError ) ; JSONNumber ] ) ]
+  Set Variable [ $error ; Value: If ( $error = 0 ; Get ( LastError ) ; $error ) ]
+
+  If [ $error = 0 ]
+    Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; True ; JSONBoolean ] ) ]
+  Else
+    Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; False ; JSONBoolean ] ; [ "error" ; $error ; JSONNumber ] ) ]
+  End If
 End If
 
 # Close the window before calling back
@@ -309,6 +335,9 @@ If the file is hosted on a server running [OttoFMS](https://docs.ottomatic.cloud
 Register the webhook with the **File Receiver** option enabled, then post to the file receiver endpoint:
 
 ```ts title="otto-upload.ts"
+// Bundled into the Web Viewer, so treat this value as public. See the warning below.
+const OTTO_DATA_API_KEY = import.meta.env.VITE_OTTO_DATA_API_KEY;
+
 export async function uploadViaOttoFMS(recordId: string, file: File) {
   const form = new FormData();
   form.append("file", file);
