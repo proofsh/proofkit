@@ -4,9 +4,10 @@ description: Reading, displaying, and writing FileMaker container data from a We
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
-import { Steps, Step } from "fumadocs-ui/components/steps";
 
 The Web Viewer bridge moves JSON strings, not binary. Container fields hold binary. So every container workflow in a Web Viewer app comes down to one of two choices: encode the bytes as Base64 and pass them through a FileMaker script, or keep the bytes in FileMaker entirely and drive a native script step from the web app.
+
+Uploads are handled for you by `containerUpload` and the add-on's script. Reads are not — you build those, so most of this page is about the FileMaker calcs involved.
 
 ## Why the Data API container value is not enough
 
@@ -26,10 +27,15 @@ await client.containerUpload({
 
 This never goes through the Data API script and never batches, because the Data API uploads containers through a separate multipart endpoint that the `Execute FileMaker Data API` script step does not expose.
 
-<Callout type="warn" title="Requirements">
-  Needs FileMaker Pro 22.0 or later and a ProofKit add-on that includes the
-  `PK_container_upload` script. On an older add-on the script never calls back,
-  so the adapter times out after 60 seconds with a message telling you to update.
+<Callout type="warn" title="New in @proofkit/webviewer 3.3.0">
+  `containerUpload` needs all three of:
+
+  - `@proofkit/webviewer` **3.3.0** or later. Earlier versions throw
+    `Container upload is not supported in webviewer`.
+  - **FileMaker Pro 22.0** or later, for the `Go to List of Records` script step
+    the upload script uses to reach a record by ID.
+  - A ProofKit add-on that includes the `PK_container_upload` script. On an older
+    add-on nothing calls back and the adapter times out after 60 seconds.
 </Callout>
 
 Pass a `File`, not a bare `Blob`. FileMaker's `Base64Decode` needs a file name with an extension, and a `Blob` does not carry one:
@@ -88,109 +94,73 @@ The rest of this page covers reading containers, and the script patterns to use 
 
 ## Reading a container
 
-Have a FileMaker script Base64-encode the container and return it with its file name.
+There is no `containerRead`. Reading is yours to build, because only you know which record to reach and what shape the screen needs.
 
-<Steps>
-  <Step>
-    ### FileMaker script
+The FileMaker side is one script that returns the file as Base64. Start from the add-on's `FETCH CALLBACK TEMPLATE`, which already parses the request and sends the callback, and replace its business-logic block with two calcs:
 
-    ```FileMaker title="Get Container"
-    # Required properties
-    Set Variable [ $json ; Value: Get ( ScriptParameter ) ]
-    Set Variable [ $callback ; Value: JSONGetElement ( $json ; "callback" ) ]
-    Set Variable [ $data ; Value: JSONGetElement ( $json ; "data" ) ]
-    Set Variable [ $webViewerName ; Value: "web" ]
+```FileMaker title="The only two calcs you need"
+Set Variable [ $result ; Value: JSONSetElement ( "" ;
+  [ "fileName" ; GetContainerAttribute ( Customers::Photo ; "filename" ) ; JSONString ] ;
+  [ "base64" ; Base64EncodeRFC ( 4648 ; Customers::Photo ) ; JSONString ]
+) ]
+```
 
-    Set Variable [ $recordId ; Value: JSONGetElement ( $data ; "recordId" ) ]
+`GetContainerAttribute` gives you the file name, which the browser needs to pick a MIME type and to name a download. `Base64EncodeRFC` turns the bytes into something that survives a JSON payload.
 
-    # Do the record work in a new window so the Web Viewer layout stays current
-    New Window [ Style: Card ; Using layout: "API_Customers" (Customers) ]
-    Set Error Capture [ On ]
-    Enter Find Mode [ Pause: Off ]
-    Set Field [ Customers::id ; $recordId ]
-    Perform Find []
+<Callout type="warn" title="Use Base64EncodeRFC, not Base64Encode">
+  `Base64Encode` inserts line breaks every 76 characters, which makes the string
+  invalid inside a `data:` URL. `Base64EncodeRFC ( 4648 ; field )` returns an
+  unbroken string.
+</Callout>
 
-    If [ Get ( FoundCount ) = 0 or IsEmpty ( Customers::Photo ) ]
-      Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "found" ; False ; JSONBoolean ] ) ]
-    Else
-      Set Variable [ $result ; Value: JSONSetElement ( "" ;
-        [ "found" ; True ; JSONBoolean ] ;
-        [ "fileName" ; GetContainerAttribute ( Customers::Photo ; "filename" ) ; JSONString ] ;
-        [ "base64" ; Base64EncodeRFC ( 4648 ; Customers::Photo ) ; JSONString ]
-      ) ]
-    End If
+<Callout type="error" title="Never leave the Web Viewer's layout">
+  `SendCallBack` uses `Perform JavaScript in Web Viewer`, which can only reach a
+  Web Viewer on the layout that is current when the step runs. If your script
+  uses `Go to Layout` to find the record, the callback silently fails and the
+  `fmFetch` promise never settles.
 
-    # Close the window before calling back
-    Close Window [ Current Window ]
+  Reach the record in a `New Window`, then `Close Window` before sending the
+  callback. Script variables survive the window closing, so build `$result`
+  inside the window and use it after.
+</Callout>
 
-    Set Variable [ $callback ; Value: JSONSetElement ( $callback ; [ "result" ; $result ; JSONObject ] ; [ "webViewerName" ; $webViewerName ; JSONString ] ) ]
-    Perform Script [ Specified: From list ; "SendCallBack" ; Parameter: $callback ]
-    ```
+On the web side, turn the response into a data URL:
 
-    <Callout type="error" title="Never leave the Web Viewer's layout">
-      `SendCallBack` uses `Perform JavaScript in Web Viewer`, which can only reach
-      a Web Viewer on the layout that is current when the step runs. A plain
-      `Go to Layout` navigates away and the callback silently fails, leaving the
-      `fmFetch` promise pending forever.
+```ts title="containers.ts"
+import { fmFetch } from "@proofkit/webviewer";
 
-      Do record work in a `New Window`, then `Close Window` before sending the
-      callback. Script variables survive the window closing, so build `$result`
-      inside the window and use it after. A Card window is the simplest choice; an
-      off-screen document window works too if you do not want the window to flash.
-    </Callout>
+const MIME_BY_EXTENSION: Record<string, string> = {
+  gif: "image/gif",
+  jpg: "image/jpeg",
+  pdf: "application/pdf",
+  png: "image/png",
+  webp: "image/webp",
+};
 
-    <Callout type="warn" title="Use Base64EncodeRFC, not Base64Encode">
-      `Base64Encode` inserts line breaks every 76 characters. Those line breaks
-      make the string invalid inside a `data:` URL. `Base64EncodeRFC ( 4648 ; field )`
-      returns an unbroken string.
-    </Callout>
+function mimeFromFileName(fileName: string) {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return MIME_BY_EXTENSION[extension] ?? "application/octet-stream";
+}
 
-  </Step>
-  <Step>
-    ### Web app
+export async function getCustomerPhoto(recordId: string) {
+  const { base64, fileName } = await fmFetch<{ base64: string; fileName: string }>(
+    "Get Container",
+    { recordId }
+  );
 
-    ```ts title="containers.ts"
-    import { fmFetch } from "@proofkit/webviewer";
+  return {
+    dataUrl: `data:${mimeFromFileName(fileName)};base64,${base64}`,
+    fileName,
+  };
+}
+```
 
-    type ContainerPayload =
-      | { found: false }
-      | { found: true; fileName: string; base64: string };
-
-    const MIME_BY_EXTENSION: Record<string, string> = {
-      gif: "image/gif",
-      jpeg: "image/jpeg",
-      jpg: "image/jpeg",
-      pdf: "application/pdf",
-      png: "image/png",
-      webp: "image/webp",
-    };
-
-    function mimeFromFileName(fileName: string) {
-      const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-      return MIME_BY_EXTENSION[extension] ?? "application/octet-stream";
-    }
-
-    export async function getCustomerPhoto(recordId: string) {
-      const result = await fmFetch<ContainerPayload>("Get Container", { recordId });
-      if (!result.found) {
-        return null;
-      }
-
-      return {
-        dataUrl: `data:${mimeFromFileName(result.fileName)};base64,${result.base64}`,
-        fileName: result.fileName,
-      };
-    }
-    ```
-
-    <Callout type="warn" title="Unsafe casting">
-      The type passed to `fmFetch` is not validated against what the script
-      actually returns. Validate with [zod](https://zod.dev) if the script and the
-      app change independently.
-    </Callout>
-
-  </Step>
-</Steps>
+<Callout type="warn" title="Unsafe casting">
+  The type passed to `fmFetch` is not validated against what the script actually
+  returns. Validate with [zod](https://zod.dev) if the script and the app change
+  independently, and decide how an empty container should come back — an empty
+  `base64` string, or a `found` flag your script sets.
+</Callout>
 
 ### Rendering the result
 
@@ -207,7 +177,7 @@ export function CustomerPhoto({ recordId }: { recordId: string }) {
   });
 
   if (!data) {
-    return <p>No photo on file.</p>;
+    return <p>Loading photo…</p>;
   }
 
   return <img alt={`Photo for customer ${recordId}`} src={data.dataUrl} />;
@@ -231,73 +201,12 @@ Call `URL.revokeObjectURL(url)` when the component unmounts, or the blob stays a
 
 ## Writing a container with your own script
 
-`containerUpload` covers a plain write to a container field. Use your own script when the write needs more than that: validation, related-record creation, an audit trail, or writing several fields in one transaction.
+`containerUpload` covers a plain write to a container field. Write your own script when the upload needs more than that: validation, related-record creation, an audit trail, or several fields in one transaction.
 
-The mechanics are the same as what the adapter does internally. Read the file in the browser, Base64-encode it, and let a FileMaker script decode it back into the container field.
+Copy the add-on's `PK_container_upload` script as a starting point rather than building the envelope from scratch. The calc that does the actual work is the mirror of the read:
 
-```ts title="upload.ts"
-import { fmFetch } from "@proofkit/webviewer";
-
-const CHUNK_SIZE = 0x8000;
-
-async function fileToBase64(file: File) {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += CHUNK_SIZE) {
-    binary += String.fromCharCode(...bytes.subarray(index, index + CHUNK_SIZE));
-  }
-  return btoa(binary);
-}
-
-export async function uploadCustomerPhoto(recordId: string, file: File) {
-  return await fmFetch<{ ok: boolean; error?: number | string }>("Set Container", {
-    base64: await fileToBase64(file),
-    fileName: file.name,
-    recordId,
-  });
-}
-```
-
-Chunking through `subarray` matters: `String.fromCharCode(...bytes)` on a multi-megabyte array blows the argument limit and throws.
-
-```FileMaker title="Set Container"
-Set Variable [ $json ; Value: Get ( ScriptParameter ) ]
-Set Variable [ $callback ; Value: JSONGetElement ( $json ; "callback" ) ]
-Set Variable [ $data ; Value: JSONGetElement ( $json ; "data" ) ]
-Set Variable [ $webViewerName ; Value: "web" ]
-
-Set Variable [ $recordId ; Value: JSONGetElement ( $data ; "recordId" ) ]
-Set Variable [ $fileName ; Value: JSONGetElement ( $data ; "fileName" ) ]
-Set Variable [ $base64 ; Value: JSONGetElement ( $data ; "base64" ) ]
-
-# Do the record work in a new window so the Web Viewer layout stays current
-New Window [ Style: Card ; Using layout: "API_Customers" (Customers) ]
-Set Error Capture [ On ]
-Enter Find Mode [ Pause: Off ]
-Set Field [ Customers::id ; $recordId ]
-Perform Find []
-
-If [ Get ( FoundCount ) = 0 ]
-  Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; False ; JSONBoolean ] ; [ "error" ; "Record not found" ; JSONString ] ) ]
-Else
-  # Capture the error after each step; a later step resets Get ( LastError )
-  Set Field [ Customers::Photo ; Base64Decode ( $base64 ; $fileName ) ]
-  Set Variable [ $error ; Value: Get ( LastError ) ]
-  Commit Records/Requests [ With dialog: Off ]
-  Set Variable [ $error ; Value: If ( $error = 0 ; Get ( LastError ) ; $error ) ]
-
-  If [ $error = 0 ]
-    Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; True ; JSONBoolean ] ) ]
-  Else
-    Set Variable [ $result ; Value: JSONSetElement ( "" ; [ "ok" ; False ; JSONBoolean ] ; [ "error" ; $error ; JSONNumber ] ) ]
-  End If
-End If
-
-# Close the window before calling back
-Close Window [ Current Window ]
-
-Set Variable [ $callback ; Value: JSONSetElement ( $callback ; [ "result" ; $result ; JSONObject ] ; [ "webViewerName" ; $webViewerName ; JSONString ] ) ]
-Perform Script [ Specified: From list ; "SendCallBack" ; Parameter: $callback ]
+```FileMaker title="Base64 back into a container"
+Set Field [ Customers::Photo ; Base64Decode ( $base64 ; $fileName ) ]
 ```
 
 <Callout type="info" title="Always pass the file name to Base64Decode">
@@ -305,6 +214,23 @@ Perform Script [ Specified: From list ; "SendCallBack" ; Parameter: $callback ]
   file with the right extension. Without the second argument FileMaker stores an
   untitled `.dat` file, and the container will not preview or export correctly.
 </Callout>
+
+To Base64-encode the file in the browser, chunk it. `String.fromCharCode(...bytes)` on a multi-megabyte array blows the argument limit and throws:
+
+```ts title="upload.ts"
+const CHUNK_SIZE = 0x8000;
+
+export async function fileToBase64(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + CHUNK_SIZE));
+  }
+  return btoa(binary);
+}
+```
+
+The same two rules from reading apply: do the record work in a `New Window` and close it before the callback, and capture `Get ( LastError )` immediately after `Set Field` rather than after the commit, or a failed write reports success.
 
 After a successful write, invalidate the query that reads the container so the UI picks up the new file. See [Runtime Under the Hood](/docs/webviewer/runtime-under-the-hood) for the caching model.
 
