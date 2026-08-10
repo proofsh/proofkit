@@ -7,6 +7,12 @@ vi.mock("../src/main.js", () => ({
   fmFetch: vi.fn(),
 }));
 
+const FILEMAKER_ERROR_101 = /101/;
+const MISSING_FILE_NAME_ERROR = /file name with an extension/;
+const UNSUPPORTED_REPETITION_ERROR = /repetitions are not yet supported/;
+const FILE_TOO_LARGE_ERROR = /exceeds the Web Viewer limit/;
+const UNKNOWN_OUTCOME_ERROR = /outcome of this upload is unknown/;
+
 describe("WebViewerAdapter", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -672,5 +678,198 @@ describe("WebViewerAdapter", () => {
       const payload = call[1] as { requests: unknown[] };
       expect(payload.requests).toHaveLength(20);
     }
+  });
+
+  describe("containerUpload", () => {
+    const makeFile = (contents: string, name = "photo.png") => new File([contents], name, { type: "image/png" });
+
+    const okResponse = () => Promise.resolve({ messages: [{ code: "0" }], response: {} });
+
+    it("sends a base64 payload to the container script without batching", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await adapter.containerUpload({
+        data: {
+          containerFieldName: "Photo",
+          file: makeFile("hello"),
+          recordId: 3,
+        },
+        layout: "API_Assets",
+      });
+
+      expect(fmFetch).toHaveBeenCalledTimes(1);
+      expect(fmFetch).toHaveBeenCalledWith("PK_container_upload", {
+        base64: btoa("hello"),
+        containerFieldName: "Photo",
+        fileName: "photo.png",
+        layout: "API_Assets",
+        recordId: 3,
+        repetition: 1,
+      });
+    });
+
+    it("includes modId only when supplied", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await adapter.containerUpload({
+        data: {
+          containerFieldName: "Photo",
+          file: makeFile("hello"),
+          modId: 7,
+          recordId: 3,
+        },
+        layout: "API_Assets",
+      });
+
+      expect(vi.mocked(fmFetch).mock.calls[0]?.[1]).toMatchObject({ modId: 7 });
+    });
+
+    it("honors a custom container script name", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({
+        container: { scriptName: "My Container Script" },
+        scriptName: "execute_data_api",
+      });
+      await adapter.containerUpload({
+        data: { containerFieldName: "Photo", file: makeFile("hi"), recordId: 1 },
+        layout: "API_Assets",
+      });
+
+      expect(fmFetch).toHaveBeenCalledWith("My Container Script", expect.anything());
+    });
+
+    it("throws a FileMakerError when the script reports a failure", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockResolvedValue({
+        messages: [{ code: "101", message: "Record is missing" }],
+        response: {},
+      });
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await expect(
+        adapter.containerUpload({
+          data: { containerFieldName: "Photo", file: makeFile("hi"), recordId: 999 },
+          layout: "API_Assets",
+        }),
+      ).rejects.toThrow(FILEMAKER_ERROR_101);
+    });
+
+    it("rejects a Blob without a file name", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await expect(
+        adapter.containerUpload({
+          data: {
+            containerFieldName: "Photo",
+            file: new Blob(["hi"], { type: "image/png" }),
+            recordId: 1,
+          },
+          layout: "API_Assets",
+        }),
+      ).rejects.toThrow(MISSING_FILE_NAME_ERROR);
+      expect(fmFetch).not.toHaveBeenCalled();
+    });
+
+    it.each(["photo", "photo.", ".", ""])("rejects the file name %o for lacking an extension", async (name) => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await expect(
+        adapter.containerUpload({
+          data: {
+            containerFieldName: "Photo",
+            file: new File(["hi"], name, { type: "image/png" }),
+            recordId: 1,
+          },
+          layout: "API_Assets",
+        }),
+      ).rejects.toThrow(MISSING_FILE_NAME_ERROR);
+      expect(fmFetch).not.toHaveBeenCalled();
+    });
+
+    it("rejects repetitions above 1 until the script supports them", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({ scriptName: "execute_data_api" });
+      await expect(
+        adapter.containerUpload({
+          data: {
+            containerFieldName: "Photo",
+            file: makeFile("hi"),
+            recordId: 1,
+            repetition: 2,
+          },
+          layout: "API_Assets",
+        }),
+      ).rejects.toThrow(UNSUPPORTED_REPETITION_ERROR);
+      expect(fmFetch).not.toHaveBeenCalled();
+    });
+
+    it("rejects files larger than maxFileBytes before encoding", async () => {
+      vi.useRealTimers();
+      vi.mocked(fmFetch).mockImplementation(okResponse);
+
+      const adapter = new WebViewerAdapter({
+        container: { maxFileBytes: 4 },
+        scriptName: "execute_data_api",
+      });
+      await expect(
+        adapter.containerUpload({
+          data: { containerFieldName: "Photo", file: makeFile("way too long"), recordId: 1 },
+          layout: "API_Assets",
+        }),
+      ).rejects.toThrow(FILE_TOO_LARGE_ERROR);
+      expect(fmFetch).not.toHaveBeenCalled();
+    });
+
+    it("reports an unknown outcome when the script never calls back", async () => {
+      vi.mocked(fmFetch).mockImplementation(() => new Promise(() => undefined));
+      const timeoutMs = 500;
+
+      const adapter = new WebViewerAdapter({
+        container: { timeoutMs },
+        scriptName: "execute_data_api",
+      });
+      const result = adapter.containerUpload({
+        data: { containerFieldName: "Photo", file: makeFile("hi"), recordId: 1 },
+        layout: "API_Assets",
+      });
+      const assertion = expect(result).rejects.toThrow(UNKNOWN_OUTCOME_ERROR);
+
+      await vi.advanceTimersByTimeAsync(timeoutMs);
+      await assertion;
+    });
+
+    it("marks a timeout as an unknown outcome rather than a failed write", async () => {
+      vi.mocked(fmFetch).mockImplementation(() => new Promise(() => undefined));
+
+      const adapter = new WebViewerAdapter({
+        container: { timeoutMs: 500 },
+        scriptName: "execute_data_api",
+      });
+      const result = adapter.containerUpload({
+        data: { containerFieldName: "Photo", file: makeFile("hi"), recordId: 1 },
+        layout: "API_Assets",
+      });
+      const assertion = expect(result).rejects.toMatchObject({
+        name: "ContainerUploadTimeoutError",
+        outcome: "unknown",
+        scriptName: "PK_container_upload",
+        timeoutMs: 500,
+      });
+
+      await vi.advanceTimersByTimeAsync(500);
+      await assertion;
+    });
   });
 });

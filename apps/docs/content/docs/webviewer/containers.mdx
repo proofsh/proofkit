@@ -1,0 +1,313 @@
+---
+title: Container Fields
+description: Reading, displaying, and writing FileMaker container data from a Web Viewer app.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The Web Viewer bridge moves JSON strings, not binary. Container fields hold binary. So every container workflow in a Web Viewer app comes down to one of two choices: encode the bytes as Base64 and pass them through a FileMaker script, or keep the bytes in FileMaker entirely and drive a native script step from the web app.
+
+Uploads are handled for you by `containerUpload` and the add-on's script. Reads are not — you build those, so most of this page is about the FileMaker calcs involved.
+
+## Why the Data API container value is not enough
+
+Data API responses represent a container field as a URL, not as file content. Those URLs are tied to a Data API session, so putting one straight into `<img src>` inside a Web Viewer usually fails to render.
+
+## Uploading with `containerUpload`
+
+`WebViewerAdapter` implements `containerUpload` by Base64-encoding the file and handing it to a FileMaker script that decodes it back into the container field. The call looks the same as it does in a browser-hosted app:
+
+```ts
+await client.containerUpload({
+  containerFieldName: "Photo",
+  file, // a File from an <input type="file">
+  recordId: 3,
+});
+```
+
+This never goes through the Data API script and never batches, because the Data API uploads containers through a separate multipart endpoint that the `Execute FileMaker Data API` script step does not expose.
+
+<Callout type="warn" title="New in @proofkit/webviewer 3.3.0">
+  `containerUpload` needs all three of:
+
+  - `@proofkit/webviewer` **3.3.0** or later. Earlier versions throw
+    `Container upload is not supported in webviewer`.
+  - **FileMaker Pro 22.0** or later, for the `Go to List of Records` script step
+    the upload script uses to reach a record by ID.
+  - A ProofKit add-on that includes the `PK_container_upload` script. On an older
+    add-on the adapter rejects with `ContainerUploadTimeoutError` after the
+    configured timeout.
+</Callout>
+
+Pass a `File`, not a bare `Blob`. FileMaker's `Base64Decode` needs a file name with an extension, and a `Blob` does not carry one:
+
+```ts
+// Blob from a canvas, fetch, or clipboard
+const file = new File([blob], "signature.png", { type: blob.type });
+```
+
+### Options
+
+```ts
+export const client = DataApi({
+  adapter: new WebViewerAdapter({
+    scriptName: "PK_execute_data_api",
+    container: {
+      scriptName: "PK_container_upload",
+      timeoutMs: 60_000,
+      maxFileBytes: 20 * 1024 * 1024,
+    },
+  }),
+  layout: "API_Assets",
+});
+```
+
+| Option                   | Default                 | Notes                                                                         |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------- |
+| `container.scriptName`   | `"PK_container_upload"` | The add-on's container script. Override if your solution renamed it.           |
+| `container.timeoutMs`    | `60000`                 | Stops the promise hanging when no script answers. `0` waits indefinitely.     |
+| `container.maxFileBytes` | `20971520` (20 MB)      | Checked before encoding, so oversized files fail fast. `0` disables the check. |
+
+### A timeout is an unknown outcome
+
+The timeout ends the JavaScript wait. It cannot stop a FileMaker script that is already running, so a slow upload can commit *after* the promise rejects. `ContainerUploadTimeoutError` carries `outcome: "unknown"` for that reason — do not treat it as a confirmed failure.
+
+```ts
+import { ContainerUploadTimeoutError } from "@proofkit/webviewer/adapter";
+
+try {
+  await client.containerUpload({ containerFieldName: "Photo", file, recordId: 3 });
+} catch (error) {
+  if (error instanceof ContainerUploadTimeoutError) {
+    // The write may have landed. Refetch the record before telling the user it failed.
+  }
+}
+```
+
+Retrying is safe: the upload sets one field from a payload that fully determines the result, so sending the same file to the same record twice leaves the same end state. Refetch first anyway, so you do not upload again while the original script is still running.
+
+### Current limits
+
+- **Repetitions above 1 are rejected** client-side until the script supports them. Upload to repetition 1, or write the field with your own script.
+- Errors come back as `FileMakerError` with the real FileMaker code: `101` for a missing record, `102` for a field not on the layout, `105` for a missing layout, `306` for a stale `modId`.
+
+The rest of this page covers reading containers, and the script patterns to use when you need behavior beyond a straight field write.
+
+## Reading a container
+
+There is no `containerRead`. Reading is yours to build, because only you know which record to reach and what shape the screen needs.
+
+The FileMaker side is one script that returns the file as Base64. Start from the add-on's `FETCH CALLBACK TEMPLATE`, which already parses the request and sends the callback, and replace its business-logic block with two calcs:
+
+```FileMaker title="The only two calcs you need"
+Set Variable [ $result ; Value: JSONSetElement ( "" ;
+  [ "fileName" ; GetContainerAttribute ( Customers::Photo ; "filename" ) ; JSONString ] ;
+  [ "base64" ; Base64EncodeRFC ( 4648 ; Customers::Photo ) ; JSONString ]
+) ]
+```
+
+`GetContainerAttribute` gives you the file name, which the browser needs to pick a MIME type and to name a download. `Base64EncodeRFC` turns the bytes into something that survives a JSON payload.
+
+<Callout type="warn" title="Use Base64EncodeRFC, not Base64Encode">
+  `Base64Encode` inserts line breaks every 76 characters, which makes the string
+  invalid inside a `data:` URL. `Base64EncodeRFC ( 4648 ; field )` returns an
+  unbroken string.
+</Callout>
+
+<Callout type="error" title="Never leave the Web Viewer's layout">
+  `SendCallBack` uses `Perform JavaScript in Web Viewer`, which can only reach a
+  Web Viewer on the layout that is current when the step runs. If your script
+  uses `Go to Layout` to find the record, the callback silently fails and the
+  `fmFetch` promise never settles.
+
+  Reach the record in a `New Window`, then `Close Window` before sending the
+  callback. Script variables survive the window closing, so build `$result`
+  inside the window and use it after.
+</Callout>
+
+On the web side, turn the response into a data URL:
+
+```ts title="containers.ts"
+import { fmFetch } from "@proofkit/webviewer";
+
+const MIME_BY_EXTENSION: Record<string, string> = {
+  gif: "image/gif",
+  jpg: "image/jpeg",
+  pdf: "application/pdf",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+function mimeFromFileName(fileName: string) {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return MIME_BY_EXTENSION[extension] ?? "application/octet-stream";
+}
+
+export async function getCustomerPhoto(recordId: string) {
+  const { base64, fileName } = await fmFetch<{ base64: string; fileName: string }>(
+    "Get Container",
+    { recordId }
+  );
+
+  return {
+    dataUrl: `data:${mimeFromFileName(fileName)};base64,${base64}`,
+    fileName,
+  };
+}
+```
+
+<Callout type="warn" title="Unsafe casting">
+  The type passed to `fmFetch` is not validated against what the script actually
+  returns. Validate with [zod](https://zod.dev) if the script and the app change
+  independently, and decide how an empty container should come back — an empty
+  `base64` string, or a `found` flag your script sets.
+</Callout>
+
+### Rendering the result
+
+A data URL works directly as an image source or download target.
+
+```tsx title="CustomerPhoto.tsx"
+import { useQuery } from "@tanstack/react-query";
+import { getCustomerPhoto } from "./containers";
+
+export function CustomerPhoto({ recordId }: { recordId: string }) {
+  const { data } = useQuery({
+    queryFn: () => getCustomerPhoto(recordId),
+    queryKey: ["customer-photo", recordId],
+  });
+
+  if (!data) {
+    return <p>Loading photo…</p>;
+  }
+
+  return <img alt={`Photo for customer ${recordId}`} src={data.dataUrl} />;
+}
+```
+
+For anything large, convert to a blob URL instead. A data URL keeps the whole Base64 string in the DOM; a blob URL keeps one reference and lets the browser stream from memory.
+
+```ts title="blob-url.ts"
+export function base64ToBlobUrl(base64: string, mimeType: string) {
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+}
+```
+
+Call `URL.revokeObjectURL(url)` when the component unmounts, or the blob stays alive for the lifetime of the Web Viewer session.
+
+## Writing a container with your own script
+
+`containerUpload` covers a plain write to a container field. Write your own script when the upload needs more than that: validation, related-record creation, an audit trail, or several fields in one transaction.
+
+Copy the add-on's `PK_container_upload` script as a starting point rather than building the envelope from scratch. The calc that does the actual work is the mirror of the read:
+
+```FileMaker title="Base64 back into a container"
+Set Field [ Customers::Photo ; Base64Decode ( $base64 ; $fileName ) ]
+```
+
+<Callout type="info" title="Always pass the file name to Base64Decode">
+  `Base64Decode ( text ; fileNameWithExtension )` stores the result as a named
+  file with the right extension. Without the second argument FileMaker stores an
+  untitled `.dat` file, and the container will not preview or export correctly.
+</Callout>
+
+To Base64-encode the file in the browser, chunk it. `String.fromCharCode(...bytes)` on a multi-megabyte array blows the argument limit and throws:
+
+```ts title="upload.ts"
+const CHUNK_SIZE = 0x8000;
+
+export async function fileToBase64(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + CHUNK_SIZE));
+  }
+  return btoa(binary);
+}
+```
+
+The same two rules from reading apply: do the record work in a `New Window` and close it before the callback, and capture `Get ( LastError )` immediately after `Set Field` rather than after the commit, or a failed write reports success.
+
+After a successful write, invalidate the query that reads the container so the UI picks up the new file. See [Runtime Under the Hood](/docs/webviewer/runtime-under-the-hood) for the caching model.
+
+## Skipping the bridge entirely
+
+Base64 inflates payloads by roughly a third, and every byte crosses the bridge as a string. When files are large, or when the user is already sitting in FileMaker, it is often better to let FileMaker handle the bytes and only send a signal across.
+
+Use [`callFMScript`](/docs/webviewer/callFmScript) to trigger a script that runs `Insert File`, `Insert Picture`, or `Insert from URL` with FileMaker's own dialog, then refetch the record when the script reports back:
+
+```ts
+import { callFMScript } from "@proofkit/webviewer";
+
+callFMScript("Attach File To Customer", { recordId });
+```
+
+The script can call back into the app with a [Web Viewer command](/docs/webviewer/commands) once the user finishes, which keeps a multi-megabyte file out of the JSON payload completely.
+
+Other cases worth pushing to FileMaker:
+
+- Exporting a container to disk with `Export Field Contents`.
+- Fetching a remote file directly into a container with `Insert from URL`.
+- Generating a PDF from a FileMaker layout instead of rendering it in the browser.
+
+### Uploading directly with OttoFMS
+
+If the file is hosted on a server running [OttoFMS](https://docs.ottomatic.cloud/docs/ottofms/guides/webhooks/webhook-file-uploads), the web app can `POST` the file to the server as multipart form data instead of routing it through a script. No Base64, no bridge, and no FileMaker dialog for the user.
+
+Register the webhook with the **File Receiver** option enabled, then post to the file receiver endpoint:
+
+```ts title="otto-upload.ts"
+// Bundled into the Web Viewer, so treat this value as public. See the warning below.
+const OTTO_DATA_API_KEY = import.meta.env.VITE_OTTO_DATA_API_KEY;
+
+export async function uploadViaOttoFMS(recordId: string, file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("recordId", recordId);
+
+  const response = await fetch(
+    "https://your.server.host/otto/filereceiver/YourFile.fmp12/customer-photos",
+    {
+      body: form,
+      headers: { Authorization: `Bearer ${OTTO_DATA_API_KEY}` },
+      method: "POST",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.status}`);
+  }
+}
+```
+
+OttoFMS saves the upload under the server's `Documents/otto/{uuid}/` folder and runs your `OttoReceiver` script with an `uploaded_files` array in the payload. Each entry carries `fieldname`, `originalname`, `mimetype`, `size`, `destination`, `filename`, and `path`. The script uses `path` to pull the file into a container with `Insert File` or `Insert PDF`. Uploads are deleted after 24 hours, so move the file into the solution on receipt.
+
+<Callout type="warn" title="This puts a Data API key in the client">
+  Anything the Web Viewer holds is readable by anyone who can open the file, so
+  treat this key as public. An OttoFMS Data API key inherits the privilege set of
+  the FileMaker account it was created with, which makes the privilege set the
+  only thing standing between a copied key and your data.
+
+  Create a dedicated account for it and lock the privilege set down as close to
+  write-only as FileMaker allows: create-only access on the one target table, no
+  access to any other table, and no script or layout access beyond what the
+  receiver needs. Never reuse a full-access or admin key here.
+</Callout>
+
+Test the request from inside a real Web Viewer before committing to this path. A Web Viewer is not an ordinary browser page, and cross-origin requests do not always behave the same way there as they do in local development.
+
+## Sizing guidance
+
+- Return thumbnails in list views and fetch the full-size container only when a detail view opens.
+- Keep single transfers small. Multi-megabyte Base64 strings are slow to build in FileMaker, slow to parse in JavaScript, and hold up the bridge while they move.
+- Keep container fields off broad list layouts used by Execute Data API queries. See [Batching Data API Requests](/docs/webviewer/batching) for page-size tuning on container-heavy layouts.
+- Cache aggressively. A container rarely changes between renders, so a long `staleTime` in TanStack Query avoids repeat transfers.
+
+## Full web apps
+
+Outside a Web Viewer, containers go over HTTP:
+
+- [@proofkit/fmdapi](/docs/fmdapi) exposes `client.containerUpload({ containerFieldName, file, recordId })` for uploads.
+- [@proofkit/fmodata](/docs/fmodata) models containers with `containerField()`. Container fields cannot be included in `.select()`; read them with `.getSingleField()`.
