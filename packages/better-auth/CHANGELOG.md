@@ -1,5 +1,14 @@
 # @proofkit/better-auth
 
+## 0.4.2
+
+### Patch Changes
+
+- 788446b: fix: update Better Auth dependencies
+- 69fcc55: Move skill package metadata under the Intent metadata frontmatter key.
+- Updated dependencies [69fcc55]
+  - @proofkit/fmodata@0.1.2
+
 ## 0.4.1
 
 ### Patch Changes

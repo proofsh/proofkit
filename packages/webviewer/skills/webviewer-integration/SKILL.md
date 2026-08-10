@@ -7,7 +7,7 @@ description: >
 metadata:
   type: core
   library: proofkit
-  library_version: "3.2.0"
+  library_version: "3.3.0"
 sources:
   - "proofsh/proofkit:packages/webviewer/src/main.ts"
   - "proofsh/proofkit:packages/webviewer/src/adapter.ts"

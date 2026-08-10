@@ -1,5 +1,16 @@
 # @proofkit/webviewer
 
+## 3.3.0
+
+### Minor Changes
+
+- 81d5f15: Implement `containerUpload` in `WebViewerAdapter`. Files are Base64-encoded and written by the add-on's `PK_container_upload` FileMaker script, which navigates by record ID with `Go to List of Records` in a new window so the Web Viewer's layout stays current. Adds a `container` adapter option for `scriptName`, `timeoutMs`, and `maxFileBytes`. Requires FileMaker Pro 22.0 or later and an add-on that includes the script. When no script answers in time the call rejects with the new exported `ContainerUploadTimeoutError`, which carries `outcome: "unknown"` because the timeout cannot stop a FileMaker script that may still commit the write. File names without an extension, and container field repetitions above 1, are rejected client-side.
+
+### Patch Changes
+
+- 69fcc55: Update WebViewerAdapter and FM MCP typegen guidance to use the renamed `PK_execute_data_api` FileMaker script.
+- 69fcc55: Move skill package metadata under the Intent metadata frontmatter key.
+
 ## 3.2.0
 
 ### Minor Changes

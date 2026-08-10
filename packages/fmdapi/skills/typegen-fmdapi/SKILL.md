@@ -11,7 +11,7 @@ description: >
 metadata:
   type: core
   library: proofkit
-  library_version: "5.2.0"
+  library_version: "5.2.1"
 sources:
   - "proofsh/proofkit:packages/typegen/src/cli.ts"
   - "proofsh/proofkit:packages/typegen/src/typegen.ts"

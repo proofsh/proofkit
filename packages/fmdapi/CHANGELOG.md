@@ -1,5 +1,12 @@
 # @proofkit/fmdapi
 
+## 5.2.1
+
+### Patch Changes
+
+- 69fcc55: Update WebViewerAdapter and FM MCP typegen guidance to use the renamed `PK_execute_data_api` FileMaker script.
+- 69fcc55: Move skill package metadata under the Intent metadata frontmatter key.
+
 ## 5.2.0
 
 ### Minor Changes
