@@ -35,7 +35,8 @@ This never goes through the Data API script and never batches, because the Data 
   - **FileMaker Pro 22.0** or later, for the `Go to List of Records` script step
     the upload script uses to reach a record by ID.
   - A ProofKit add-on that includes the `PK_container_upload` script. On an older
-    add-on nothing calls back and the adapter times out after 60 seconds.
+    add-on the adapter rejects with `ContainerUploadTimeoutError` after the
+    configured timeout.
 </Callout>
 
 Pass a `File`, not a bare `Blob`. FileMaker's `Base64Decode` needs a file name with an extension, and a `Blob` does not carry one:
@@ -61,11 +62,11 @@ export const client = DataApi({
 });
 ```
 
-| Option         | Default                | Notes                                                                           |
-| -------------- | ---------------------- | ------------------------------------------------------------------------------- |
-| `scriptName`   | `"PK_container_upload"` | The add-on's container script. Override if your solution renamed it.             |
-| `timeoutMs`    | `60000`                | Stops the promise hanging when no script answers. `0` waits indefinitely.       |
-| `maxFileBytes` | `20971520` (20 MB)     | Checked before encoding, so oversized files fail fast. `0` disables the check.   |
+| Option                   | Default                 | Notes                                                                         |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------- |
+| `container.scriptName`   | `"PK_container_upload"` | The add-on's container script. Override if your solution renamed it.           |
+| `container.timeoutMs`    | `60000`                 | Stops the promise hanging when no script answers. `0` waits indefinitely.     |
+| `container.maxFileBytes` | `20971520` (20 MB)      | Checked before encoding, so oversized files fail fast. `0` disables the check. |
 
 ### A timeout is an unknown outcome
 
@@ -189,10 +190,7 @@ For anything large, convert to a blob URL instead. A data URL keeps the whole Ba
 ```ts title="blob-url.ts"
 export function base64ToBlobUrl(base64: string, mimeType: string) {
   const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index++) {
-    bytes[index] = binary.charCodeAt(index);
-  }
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
   return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
 }
 ```
@@ -284,7 +282,7 @@ export async function uploadViaOttoFMS(recordId: string, file: File) {
 }
 ```
 
-OttoFMS saves the upload under the server's `Documents/otto/{uuid}/` folder and runs your `OttoReceiver` script with an `uploaded_files` array in the payload. Each entry carries `originalname`, `mimetype`, `size`, and `path`. The script uses `path` to pull the file into a container with `Insert File` or `Insert PDF`. Uploads are deleted after 24 hours, so move the file into the solution on receipt.
+OttoFMS saves the upload under the server's `Documents/otto/{uuid}/` folder and runs your `OttoReceiver` script with an `uploaded_files` array in the payload. Each entry carries `fieldname`, `originalname`, `mimetype`, `size`, `destination`, `filename`, and `path`. The script uses `path` to pull the file into a container with `Insert File` or `Insert PDF`. Uploads are deleted after 24 hours, so move the file into the solution on receipt.
 
 <Callout type="warn" title="This puts a Data API key in the client">
   Anything the Web Viewer holds is readable by anyone who can open the file, so

@@ -834,9 +834,10 @@ describe("WebViewerAdapter", () => {
 
     it("reports an unknown outcome when the script never calls back", async () => {
       vi.mocked(fmFetch).mockImplementation(() => new Promise(() => undefined));
+      const timeoutMs = 500;
 
       const adapter = new WebViewerAdapter({
-        container: { timeoutMs: 500 },
+        container: { timeoutMs },
         scriptName: "execute_data_api",
       });
       const result = adapter.containerUpload({
@@ -845,7 +846,7 @@ describe("WebViewerAdapter", () => {
       });
       const assertion = expect(result).rejects.toThrow(UNKNOWN_OUTCOME_ERROR);
 
-      await vi.advanceTimersByTimeAsync(500);
+      await vi.advanceTimersByTimeAsync(timeoutMs);
       await assertion;
     });
 

@@ -135,20 +135,20 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, error: () 
   }
 }
 
-async function blobToBase64(blob: Blob): Promise<string> {
+const blobToBase64 = async (blob: Blob): Promise<string> => {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   let binary = "";
   for (let index = 0; index < bytes.length; index += BASE64_CHUNK_SIZE) {
     binary += String.fromCharCode(...bytes.subarray(index, index + BASE64_CHUNK_SIZE));
   }
   return btoa(binary);
-}
+};
 
 /**
  * FileMaker's `Base64Decode` needs a file name with an extension, otherwise it
  * stores an untitled `.dat` that will not preview or export correctly.
  */
-function getUploadFileName(file: Blob): string {
+const getUploadFileName = (file: Blob): string => {
   const fileName = (file as File).name;
   const trimmedFileName = typeof fileName === "string" ? fileName.trim() : "";
   const extension = trimmedFileName.slice(trimmedFileName.lastIndexOf(".") + 1);
@@ -160,9 +160,9 @@ function getUploadFileName(file: Blob): string {
   throw new Error(
     `Container upload requires a file name with an extension, received ${JSON.stringify(trimmedFileName)}. Pass a \`File\` rather than a bare \`Blob\`, or wrap it: \`new File([blob], "photo.png", { type: blob.type })\`.`,
   );
-}
+};
 
-function resolveContainerRepetition(repetition: string | number | undefined): number {
+const resolveContainerRepetition = (repetition: string | number | undefined): number => {
   if (repetition === undefined) {
     return 1;
   }
@@ -177,18 +177,18 @@ function resolveContainerRepetition(repetition: string | number | undefined): nu
     );
   }
   return 1;
-}
+};
 
-function resolveContainerOptions(
+const resolveContainerOptions = (
   container: WebViewerAdapterContainerOptions | undefined,
-): Required<WebViewerAdapterContainerOptions> {
+): Required<WebViewerAdapterContainerOptions> => {
   const scriptName = container?.scriptName?.trim();
   return {
     maxFileBytes: Math.max(0, container?.maxFileBytes ?? DEFAULT_CONTAINER_MAX_FILE_BYTES),
     scriptName: scriptName ? scriptName : DEFAULT_CONTAINER_SCRIPT_NAME,
     timeoutMs: Math.max(0, container?.timeoutMs ?? DEFAULT_CONTAINER_TIMEOUT_MS),
   };
-}
+};
 
 function normalizeBatchMaxSize(maxSize: number | undefined): number {
   if (maxSize === undefined || !Number.isFinite(maxSize)) {

@@ -115,33 +115,57 @@ Set Variable [ $recordId ; Value: JSONGetElement ( $data ; "recordId" ) ]
 Set Variable [ $fieldName ; Value: JSONGetElement ( $data ; "containerFieldName" ) ]
 Set Variable [ $fileName ; Value: JSONGetElement ( $data ; "fileName" ) ]
 Set Variable [ $base64 ; Value: JSONGetElement ( $data ; "base64" ) ]
-Set Variable [ $repetition ; Value: Max ( 1 ; GetAsNumber ( JSONGetElement ( $data ; "repetition" ) ) ) ]
+Set Variable [ $repetitionInput ; Value: JSONGetElement ( $data ; "repetition" ) ]
+Set Variable [ $repetitionType ; Value: JSONGetElementType ( $data ; "repetition" ) ]
+Set Variable [ $repetitionIsValid ; Value: ( IsEmpty ( $repetitionInput ) and IsEmpty ( $repetitionType ) ) or ( $repetitionType = JSONNumber and GetAsNumber ( $repetitionInput ) = 1 ) ]
+Set Variable [ $repetition ; Value: 1 ]
 Set Variable [ $modId ; Value: JSONGetElement ( $data ; "modId" ) ]   # empty when absent
 
 # 2. Navigate by record ID, in a new window
-Set Variable [ $callerWindow ; Value: Get ( WindowName ) ]
-Go to List of Records [ List of record IDs: $recordId ; Using layout: $layout ; Show in new window: On ; Animation: None ]
-Set Variable [ $error ; Value: Get ( LastError ) ]
-Set Variable [ $openedWindow ; Value: Get ( WindowName ) ≠ $callerWindow ]
-
-If [ $error ≠ 0 or Get ( FoundCount ) = 0 ]
-  Set Variable [ $result ; Value: PK_error ( 101 ; "Record is missing" ) ]
-
-Else If [ IsEmpty ( JSONGetElement ( $data ; "modId" ) ) = False and Get ( RecordModificationCount ) ≠ GetAsNumber ( $modId ) ]
-  Set Variable [ $result ; Value: PK_error ( 306 ; "Record modification ID does not match" ) ]
-
+If [ not $repetitionIsValid ]
+  Set Variable [ $result ; Value: PK_error ( 500 ; "Only container repetition 1 is supported" ) ]
 Else
-  # 3. Write, capturing the error after each step
-  Set Variable [ $fullFieldName ; Value: Get ( LayoutTableName ) & "::" & $fieldName ]
-  Set Field By Name [ $fullFieldName ; Base64Decode ( $base64 ; $fileName ) ]
-  Set Variable [ $error ; Value: Get ( LastError ) ]
-  Commit Records/Requests [ With dialog: Off ]
-  Set Variable [ $error ; Value: If ( $error = 0 ; Get ( LastError ) ; $error ) ]
+  Set Variable [ $callerWindow ; Value: Get ( WindowName ) ]
+  Go to List of Records [ List of record IDs: $recordId ; Using layout: $layout ; Show in new window: On ; Animation: None ]
+  Set Variable [ $navigationError ; Value: JSONSetElement ( "{}" ; [ "code" ; Get ( LastError ) ; JSONNumber ] ; [ "message" ; Get ( LastErrorText ) ; JSONString ] ) ]
+  Set Variable [ $error ; Value: JSONGetElement ( $navigationError ; "code" ) ]
+  Set Variable [ $errorMessage ; Value: JSONGetElement ( $navigationError ; "message" ) ]
+  Set Variable [ $openedWindow ; Value: Get ( WindowName ) ≠ $callerWindow ]
 
-  If [ $error = 0 ]
-    Set Variable [ $result ; Value: PK_ok ]
+  If [ $error = 105 ]
+    Set Variable [ $result ; Value: PK_error ( 105 ; "Layout is missing" ) ]
+  Else If [ $error = 101 ]
+    Set Variable [ $result ; Value: PK_error ( 101 ; "Record is missing" ) ]
+  Else If [ $error ≠ 0 ]
+    Set Variable [ $result ; Value: PK_error ( $error ; $errorMessage ) ]
+  Else If [ Get ( FoundCount ) = 0 ]
+    Set Variable [ $result ; Value: PK_error ( 101 ; "Record is missing" ) ]
+  Else If [ IsEmpty ( JSONGetElement ( $data ; "modId" ) ) = False and Get ( RecordModificationCount ) ≠ GetAsNumber ( $modId ) ]
+    Set Variable [ $result ; Value: PK_error ( 306 ; "Record modification ID does not match" ) ]
   Else
-    Set Variable [ $result ; Value: PK_error ( $error ; "" ) ]
+    # 3. Decode, then write valid data while capturing errors after each step
+    Set Variable [ $fullFieldName ; Value: Get ( LayoutTableName ) & "::" & $fieldName ]
+    Set Variable [ $decoded ; Value: Base64Decode ( $base64 ; $fileName ) ]
+    If [ IsEmpty ( $decoded ) or $decoded = "?" ]
+      Set Variable [ $result ; Value: PK_error ( 500 ; "Could not decode file data" ) ]
+    Else
+      Set Field By Name [ $fullFieldName ; $decoded ]
+      Set Variable [ $fieldError ; Value: JSONSetElement ( "{}" ; [ "code" ; Get ( LastError ) ; JSONNumber ] ; [ "message" ; Get ( LastErrorText ) ; JSONString ] ) ]
+      Set Variable [ $error ; Value: JSONGetElement ( $fieldError ; "code" ) ]
+      Set Variable [ $errorMessage ; Value: JSONGetElement ( $fieldError ; "message" ) ]
+      Commit Records/Requests [ With dialog: Off ]
+      Set Variable [ $commitError ; Value: JSONSetElement ( "{}" ; [ "code" ; Get ( LastError ) ; JSONNumber ] ; [ "message" ; Get ( LastErrorText ) ; JSONString ] ) ]
+      If [ JSONGetElement ( $commitError ; "code" ) ≠ 0 ]
+        Set Variable [ $error ; Value: JSONGetElement ( $commitError ; "code" ) ]
+        Set Variable [ $errorMessage ; Value: JSONGetElement ( $commitError ; "message" ) ]
+      End If
+
+      If [ $error = 0 ]
+        Set Variable [ $result ; Value: PK_ok ]
+      Else
+        Set Variable [ $result ; Value: PK_error ( $error ; $errorMessage ) ]
+      End If
+    End If
   End If
 End If
 
