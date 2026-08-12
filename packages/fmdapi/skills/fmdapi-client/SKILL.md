@@ -9,7 +9,7 @@ description: >
 metadata:
   type: core
   library: proofkit
-  library_version: "5.2.0"
+  library_version: "5.2.1"
 requires:
   - typegen-fmdapi
 sources:

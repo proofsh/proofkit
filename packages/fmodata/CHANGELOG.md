@@ -1,5 +1,11 @@
 # @proofkit/fmodata
 
+## 0.1.2
+
+### Patch Changes
+
+- 69fcc55: Move skill package metadata under the Intent metadata frontmatter key.
+
 ## 0.1.1
 
 ### Patch Changes

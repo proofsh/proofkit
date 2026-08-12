@@ -1,5 +1,15 @@
 # @proofkit/typegen
 
+## 1.1.5
+
+### Patch Changes
+
+- 69fcc55: Update WebViewerAdapter and FM MCP typegen guidance to use the renamed `PK_execute_data_api` FileMaker script.
+- Updated dependencies [69fcc55]
+- Updated dependencies [69fcc55]
+  - @proofkit/fmdapi@5.2.1
+  - @proofkit/fmodata@0.1.2
+
 ## 1.1.4
 
 ### Patch Changes
