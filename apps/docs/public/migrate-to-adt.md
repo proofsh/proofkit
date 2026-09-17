@@ -5,23 +5,22 @@
 
 # Migrate a ProofKit Web Viewer Project to an ADT Web Viewer App
 
-Migrate the supplied ProofKit Vite web viewer into a new ADT web viewer app. Preserve the ProofKit source and all existing FileMaker scripts. Treat the FileMaker file as an active part of the migration: use ADT-provisioned components where they are compatible, and create new parallel ADT wrapper scripts for application-specific flows. Never modify, rename, or delete an old ProofKit wrapper.
+Convert the ProofKit Vite web viewer in the current Git repository into an ADT project and web viewer app. Initialize ADT at the repository root, preserve the existing Git history, migrate the application into `webviewer-apps/<app-name>`, and update application-owned FileMaker scripts in place for ADT's runtime contract. Don't create duplicate wrapper scripts.
 
-Continue through compatible work instead of stopping at the first incompatible script. Stop only for a required decision, an unsafe FileMaker write, or a flow that can't be verified.
+Work autonomously after one approval gate. Inspect first, ask once for backup confirmation and permission to execute the complete migration, then continue through app changes, FileMaker script edits, write-flow tests, and browser verification without asking for routine approvals again.
 
 ## Inputs
 
-- ProofKit project: `<absolute-source-project-path>`
-- ADT project destination: `<absolute-adt-project-path>`
+- ProofKit repository: the current working directory
 - FileMaker target: `<absolute-path-to-file.fmp12-or-fmnet-url>`
 - ADT file key: `<file-key>`
-- ADT app name: optional override; otherwise derive it from the source `package.json` name
+- ADT app name: optional override; otherwise derive it from the original `package.json` name
 
-If an input is missing and you can't resolve it from the project, ask one concise question before making changes. Create the ADT project outside the ProofKit project. Keep the ProofKit source unchanged.
+Resolve missing values from the repository, the open FileMaker files, and ADT diagnostics before asking the user. Ask only when a required value can't be discovered.
 
 ## Use the installed ADT instructions
 
-Read each of these files from start to finish before running ADT or `fm` commands:
+Read these installed files from start to finish before running ADT or `fm` commands:
 
 ```text
 $HOME/Library/Application Support/ADT/MCP/agent-plugin/skills/adt-project-setup/SKILL.md
@@ -30,9 +29,9 @@ $HOME/Library/Application Support/ADT/MCP/agent-plugin/skills/fm-cli/SKILL.md
 $HOME/Library/Application Support/ADT/MCP/agent-plugin/skills/filemaker-standards/SKILL.md
 ```
 
-Follow every additional file that those skills require. In particular, resolve and read the active FileMaker naming and pattern standards before naming or creating a script.
+Follow the references those skills require. Resolve the active FileMaker standards before editing scripts.
 
-ADT and `fm` aren't necessarily on the user's shell `PATH`. Resolve the launchers installed with the agent plugin once, then use those exact paths:
+ADT and `fm` aren't necessarily on the shell `PATH`. Use the launchers installed with ADT, not a cached plugin copy:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
@@ -45,90 +44,114 @@ fi
 "$FM_BIN" --version
 ```
 
-Don't conclude that ADT is missing from a failed `command -v adt`, don't change the user's global `PATH`, and don't substitute a cached plugin binary. Redeclare `ADT_BIN` or `FM_BIN` in every new shell process that uses it because shell variables don't persist across tool calls. Follow the destination project's `AGENTS.md` after `adt init`, and the app's `AGENTS.md` after `adt app add`.
+Redeclare `ADT_BIN` or `FM_BIN` in every new shell process that uses it. Don't change the user's global `PATH` or reinstall ADT because `command -v` fails.
 
-## Guardrails
+## Operating rules
 
-- Preserve the source project and its Git history. Migrate into a new destination.
-- Preserve user-written source, routes, components, styles, public assets, and custom dependencies.
-- Let `adt init` and `adt app add` create ADT-owned manifests, workspace files, vendored packages, FileMaker components, and the app layout.
-- Regenerate schema clients with ADT instead of copying them.
-- Never modify, rename, or delete an existing FileMaker script. Create a new parallel ADT wrapper when an application-specific ProofKit wrapper has an incompatible contract.
-- Keep ProofKit components in the FileMaker file. They can become unused after the app is repointed; cleanup is a separate task.
-- Never change an existing FileMaker layout or web viewer object without explicit approval.
-- Confirm a backup exists, or work against a copy, before the first FileMaker schema write.
-- Test read-only application flows first. Before exercising any flow that creates, updates, or deletes records, uploads a file, sends a message, charges money, or causes another external side effect, describe the exact test and ask for approval. Approval may cover a clearly enumerated batch. Continue all read-only work while write-flow approval is pending.
-- Rewrite an application call site only after its replacement ADT component or new wrapper has passed an independent `/__fm/fmfetch` round trip. If a write flow isn't approved for testing, leave its call site unchanged and report it as deferred.
+- Work in the current Git repository. Don't create a sibling migration project or a second Git repository.
+- Preserve unrelated and pre-existing working-tree changes. Record the initial status and keep the migration diff scoped.
+- Use `adt init . --no-git` so the existing repository remains authoritative.
+- Use `adt app add --no-commit` so the scaffold doesn't commit in the middle of the migration.
+- Let ADT create its manifest, workspace files, vendored package, components, and app layout.
+- Move the application into the generated ADT app. Keep the original root files until the migrated app verifies, then remove only files proven superseded by the ADT copy.
+- Update application-owned FileMaker wrappers in place. Preserve their names and FileMaker-side callers. Don't create parallel or suffixed ADT copies.
+- Repoint ProofKit component calls to independently verified ADT twins. Keep the old ProofKit components installed; component cleanup is a separate task.
+- Use `fm update:script` step edits addressed by `uuid`, with a current `token` and `expect` checks. Never replace an existing script's whole `body`.
+- Dry-run every FileMaker write batch, require `"errors":0`, apply it, require `"rolledBack":false`, and verify from a fresh `fm` process.
 - Clean up every dev server or watcher started during the migration.
 
-## 1. Inspect the source and environment
+Stop only when the target changes, the backup isn't confirmed, credentials or a FileMaker lock require human action, a tool reports an unknown write outcome, or a required operation is unsupported. A failed check inside the approved migration scope is work to fix, not a reason to ask permission again.
 
-Run read-only checks first:
+## 1. Inspect the repository and target
+
+Run read-only checks from the repository root:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
-cd "<absolute-source-project-path>"
 pwd
+git rev-parse --show-toplevel
 git status --short
 proofkit --version
 "$ADT_BIN" --version
 uname -s
 node -v
 pnpm -v
-for config in proofkit.config.json proofkit.json; do
-  if [ -f "$config" ]; then
-    echo "$config"
-    sed -n '1,240p' "$config"
-  fi
-done
-sed -n '1,240p' package.json
+
+if [ -f proofkit.config.json ]; then
+  PROOFKIT_CONFIG=proofkit.config.json
+elif [ -f proofkit.json ]; then
+  PROOFKIT_CONFIG=proofkit.json
+else
+  echo "No ProofKit configuration found" >&2
+  exit 1
+fi
+
+echo "Selected ProofKit config: $PROOFKIT_CONFIG"
+sed -n '1,260p' "$PROOFKIT_CONFIG"
+sed -n '1,260p' package.json
 rg -n '@proofkit/|PK_|fmFetch|callFMScript|PerformScript|WebViewerAdapter|DEV' . \
   -g '!node_modules/**' -g '!dist/**' -g '!pnpm-lock.yaml'
 ```
 
-Treat either `proofkit.config.json` or `proofkit.json` as authoritative. Confirm that its `appType` is `webviewer`. Stop with a compatibility report if it's a browser or Next.js project.
+When both ProofKit config names exist, `proofkit.config.json` wins. When neither exists, stop and ask which file defines the project before continuing. Confirm that the selected config has `appType: "webviewer"`; stop with a compatibility report for browser and Next.js projects.
 
-Read the `name` field from the source `package.json` and derive the **suggested** ADT app name:
+Read the original `package.json` name and derive the **suggested** ADT app name:
 
-1. Remove an npm scope. For example, `@acme/inventory-viewer` becomes `inventory-viewer`.
-2. Convert the remaining name to kebab-case: lowercase it, replace each run of non-alphanumeric characters with one hyphen, and trim leading or trailing hyphens.
-3. If the user supplied an override, that override is the **resolved** ADT app name. Otherwise, the suggested name is the resolved name.
-4. Before making changes, report both values: `Suggested ADT app name: <suggested-name> (from package.json name <source-package-name>). Resolved ADT app name: <resolved-name>.`
+1. Remove an npm scope. `@acme/inventory-viewer` becomes `inventory-viewer`.
+2. Convert the remainder to kebab-case.
+3. Use a user-supplied override as the **resolved** name; otherwise use the suggestion.
+4. Report the source package name, suggested name, and resolved name separately.
 
-Ask for an app name only when `package.json` has no usable name or the destination for the **resolved** name already exists. Use `<resolved-adt-app-name>` for every later path and command.
+Check collisions using the resolved name. Ask for another name only when the resolved `webviewer-apps/<name>` already exists or the package has no usable name.
 
-Build a source inventory containing:
+Inventory:
 
-- every `@proofkit/*` dependency and import;
-- every FileMaker script name called by `fmFetch`, `callFMScript`, generated clients, or direct `window.FileMaker` calls;
-- each call's top-level parameter shape and expected result shape;
-- configured typegen layouts and schema output paths;
+- all `@proofkit/*` dependencies and imports;
+- every FileMaker script called from application code or generated clients;
+- each call's parameter and result shapes;
+- every FileMaker-side caller of an application-owned wrapper;
+- all typegen layouts, output paths, and override files;
 - aliases, wrappers, or subclasses of `WebViewerAdapter`;
 - custom Vite plugins and build scripts;
-- any remote FileMaker, OttoFMS, or server-side data source;
-- every development fallback that can bypass FileMaker.
+- development fallbacks that can bypass FileMaker;
+- write and external-side-effect flows, including affected records, uploads, email, SMS, payments, and their safe test inputs and cleanup.
 
-Before changing the source, run its existing typecheck and test commands when present. Record failures as the baseline so only new failures are attributed to the migration. Don't invent a new source command when the package has none.
+Run the source repository's existing typecheck, tests, and build when those scripts exist. Record failures as the baseline. Don't auto-fix or reformat the source.
 
-## 2. Understand the runtime contract change
+## 2. Ask once before writes
+
+After the read-only inventory, ask one combined question:
+
+> I found `<count>` application-owned FileMaker scripts to update in place and these write or external-side-effect flows to test: `<list with safe test inputs and cleanup>`. Before I continue, confirm that `<FileMaker target>` has a current restorable backup or is a disposable copy, and authorize me to complete the migration end-to-end, including editing those existing scripts and exercising the listed flows against this target. After confirmation, I will continue without asking for routine migration approvals.
+
+Include every known side effect in this one prompt. If a flow needs a test recipient, account, record, or cleanup value, request it in the same question. Don't split backup confirmation, script authorization, and write-flow authorization into separate prompts.
+
+After confirmation, proceed through all remaining phases without asking again for each script, batch, call-site edit, or write-flow test. FileMaker's native credential or Agent Access windows aren't new approval gates; tell the user when one is waiting and continue after they answer it.
+
+## 3. Apply the ProofKit-to-ADT contracts
 
 ProofKit and ADT use different FileMaker script contracts:
 
 | Concern | ProofKit | ADT |
 |---|---|---|
-| Script parameter | `{ data: <payload>, callback: { fetchId, fn, webViewerName } }`; wrappers commonly read `JSONGetElement ( $json ; "data" )` | The payload is the top-level JSON value; read it from `Get ( ScriptParameter )` |
-| Result path | A script calls `PK_send_callback`, which performs JavaScript in a named web viewer | `PerformScriptAsync` resolves from that script's `Exit Script [ Result ]` |
-| `setWebViewerName()` | Selects the callback target | A compatibility no-op; don't rely on it |
-| Layout navigation | Often tolerated | `Go to Layout` in the visible web viewer window unloads the app |
-| Empty or non-JSON result | Callback-specific | `""` resolves as `undefined`; a non-JSON string passes through as a raw string |
+| Script parameter | `{ data: <payload>, callback: { fetchId, fn, webViewerName } }` | The payload is the top-level JSON value |
+| Result path | `PK_send_callback` performs JavaScript in a named web viewer | `PerformScriptAsync` resolves from `Exit Script [ Result ]` |
+| `setWebViewerName()` | Selects the callback target | Compatibility no-op |
+| Layout navigation | May be tolerated | `Go to Layout` in the visible web viewer window unloads the app |
+| Empty or non-JSON result | Callback-specific | `""` becomes `undefined`; non-JSON remains a string |
 
-Every new ADT wrapper must have an explicit contract:
+For every application-owned wrapper, keep its name and edit it in place:
 
-- **Parameter:** one JSON value at the top level, with no `data` or `callback` envelope. Read `Get ( ScriptParameter )` once and extract named local variables from it.
-- **Result:** one value returned by `Exit Script [ $result ]` on every path. When returning JSON, return the exact JSON shape the TypeScript caller expects; don't add or remove an envelope silently. Follow the resolved FileMaker standards for success and error objects. Don't use an empty success result unless the caller intentionally expects `undefined`.
-- **Context:** don't use `Go to Layout` in the web viewer's visible window. When local layout context is necessary, open a named off-screen window on the required context layout and close it on every exit path. Use `Perform Script on Server` with wait-for-completion only when the operation is server-safe and doesn't require client-only state.
+- read `Get ( ScriptParameter )` once;
+- accept the ADT payload at the top level;
+- remove the ADT path's dependency on `callback`, `PK_send_callback`, and the web viewer object name;
+- return the exact app-facing result through `Exit Script [ $result ]` on every ADT path;
+- use a named off-screen window, closed on every exit path, when FileMaker context is required;
+- use `Perform Script on Server` with wait-for-completion only when the behavior is server-safe.
 
-The following source changes are mechanical:
+Before changing a result contract, inspect FileMaker-side and remaining ProofKit callers. When an old caller still needs the ProofKit envelope, make the same script dual-contract instead of creating a duplicate: detect the callback envelope, preserve the legacy callback branch for that caller, and use top-level input plus `Exit Script` for ADT calls. The migrated browser path must never enter the ProofKit callback branch.
+
+Use these source and component mappings:
 
 | ProofKit source | ADT destination |
 |---|---|
@@ -139,196 +162,131 @@ The following source changes are mechanical:
 | `@proofkit/webviewer/react` | `@adt/fmdapi/react` |
 | `@proofkit/webviewer/vite-plugins` | `@adt/fmdapi/vite` |
 | `proofkit deploy` | `adt deploy` |
-| ProofKit typegen command | `adt typegen` |
+| ProofKit typegen | `adt typegen` |
 | `PK_execute_data_api` | `ADT_execute_data_api` |
 | `PK_execute_sql` | `ADT_execute_sql` |
 | `PK_container_upload` | `ADT_container_upload` |
 | `PK_deploy_html` | `adt deploy` |
 
-`PK_execute_sql` **must migrate to `ADT_execute_sql`** in the new app. First verify that ADT provisioned `ADT_execute_sql` and independently test its expected request and response contract. Only then change the application call site. If the contracts differ, don't retain `PK_execute_sql` as a silent fallback; leave the call site unchanged and report the flow as blocked pending an explicit adapter decision.
+`PK_execute_sql` must migrate to `ADT_execute_sql`. Verify the ADT component and its request/result contract first, then change the application call site. Apply the same verify-then-repoint rule to every ADT twin.
 
-Treat these as review boundaries rather than blind replacements:
+Review adapter aliases, custom data sources, deep `/dist` imports, custom FileMaker callbacks, and code that depends on layout, found-set, record, global-variable, or web viewer-name state. ADT typegen imports `WebViewerAdapter` from the `@adt/fmdapi` barrel; preserve intentional interception with a reviewed barrel shim or alias and re-check it after typegen.
 
-- `FetchAdapter`, `FmMcpAdapter`, or `OttoAdapter`;
-- any alias, wrapper, or subclass of `WebViewerAdapter`;
-- `@proofkit/webviewer/nextjs`;
-- genuine deep imports such as `@proofkit/fmdapi/dist/...`;
-- nonempty ProofKit `dataSources`;
-- custom callback functions injected by FileMaker scripts;
-- code that depends on an existing FileMaker layout, found set, record context, global variables, or web viewer object name.
+## 4. Initialize ADT in the current repository
 
-ADT typegen imports `WebViewerAdapter` from the `@adt/fmdapi` package barrel. A source project that intercepts the ProofKit adapter subpath can therefore build successfully while silently losing that behavior. Before typegen, record every adapter alias and subclass. After typegen, inspect generated imports and preserve intentional interception with a reviewed barrel shim or alias when necessary. Re-run the adapter search after generation.
-
-## 3. Initialize the ADT project
-
-Confirm that the destination is absent or empty. Stop if it contains an existing project or user files. Then use the supported ADT commands rather than recreating their output by hand:
+If the root already contains `adt.json`, validate and continue it. Otherwise initialize in place:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
-mkdir -p "<absolute-adt-project-path>"
-cd "<absolute-adt-project-path>"
-"$ADT_BIN" init . --target "<absolute-path-to-file.fmp12-or-fmnet-url>"
-sed -n '1,240p' adt.json
+cd "<absolute-proofkit-repository-path>"
+"$ADT_BIN" init . --target "<absolute-path-to-file.fmp12-or-fmnet-url>" --no-git
+sed -n '1,260p' adt.json
 "$ADT_BIN" standards
 ```
 
-Read every naming and pattern standards file reported by `adt standards`. State which standards pack is active before naming FileMaker objects.
+Read the generated root `AGENTS.md` and every standards file reported by `adt standards`. State the active standards pack.
 
-If `adt init` records no file or the intended key differs, connect it explicitly:
+If `adt init` doesn't record the intended file or key, connect it explicitly:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
-cd "<absolute-adt-project-path>"
+cd "<absolute-proofkit-repository-path>"
 "$ADT_BIN" connect "<absolute-path-to-file.fmp12-or-fmnet-url>" --name "<file-key>"
 ```
 
-Tell the user to allow the FileMaker Pro Agent Access prompt if ADT displays one. Confirm the target and access result before proceeding.
+Tell the user when FileMaker Pro is waiting for its Agent Access or credential window. Confirm the target and grant before continuing.
 
-## 4. Add the ADT web viewer app
-
-State that the next command may provision ADT-owned FileMaker components and create a new app layout. Then run:
+Add the app in the same repository:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
-cd "<absolute-adt-project-path>"
-"$ADT_BIN" app add "<resolved-adt-app-name>" --file "<file-key>" --keychain --non-interactive
-sed -n '1,260p' "webviewer-apps/<resolved-adt-app-name>/adt-project-setup-summary.json"
-sed -n '1,260p' "webviewer-apps/<resolved-adt-app-name>/AGENTS.md"
+cd "<absolute-proofkit-repository-path>"
+"$ADT_BIN" app add "<resolved-adt-app-name>" \
+  --file "<file-key>" --keychain --no-commit --non-interactive
+sed -n '1,280p' "webviewer-apps/<resolved-adt-app-name>/adt-project-setup-summary.json"
+sed -n '1,280p' "webviewer-apps/<resolved-adt-app-name>/AGENTS.md"
+git status --short
 ```
 
-Resolve any failed scaffold, dependency, tooling, or layout phase before copying application code.
+Resolve failed scaffold, layout, dependency, tooling, generation, or quality phases before migrating source files.
 
-## 5. Move only user-owned application files
+## 5. Move the app into the ADT workspace
 
-Copy the source project's user-owned files into the generated ADT app. Typical inputs are `src/`, `public/`, static assets, and project-specific configuration. Exclude at least:
+Treat the original repository root as the source app and `webviewer-apps/<resolved-adt-app-name>` as the destination app. Merge user-owned `src/`, `public/`, static assets, tests, and project-specific configuration into the generated app. Preserve ADT-owned bridge, Intent, manifest, and workspace configuration.
 
-```text
-.git/
-node_modules/
-dist/
-.env*
-pnpm-lock.yaml
-proofkit.config.json
-proofkit.json
-proofkit-setup-summary.json
-proofkit-setup.log
-```
+Merge the original app's `package.json` into the generated app package:
 
-Merge `package.json` instead of replacing it:
-
-- keep ADT's `@adt/fmdapi` dependency, `adtMetadata`, Intent configuration, and ADT scripts;
-- preserve non-ProofKit dependencies and custom scripts;
-- remove `@proofkit/webviewer`, `@proofkit/fmdapi`, and `@proofkit/typegen` only after every usage has been mapped or reported;
+- keep `@adt/fmdapi`, `adtMetadata`, ADT scripts, and Intent configuration;
+- move non-ProofKit runtime and development dependencies needed by the app;
+- preserve useful custom scripts under non-conflicting names;
 - keep `deploy: "adt deploy"` and `typegen: "adt typegen"`;
-- preserve the source package name only if it remains unique in the ADT workspace.
+- remove an `@proofkit/*` package only after no remaining import requires it; retain and report packages needed by deferred imports.
 
-Rewrite only the supported imports listed in the compatibility table. Preserve review boundaries until their behavior is understood.
+Use the ADT-generated root package and workspace files as the workspace authority. Don't replace them with the original app package.
 
-Merge the inner `config` object from the detected ProofKit configuration into `adt.config.json`:
+Select the active ADT app config before merging typegen settings. Use an explicit `--config` path from the app's typegen script when present; otherwise prefer `adt.config.jsonc`, then `adt.config.json`. Stop if neither exists.
 
-- preserve `path`, `clearOldFiles`, `clientSuffix`, `validator`, and `layouts`;
-- use `ADT_execute_data_api` as `webviewerScriptName`;
-- keep the file binding produced by ADT;
-- omit ProofKit-only top-level keys such as `appType`, `ui`, `dataSources`, `envFile`, `registryTemplates`, and `replacedMainPage` after recording any behavior they represented.
+Merge the selected ProofKit config's inner `config` value into that active ADT config:
 
-Preserve `clearOldFiles: false` when the source uses it; ADT's `true` default can delete hand-written clients that aren't listed in `layouts`.
+- preserve `path`, `clearOldFiles`, `clientSuffix`, `validator`, `layouts`, `generateClient`, and `fmMcp`;
+- keep the file binding generated from `adt.json`;
+- set `webviewerScriptName` to `ADT_execute_data_api` only after the FileMaker script catalog confirms that component exists; otherwise mark typegen blocked pending an adapter decision;
+- omit ProofKit-only project keys after recording any behavior they represented.
 
-Keep the user's Vite configuration and replace only the bridge import and call needed for ADT. Keep the user's UI instead of copying the current ADT starter UI over it.
+`clearOldFiles` defaults to `false`. When it is `true`, typegen empties only the configured `path/client` and `path/generated` directories; non-regenerated files in those directories, including hand-written clients, can be removed. Preserve the source value intentionally.
 
-## 6. Inventory and classify the FileMaker boundary
+Keep the user's Vite behavior and replace only the ProofKit bridge with ADT's `fmBridge()` integration. Keep the user's UI instead of the starter UI.
 
-Run ADT diagnostics, then use the installed `fm-cli` skill for read-only script inventory:
+Run focused typecheck and tests from the generated app. When they pass, remove only root-level app files that are now superseded by verified files inside the ADT app. Preserve repository documentation, Git configuration, unrelated tooling, and user changes.
+
+## 6. Edit application-owned FileMaker scripts in place
+
+Run diagnostics and inspect live operation shapes:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
-cd "<absolute-adt-project-path>"
+cd "<absolute-proofkit-repository-path>"
 "$ADT_BIN" doctor --json
 ```
 
 ```sh
 FM_BIN="$HOME/Library/Application Support/ADT/MCP/fm-cli/fm-cli"
 "$FM_BIN" help script
-"$FM_BIN" help script create
 "$FM_BIN" help script update
 ```
 
-Use the target recorded in `adt.json` and the live-help operation shapes. Enumerate ADT-provisioned scripts by reading the catalog and filtering `ADT_`; don't assume a component exists because it appears in this prompt.
+Read the script catalog and enumerate ADT components instead of assuming they exist. Classify each app call:
 
-Classify every script the app calls:
+1. **ProofKit component with a verified ADT twin:** repoint the app; edit neither component.
+2. **Application-owned wrapper:** edit that existing script in place for the ADT contract.
+3. **Remaining ProofKit component:** leave installed and report whether anything still calls it.
 
-1. **ProofKit component with an ADT twin:** repoint the app only after verifying the ADT twin. Don't edit either script.
-2. **Application-specific ProofKit wrapper:** create a new parallel ADT wrapper, verify it independently, and then repoint that one app call site. Never modify the old wrapper.
-3. **Remaining ProofKit component:** leave it in place. It can become dead code after all callers move.
+Maintain a migration table:
 
-Maintain this table throughout the migration:
+| App call site | Script | Action | Contract | Runtime evidence |
+|---|---|---|---|---|
+| `<file:line>` | `<script>` | repointed/edited/unchanged | ADT/dual/deferred | fresh read and `/__fm/fmfetch` result |
 
-| App call site | Legacy script | Replacement | Flow kind | Contract status | Evidence |
-|---|---|---|---|---|---|
-| `<file:line>` | `<PK or user script>` | `<ADT twin or new wrapper>` | read/write/external side effect | planned/verified/deferred/blocked | source, FileMaker read, and round trip |
+For each application-owned script:
 
-## 7. Create and verify parallel ADT wrappers
+1. Read the script, its `token`, step `uuid` values, callers, side effects, context, and exit paths.
+2. Draft the smallest step-level `edits` that implement the ADT or dual contract.
+3. Address steps by `uuid`; include `expect` on every edit.
+4. Dry-run and require `"errors":0`.
+5. Apply, require the closing summary and `"rolledBack":false`.
+6. Re-read the script from a fresh process and verify only the intended step ids changed.
+7. Exercise it through `POST /__fm/fmfetch` with the same top-level parameter the app sends.
+8. Fix failures and repeat within the approved scope; don't create a replacement script or ask for another routine approval.
 
-Work one application-specific flow at a time. Prefer a new parallel wrapper even when editing the old wrapper looks mechanical.
+If an `fm` run ends without a summary or times out during apply or commit, treat the outcome as unknown. Read from a fresh process before retrying.
 
-### Naming convention
+## 7. Verify the complete migration
 
-ADT-provisioned components retain their `ADT_*` names. For a new application-specific wrapper, follow the active standards pack and use this default when it doesn't override script naming:
-
-```text
-<Verb phrase describing the legacy purpose> for ADT ( <required top-level JSON keys> )
-```
-
-Omit parentheses when the wrapper takes no parameters. Keep the name within FileMaker's 100-character limit; if listing every key would exceed it, name the top-level object `request` in the signature and document every required key in the script header. Examples: `Get Session for ADT` and `Save Sale Line for ADT ( saleLine )`. Place the wrapper in the existing functional folder for that behavior. Record the exact legacy-to-ADT name mapping before writing it.
-
-### Authoring and write safety
-
-For each wrapper:
-
-1. Read the legacy script and every FileMaker-side caller. Record its inputs, outputs, context, side effects, and all exit paths.
-2. Design the new top-level parameter and `Exit Script` result contracts. Add the comment header required by the active standards.
-3. If context is required, use a named off-screen window on a context-only layout. Close it on every success and error path. Never navigate the visible web viewer window.
-4. Create a new script. Don't rename, patch, or replace the legacy script. Use `update:script` edits only against the newly-created wrapper, address existing steps by `uuid`, and include `expect` checks. Never send a whole replacement body to an existing script.
-5. Dry-run the complete batch and require a closing summary with `"errors":0` before applying it.
-6. Apply the batch, require `"rolledBack":false`, and then verify the new script with `read:script` from a fresh `fm` process.
-7. Keep the legacy wrapper and all ProofKit components in place.
-
-The new wrapper must not call `PK_send_callback`, construct a ProofKit callback envelope, depend on `setWebViewerName()`, or use a ProofKit component when an independently verified ADT twin exists.
-
-### Independent runtime verification
-
-Start the ADT dev server and use its live FileMaker proxy. A successful HTTP response alone isn't enough; verify the returned value and shape:
-
-```sh
-cd "<absolute-adt-project-path>/webviewer-apps/<resolved-adt-app-name>"
-pnpm dev
-```
-
-From another shell, test a read-only probe and then each replacement script:
-
-```sh
-curl -sS -X POST http://localhost:<port>/__fm/fmfetch \
-  -H 'content-type: application/json' \
-  -d '{"script":"ADT_probe","param":"{}"}'
-```
-
-For a new wrapper, send the same top-level JSON shape the application will send. Mark it `verified` only when the endpoint executes the intended new script and returns the exact success or error shape the app expects.
-
-Test all read-only flows first. Before invoking a write or external-side-effect wrapper, tell the user the target file, script, parameter summary, expected records or external systems affected, and cleanup plan, then ask for approval. Don't infer approval from the original migration request. If approval is declined or unavailable, don't invoke the flow and don't repoint its call site.
-
-After each replacement passes independently:
-
-1. Change only that application call site to the verified ADT script name.
-2. Run the focused test or typecheck for the changed caller.
-3. Exercise the flow through the application when safe.
-4. Update the migration table before moving to the next flow.
-
-## 8. Regenerate and verify the ADT app
-
-Install from the ADT workspace root, then verify from the app directory:
+Install and generate from the in-repository ADT workspace:
 
 ```sh
 ADT_BIN="$HOME/Library/Application Support/ADT/MCP/agent-plugin/bin/adt"
-cd "<absolute-adt-project-path>"
+cd "<absolute-proofkit-repository-path>"
 pnpm install
 
 cd "webviewer-apps/<resolved-adt-app-name>"
@@ -338,26 +296,31 @@ pnpm build
 pnpm dev
 ```
 
-`adt typegen` uses Agent Access. It doesn't accept FileMaker credential flags. Never pass `--reset-overrides` during a migration because user-editable schema override files may contain application logic.
+`adt typegen` uses Agent Access and doesn't accept FileMaker credential flags. Never pass `--reset-overrides` during migration. Don't run `pnpm fix` or another broad auto-fix; report baseline and migration-introduced lint failures separately.
 
-Typegen must exit zero, but that alone doesn't prove success. Report whether it generated layout client files. If `layouts` is empty, say: `tooling wired, app schema not configured yet`.
+Use the dev server's FileMaker proxy to test every app-called script:
 
-Don't run `pnpm fix` or another broad auto-fix. On a migrated codebase, report the lint count and leading rules separately from migration-introduced failures. Warn before committing if hooks would reformat unrelated source.
+```sh
+curl -sS -X POST http://localhost:<port>/__fm/fmfetch \
+  -H 'content-type: application/json' \
+  -d '{"script":"<script-name>","param":"<top-level-json>"}'
+```
 
-Re-run the adapter alias search after typegen and confirm generated clients still use any required adapter interception. Compare the destination's typecheck and test results with the recorded source baseline.
+Run read-only flows first, then run the write and external-side-effect flows covered by the one approval. Use the inventoried safe inputs and perform the stated cleanup. A script is compatible only when this endpoint returns the exact shape the caller expects.
+
+Re-run the adapter alias search after typegen. Compare typecheck, tests, and build results with the original baseline. Report generated layout clients; when `layouts` is empty, report `tooling wired, app schema not configured yet`.
 
 ### Browser completion gate
 
-Use a real browser against the running ADT app and exercise every repointed flow that has permission to run. Inspect both the page and browser console. The browser gate passes only when:
+Use a real browser against the ADT app and exercise every migrated flow. The gate passes only when:
 
-- the app loads and remains loaded after every FileMaker call;
-- expected read results and approved write results appear in the UI;
-- the network and console show no development fallback supplying FileMaker data;
-- there are no ProofKit callback warnings, `PK_send_callback` errors, callback timeouts, or missing web viewer-name warnings;
-- there are no calls to legacy ProofKit scripts from migrated call sites;
-- a production build passes after browser verification.
-
-Disable or bypass development fallback data for this gate. A UI that succeeds because a fallback masked a failed FileMaker call doesn't pass.
+- the app remains loaded after every FileMaker call;
+- expected read and write results appear in the UI;
+- no development fallback supplies FileMaker data;
+- the console has no ProofKit callback warnings, `PK_send_callback` errors, callback timeouts, or missing web viewer-name warnings;
+- migrated component calls use ADT twins;
+- application-owned calls use the updated in-place scripts;
+- the final production build passes.
 
 Stop the dev server after verification.
 
@@ -365,22 +328,20 @@ Stop the dev server after verification.
 
 Report:
 
-- source and destination paths;
-- source package name, suggested ADT app name, resolved app name, and any override;
-- ADT project, file key, target, and app binding from `adt.json`;
-- active FileMaker standards pack and backup evidence;
-- `adt app add` phase results;
-- every dependency, import, config, and adapter rewrite;
-- scripts repointed to ADT twins;
-- new parallel wrappers, including legacy/new names, top-level parameter shape, result shape, context strategy, and FileMaker step ids created or changed;
-- scripts and call sites left unchanged;
-- write flows approved and exercised, and flows declined or deferred;
-- `/__fm/fmfetch` evidence for every migrated call site;
-- typegen output and whether it generated layout clients;
-- baseline and destination typecheck, test, lint, and build results;
-- browser verification, including confirmation that DEV fallbacks were disabled and no ProofKit callback warnings occurred;
-- confirmation that source files, existing FileMaker scripts, and ProofKit components weren't modified or removed.
+- repository path and initial/final Git status;
+- source package name, suggested and resolved app names, and override;
+- ADT file key, target, app binding, and standards pack;
+- backup confirmation and the scope covered by the one approval;
+- scaffold phase results;
+- files moved into the ADT app and superseded root files removed;
+- dependency, import, config, Vite, and adapter changes;
+- ProofKit component calls repointed to ADT twins;
+- application-owned scripts edited in place, including contract type and step ids changed;
+- ProofKit components and scripts left installed;
+- `/__fm/fmfetch` evidence for every app-called script;
+- typegen, generated clients, typecheck, test, lint, build, and browser results;
+- confirmation that browser verification used no development fallbacks or ProofKit callback path.
 
-Call the migration complete only when the app builds, every migrated call site has passed an independent `/__fm/fmfetch` round trip, every permitted flow passes in the browser without development fallbacks or ProofKit callback warnings, and no migrated call site still invokes a legacy ProofKit script.
+Call the migration complete only when the ADT app builds, every app-called FileMaker script has passed `/__fm/fmfetch`, every inventoried flow passes in the browser, the console is free of ProofKit callback warnings, and the repository no longer retains a duplicate root copy of the migrated app.
 
-If write-flow verification wasn't approved, call the result `migration implemented; write verification deferred`, not complete. If an individual flow is blocked, continue the others and report that flow precisely instead of stopping the whole migration.
+If a hard blocker remains, report the exact failed operation, evidence, current FileMaker state, and next required human action. Don't describe a partially verified migration as complete.
