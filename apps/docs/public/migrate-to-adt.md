@@ -13,7 +13,7 @@ Migrate the supplied ProofKit Vite web viewer into a new ADT web viewer app. Pre
 - ADT project destination: `<absolute-adt-project-path>`
 - FileMaker target: `<absolute-path-to-file.fmp12-or-fmnet-url>`
 - ADT file key: `<file-key>`
-- ADT app name: `<kebab-case-app-name>`
+- ADT app name: optional override; otherwise derive it from the source `package.json` name
 
 If an input is missing and you can't resolve it from the project, ask one concise question before making changes. Create the ADT project outside the ProofKit project. Keep the ProofKit source unchanged.
 
@@ -73,6 +73,15 @@ rg -n '@proofkit/|PK_|fmFetch|callFMScript|PerformScript' . \
 ```
 
 Confirm that `proofkit.config.json` has `appType: "webviewer"`. Stop with a compatibility report if it's a browser or Next.js project.
+
+Read the `name` field from the source `package.json` and derive the suggested ADT app name:
+
+1. Remove an npm scope. For example, `@acme/inventory-viewer` becomes `inventory-viewer`.
+2. Convert the remaining name to kebab-case: lowercase it, replace each run of non-alphanumeric characters with one hyphen, and trim leading or trailing hyphens.
+3. Prefer an explicit ADT app-name input when the user supplied one. Otherwise, use the derived name.
+4. Before making changes, report: `Suggested ADT app name: <resolved-adt-app-name> (from package.json name <source-package-name>)`.
+
+Ask for an app name only when `package.json` has no usable name or the derived destination already exists. Use `<resolved-adt-app-name>` for every later path and command.
 
 Build a source inventory containing:
 
@@ -137,9 +146,9 @@ State that the next command may provision ADT-owned FileMaker components and cre
 
 ```sh
 cd "<absolute-adt-project-path>"
-"$ADT_BIN" app add "<kebab-case-app-name>" --file "<file-key>" --non-interactive
-cat "webviewer-apps/<kebab-case-app-name>/adt-project-setup-summary.json"
-cat "webviewer-apps/<kebab-case-app-name>/AGENTS.md"
+"$ADT_BIN" app add "<resolved-adt-app-name>" --file "<file-key>" --non-interactive
+cat "webviewer-apps/<resolved-adt-app-name>/adt-project-setup-summary.json"
+cat "webviewer-apps/<resolved-adt-app-name>/AGENTS.md"
 ```
 
 Resolve any failed scaffold, dependency, tooling, or layout phase before copying application code.
@@ -205,7 +214,7 @@ Install from the ADT workspace root, then verify from the app directory:
 cd "<absolute-adt-project-path>"
 pnpm install
 
-cd "webviewer-apps/<kebab-case-app-name>"
+cd "webviewer-apps/<resolved-adt-app-name>"
 "$ADT_BIN" typegen
 pnpm fix
 pnpm lint
@@ -222,6 +231,7 @@ Typegen must exit zero, but that alone doesn't prove success. Report whether it 
 Report:
 
 - source and destination paths;
+- source package name, suggested ADT app name, and any user override;
 - ADT project, file key, target, and app binding from `adt.json`;
 - `adt app add` phase results;
 - every dependency/import/config rewrite;
