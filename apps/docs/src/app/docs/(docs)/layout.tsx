@@ -47,13 +47,6 @@ function appendLlmLinks(tree: Root): Root {
 }
 
 function appendLlmLinksToNode(node: Node): Node {
-  if (node.type === "page" && node.url === "/docs/ai/migrate-to-adt") {
-    return {
-      ...node,
-      name: "Migrate to ADT",
-    };
-  }
-
   if (node.type === "page" && newBadgePages.has(node.url)) {
     return {
       ...node,

@@ -11,6 +11,19 @@ import { createElement } from "react";
 export const source = loader({
   // it assigns a URL to your pages
   baseUrl: "/docs",
+  plugins: ({ typedPlugin }) => [
+    typedPlugin({
+      transformPageTree: {
+        file(node, filePath) {
+          const file = filePath ? this.storage.read(filePath) : undefined;
+          if (file?.format === "page" && file.data.sidebarTitle) {
+            node.name = file.data.sidebarTitle;
+          }
+          return node;
+        },
+      },
+    }),
+  ],
   icon(icon) {
     if (!icon) {
       // You may set a default icon
