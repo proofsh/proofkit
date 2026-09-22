@@ -2,9 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { rehypeCodeDefaultOptions, remarkMdxMermaid, remarkNpm } from "fumadocs-core/mdx-plugins";
-import { defineConfig, defineDocs } from "fumadocs-mdx/config";
+import { defineConfig, defineDocs, frontmatterSchema } from "fumadocs-mdx/config";
 import { transformerTwoslash } from "fumadocs-twoslash";
 import type { LanguageRegistration } from "shiki";
+import { z } from "zod";
 
 import FileMakerLang from "./src/lib/FileMaker-tmLanguage.json";
 
@@ -15,6 +16,9 @@ export const docs = defineDocs({
   dir: "content/docs",
   docs: {
     async: true,
+    schema: frontmatterSchema.extend({
+      sidebarTitle: z.string().optional(),
+    }),
     postprocess: {
       includeProcessedMarkdown: true,
     },

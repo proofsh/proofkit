@@ -1,0 +1,42 @@
+---
+title: Migrate from ProofKit to ADT
+sidebarTitle: Migrate to ADT
+description: Use a coding agent to migrate a ProofKit Web Viewer project and its FileMaker scripts to ADT.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+This migration moves a ProofKit Web Viewer project and its connected FileMaker file to the Agentic Development Toolkit from Claris (ADT). A coding agent performs the migration by following a detailed set of instructions.
+
+<Callout type="error" title="ADT is still in beta">
+  Do not run this migration on a production system. Use a development or backup
+  copy of the FileMaker file, and make sure you can restore both the file and the
+  web project before you begin.
+
+  If you don't yet have access to ADT, you may continue using ProofKit
+</Callout>
+
+## What the migration changes
+
+The agent will edit your existing FileMaker scripts in place, update the web project for ADT, and replace its ProofKit integration. It does not create a second set of FileMaker scripts for you to switch between.
+
+After the migration, the project and FileMaker file will no longer be compatible with ProofKit. Once you have verified the ADT version, the agent will guide you through removing ProofKit deployment data and uninstalling the ProofKit add-on from the FileMaker file. Restoring the ProofKit version requires restoring your backups.
+
+## Before you start
+
+- Install the latest ADT beta on the computer where you will run the migration.
+- Open a development or backup copy of your FileMaker file in FileMaker Pro.
+- Open your coding agent in the root of the ProofKit project's Git repository.
+- Make sure you have current, restorable backups of both the repository and the FileMaker file.
+
+## Prompt your coding agent
+
+Copy this prompt into your coding agent:
+
+```text title="Prompt"
+Fetch and follow the migration instructions at
+https://proofkit.proof.sh/migrate-to-adt.md to migrate this ProofKit Web Viewer
+project and its FileMaker file to an ADT WebViewer app.
+```
+
+The agent should stop if the installed ADT instructions are unavailable and ask you to run the ADT installer. Otherwise, it should inspect the project, discover the open FileMaker file, and handle the migration from the linked instructions.

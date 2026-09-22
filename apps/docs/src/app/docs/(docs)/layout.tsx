@@ -51,7 +51,7 @@ function appendLlmLinksToNode(node: Node): Node {
     return {
       ...node,
       name: (
-        <span className="inline-flex w-full items-center gap-2">
+        <span className="inline-flex w-full items-center gap-2" key={node.url}>
           {node.name}
           <NewBadge />
         </span>
