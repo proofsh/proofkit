@@ -12,7 +12,7 @@ description: >
 metadata:
   type: core
   library: proofkit
-  library_version: "0.1.2"
+  library_version: "0.2.0"
 requires:
   - typegen-fmodata
 sources:

@@ -14,7 +14,7 @@ description: >
 metadata:
   type: core
   library: proofkit
-  library_version: "3.3.0"
+  library_version: "3.3.1"
 sources:
   - "proofsh/proofkit:apps/docs/content/docs/webviewer/platform-notes.mdx"
   - "proofsh/proofkit:apps/docs/content/docs/webviewer/deployment-methods.mdx"
