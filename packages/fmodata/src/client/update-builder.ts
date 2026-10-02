@@ -211,7 +211,7 @@ export class ExecutableUpdateBuilder<
       requestHeaders.delete("Prefer");
     }
 
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       // Step 1: Validate input
       let validatedData = this.data;
       if (this.table) {

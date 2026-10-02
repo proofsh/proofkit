@@ -135,7 +135,7 @@ export class ExecutableDeleteBuilder<Occ extends FMTable<any, any>>
       builderName: "ExecutableDeleteBuilder",
     });
 
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       // Make DELETE request via DI
       const response = yield* requestFromService(url, {
         ...requestOptions,

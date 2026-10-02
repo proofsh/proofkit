@@ -711,7 +711,7 @@ export class RecordBuilder<
       const queryString = this.buildQueryString(mergedOptions.includeSpecialColumns, mergedOptions.useEntityIds);
       url += queryString;
     }
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       // Make GET request via DI
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic response type from OData API
       const response = yield* requestFromService<any>(url, {

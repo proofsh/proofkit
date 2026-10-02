@@ -35,7 +35,7 @@ export interface HttpClient {
   ) => Effect.Effect<T, FMODataErrorType>;
 }
 
-export const HttpClient = Context.GenericTag<HttpClient>("@proofkit/fmodata/HttpClient");
+export const HttpClient = Context.Service<HttpClient>("@proofkit/fmodata/HttpClient");
 
 // --- ODataConfig Service ---
 
@@ -47,7 +47,7 @@ export interface ODataConfig {
   readonly includeSpecialColumns: boolean;
 }
 
-export const ODataConfig = Context.GenericTag<ODataConfig>("@proofkit/fmodata/ODataConfig");
+export const ODataConfig = Context.Service<ODataConfig>("@proofkit/fmodata/ODataConfig");
 
 // --- ODataLogger Service ---
 
@@ -55,7 +55,7 @@ export interface ODataLogger {
   readonly logger: InternalLogger;
 }
 
-export const ODataLogger = Context.GenericTag<ODataLogger>("@proofkit/fmodata/ODataLogger");
+export const ODataLogger = Context.Service<ODataLogger>("@proofkit/fmodata/ODataLogger");
 
 // --- Combined layer type ---
 
