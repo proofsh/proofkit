@@ -151,7 +151,7 @@ export class WebhookManager {
       requestBody.filter = filter;
     }
 
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<WebhookAddResponse>(`/${this.config.databaseName}/Webhook.Add`, {
         ...options,
         method: "POST",
@@ -173,7 +173,7 @@ export class WebhookManager {
    * ```
    */
   async remove(webhookId: number, options?: ExecuteMethodOptions): Promise<void> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService(`/${this.config.databaseName}/Webhook.Delete(${webhookId})`, {
         ...options,
         method: "POST",
@@ -195,7 +195,7 @@ export class WebhookManager {
    * ```
    */
   get(webhookId: number, options?: ExecuteMethodOptions): Promise<WebhookInfo> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<WebhookInfo>(`/${this.config.databaseName}/Webhook.Get(${webhookId})`, options);
     });
 
@@ -213,7 +213,7 @@ export class WebhookManager {
    * ```
    */
   list(options?: ExecuteMethodOptions): Promise<WebhookListResponse> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<WebhookListResponse>(`/${this.config.databaseName}/Webhook.GetAll`, {
         ...options,
         databaseNameNormalizationMode: "ensureExtension",
@@ -244,7 +244,7 @@ export class WebhookManager {
       body.rowIDs = options.rowIDs;
     }
 
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<unknown>(`/${this.config.databaseName}/Webhook.Invoke(${webhookId})`, {
         method: "POST",
         body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,

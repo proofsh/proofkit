@@ -1,6 +1,12 @@
 import { HTTPError } from "@proofkit/fmodata";
 import { requestFromService, runLayerOrThrow, runLayerResult } from "@proofkit/fmodata/effect";
-import { HttpClient, ODataConfig, ODataLogger } from "@proofkit/fmodata/services";
+import {
+  createDatabaseLayer,
+  extractConfigFromLayer,
+  HttpClient,
+  ODataConfig,
+  ODataLogger,
+} from "@proofkit/fmodata/services";
 import { Effect, Layer } from "effect";
 import { describe, expect, it } from "vitest";
 
@@ -24,6 +30,32 @@ const baseConfig = {
 };
 
 describe("effect layer execution helpers", () => {
+  it("overrides database config while preserving HTTP and logger services", async () => {
+    const httpClient = { request: () => Effect.fail(new HTTPError("/unused", 500, "Unused")) };
+    const baseLayer = Layer.mergeAll(
+      Layer.succeed(HttpClient, httpClient),
+      Layer.succeed(ODataConfig, baseConfig),
+      Layer.succeed(ODataLogger, { logger }),
+    );
+    const overrides = {
+      databaseName: "other_db",
+      normalizeDatabaseName: false,
+      useEntityIds: true,
+      includeSpecialColumns: true,
+    };
+    const layer = createDatabaseLayer(baseLayer, overrides);
+
+    expect(extractConfigFromLayer(layer)).toEqual({ config: { ...baseConfig, ...overrides }, logger });
+    const services = await runLayerResult(
+      layer,
+      Effect.gen(function* () {
+        return { client: yield* HttpClient, logger: (yield* ODataLogger).logger };
+      }),
+    );
+    expect(services.data?.client).toBe(httpClient);
+    expect(services.data?.logger).toBe(logger);
+  });
+
   it("maps successful layered execution to Result", async () => {
     const layer = Layer.mergeAll(
       Layer.succeed(HttpClient, {

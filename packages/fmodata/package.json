@@ -65,7 +65,7 @@
     "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "dotenv": "^16.6.1",
-    "effect": "^3.20.0",
+    "effect": "^4.0.0",
     "es-toolkit": "^1.43.0",
     "odata-query": "^8.0.7"
   },

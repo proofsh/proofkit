@@ -182,7 +182,7 @@ export class BatchBuilder<Builders extends readonly ExecutableBuilder<any>[]> {
       });
     }
 
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       // Step 1: Convert builders to Request objects and format batch
       const requests: Request[] = this.builders.map((builder) => builder.toRequest(baseUrl, options));
       const { body, boundary } = yield* Effect.tryPromise({

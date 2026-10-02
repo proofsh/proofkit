@@ -70,7 +70,7 @@ export function runAsResult<T>(effect: Effect.Effect<T, FMODataErrorType>): Prom
   return Effect.runPromise(
     effect.pipe(
       Effect.map((data): Result<T> => ({ data, error: undefined })),
-      Effect.catchAll((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
+      Effect.catch((error) => Effect.succeed<Result<T>>({ data: undefined, error })),
     ),
   ).catch((defect) => ({
     data: undefined,
@@ -169,9 +169,8 @@ export function buildRetrySchedule(policy: RetryPolicy) {
   const base = Schedule.exponential(baseDelay);
   const withJitter = useJitter ? Schedule.jittered(base) : base;
 
-  return withJitter.pipe(
-    Schedule.intersect(Schedule.recurs(maxRetries)),
-    Schedule.whileInput((error: FMODataErrorType) => isTransientError(error)),
+  return Schedule.max([withJitter, Schedule.recurs(maxRetries)]).pipe(
+    Schedule.while(({ input }: Schedule.Metadata<unknown, FMODataErrorType>) => isTransientError(input)),
   );
 }
 

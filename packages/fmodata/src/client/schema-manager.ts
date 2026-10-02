@@ -67,7 +67,7 @@ export class SchemaManager {
   }
 
   createTable(tableName: string, fields: Field[], options?: RequestInit & FFetchOptions): Promise<TableDefinition> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<TableDefinition>(`/${this.config.databaseName}/FileMaker_Tables`, {
         method: "POST",
         body: JSON.stringify({
@@ -82,7 +82,7 @@ export class SchemaManager {
   }
 
   addFields(tableName: string, fields: Field[], options?: RequestInit & FFetchOptions): Promise<TableDefinition> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<TableDefinition>(`/${this.config.databaseName}/FileMaker_Tables/${tableName}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -96,7 +96,7 @@ export class SchemaManager {
   }
 
   async deleteTable(tableName: string, options?: RequestInit & FFetchOptions): Promise<void> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService(`/${this.config.databaseName}/FileMaker_Tables/${tableName}`, {
         method: "DELETE",
         ...options,
@@ -107,7 +107,7 @@ export class SchemaManager {
   }
 
   async deleteField(tableName: string, fieldName: string, options?: RequestInit & FFetchOptions): Promise<void> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService(`/${this.config.databaseName}/FileMaker_Tables/${tableName}/${fieldName}`, {
         method: "DELETE",
         ...options,
@@ -122,7 +122,7 @@ export class SchemaManager {
     fieldName: string,
     options?: RequestInit & FFetchOptions,
   ): Promise<{ indexName: string }> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService<{ indexName: string }>(
         `/${this.config.databaseName}/FileMaker_Indexes/${tableName}`,
         {
@@ -137,7 +137,7 @@ export class SchemaManager {
   }
 
   async deleteIndex(tableName: string, fieldName: string, options?: RequestInit & FFetchOptions): Promise<void> {
-    const pipeline = Effect.gen(this, function* () {
+    const pipeline = Effect.gen({ self: this }, function* () {
       return yield* requestFromService(`/${this.config.databaseName}/FileMaker_Indexes/${tableName}/${fieldName}`, {
         method: "DELETE",
         ...options,
