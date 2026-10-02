@@ -1,5 +1,12 @@
 # @proofkit/fmodata
 
+## 0.2.0
+
+### Minor Changes
+
+- 368778e: Migrate to Effect v4, updating services, generators, error handling, and retry schedules.
+  Custom Effect layers must use v4 services and APIs.
+
 ## 0.1.2
 
 ### Patch Changes

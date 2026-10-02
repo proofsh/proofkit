@@ -9,7 +9,7 @@ description: >
 metadata:
   type: core
   library: proofkit
-  library_version: "0.4.2"
+  library_version: "0.4.3"
 requires:
   - fmodata-client
 sources:
