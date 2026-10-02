@@ -1,11 +1,16 @@
 ---
 name: webdirect-runtime
 description: >
-  FileMaker WebDirect ProofKit Web Viewer runtime behavior refresh resilience
-  session state localStorage browser resize reload same deployment embedded bundle
-  avoid separate deployment avoid separate web server @proofkit/webviewer
-  fmFetch callFMScript WebViewerAdapter WebDirect page refresh blank app empty body
-  character encoding browser network response console errors deployed HTML
+  Troubleshoot and build FileMaker WebDirect ProofKit Web Viewer apps. Load when a Web Viewer
+  app is blank, white, or empty in WebDirect, when the WebDirect page response has an empty
+  body, when deployed HTML is garbled, mangled, or corrupted, or when diagnosing character
+  encoding, UTF-8, Unicode, mojibake, emoji, accented, curly quote, or other special or
+  non-ASCII characters in the single-file HTML written by the deploy_html FileMaker script.
+  Also covers refresh resilience, unexpected page reload from browser resize, session state
+  in localStorage, bundle size and page-weight myths, running the same embedded bundle in
+  WebDirect and FileMaker Pro without a separate deployment or web server, and browser
+  console and network diagnosis with @proofkit/webviewer fmFetch callFMScript
+  WebViewerAdapter.
 metadata:
   type: core
   library: proofkit
@@ -48,7 +53,7 @@ When a web app doesn't load in WebDirect, inspect what the browser received befo
 3. Check the browser console for parse errors, runtime exceptions, blocked resources, or security errors.
 4. Distinguish an empty WebDirect page response from an empty rendered root element inside the Web Viewer. React can start with an empty root and populate it at runtime, so the DOM alone doesn't prove that WebDirect omitted the bundle.
 
-If the complete page served by WebDirect has an empty body and the Web Viewer bundle is absent from that response, suspect character encoding first. An incorrectly encoded or unsupported character in the deployed single-file HTML can cause WebDirect to return an empty body instead of sending the bundle. Inspect the built HTML for invalid UTF-8 or problematic characters, rebuild, redeploy, and check the full WebDirect response again.
+If the complete page served by WebDirect has an empty body and the Web Viewer bundle is absent from that response, suspect character encoding first. An incorrectly encoded or unsupported character in the deployed single-file HTML — the payload the `deploy_html` FileMaker script writes into the file — can cause WebDirect to return an empty body instead of sending the bundle. Non-ASCII content such as emoji, curly quotes, accented letters, or invalid UTF-8 sequences is the usual source. Inspect the built HTML for invalid UTF-8 or problematic characters, rebuild, redeploy via `deploy_html`, and check the full WebDirect response again.
 
 If the full WebDirect response contains the Web Viewer HTML and JavaScript bundle, don't keep treating encoding or bundle size as the default cause. Follow the browser's console and network evidence to the parse, runtime, bridge, or security failure.
 
