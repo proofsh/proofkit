@@ -1,5 +1,11 @@
 # @proofkit/better-auth
 
+## 0.4.4
+
+### Patch Changes
+
+- cb489a0: Upgrade Better Auth to 1.7.7 or later to include upstream security fixes.
+
 ## 0.4.3
 
 ### Patch Changes
