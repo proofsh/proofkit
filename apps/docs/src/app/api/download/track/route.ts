@@ -11,6 +11,9 @@ const requestSchema = z.object({
   path: z.string().min(1).optional(),
 });
 
+// Shared placeholder posthog-js uses in cookieless mode. Never link it to a person.
+const COOKIELESS_DISTINCT_ID = "$posthog_cookieless";
+
 const getIp = (requestHeaders: Headers) =>
   requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ?? requestHeaders.get("x-real-ip") ?? undefined;
 
@@ -22,7 +25,8 @@ export const POST = async (request: Request) => {
   }
 
   const requestHeaders = await headers();
-  const { distinctId, email, path, platform } = result.data;
+  const { email, path, platform } = result.data;
+  const distinctId = result.data.distinctId === COOKIELESS_DISTINCT_ID ? undefined : result.data.distinctId;
   const ip = getIp(requestHeaders);
   const userAgent = requestHeaders.get("user-agent") ?? undefined;
   const manifest = await fetchManifest().catch(() => null);

@@ -13,6 +13,8 @@ if (isPostHogEnabled) {
     },
     capture_pageleave: true,
     capture_pageview: true,
+    // No cookies or storage. Identity is a server-side hash. Requires cookieless mode in PostHog project settings.
+    cookieless_mode: "always",
     defaults: "2026-01-30",
     disable_session_recording: true,
   });
