@@ -42,7 +42,6 @@ export function trackDownloadRequest(properties: { email: string; platform: stri
     },
     body: JSON.stringify({
       ...properties,
-      distinctId: posthog.get_distinct_id(),
       path: typeof window === "undefined" ? undefined : window.location.pathname,
     }),
     keepalive: true,
