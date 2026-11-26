@@ -27,6 +27,6 @@ overrides:
   '@modelcontextprotocol/sdk': ^1.25.2
   preact: ^10.26.10
   qs: ^6.14.1
-  vite: ^6.4.1
+  vite: ^6.4.6
   body-parser: ^2.2.1
 autoInstallPeers: true
